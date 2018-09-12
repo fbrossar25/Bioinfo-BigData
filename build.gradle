@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+group 'fr.unistra'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.hibernate', name: 'hibernate-core', version: '5.3.6.Final'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.8'
+    compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.1'
+}
