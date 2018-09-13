@@ -6,7 +6,6 @@ import org.hibernate.Transaction;
 
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
-import java.io.Serializable;
 import java.util.List;
 
 public class PersistentEntityManager<T extends PersistentEntity> {
@@ -16,12 +15,11 @@ public class PersistentEntityManager<T extends PersistentEntity> {
         this.clazz = clazz;
     }
 
-    public T save(T entity){
+    public void save(T entity){
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
-        Serializable serial = s.save(entity);
+        s.save(entity);
         t.commit();
-        return s.get(clazz, serial);
     }
 
     public void delete(T entity){
