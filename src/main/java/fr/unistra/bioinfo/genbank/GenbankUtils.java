@@ -1,13 +1,17 @@
 package fr.unistra.bioinfo.genbank;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
@@ -33,8 +37,13 @@ public class GenbankUtils {
     public static String getOrganismsListRequestURL(Reign reign){
         String request = "https://www.ncbi.nlm.nih.gov/Structure/ngram?";
         request += "&limit=0";
-        request += "&q=[display(),hist(group,subgroup,level)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""+ reign.getlabel()+"\"]).sort(replicons,desc)";
+        request += "&q=[display(),hist(group,subgroup,level)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"]).sort(replicons,desc)";
         return request;
+    }
+
+    public static String getFullOrganismsListRequestURL(){
+        //return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=50&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
+        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=0&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\"])";
     }
 
     /**
@@ -45,11 +54,33 @@ public class GenbankUtils {
      */
     public static String getKingdomCountersURL(Reign reign){
         return "https://www.ncbi.nlm.nih.gov/Structure/ngram?limit=0&q=[hist(group,subgroup,kingdom)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""
-        + reign.getlabel()+"\"]).sort(replicons,desc)";
+        + reign.getSearchTable()+"\"]).sort(replicons,desc)";
     }
 
     public static String getReignTotalURL(Reign reign){
-        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&q=[display()].from(GenomeAssemblies).matching(tab==[\""+ reign.getlabel()+"\"])&limit=1";
+        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&q=[display()].from(GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"])&limit=1";
+    }
+
+    private static String normalizeString(String s){
+        return s.replaceAll("[/\\\\:*<>?|]+","").trim();
+    }
+
+    public static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
+        return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
+    }
+
+    public static void createOrganismsTreeStructure(Path rootDirectory){
+        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL())){
+            JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
+            JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
+            for(Object obj : entries){
+                JSONObject entry = (JSONObject)obj;
+                Path entryPath = rootDirectory.resolve(getPathOfOrganism(entry.getString("kingdom"), entry.getString("group"), entry.getString("subgroup"), entry.getString("organism")));
+                FileUtils.forceMkdir(entryPath.toFile());
+            }
+        }catch(IOException | NullPointerException e){
+            LOGGER.error("Erreur de récupération de la liste des organismes",e);
+        }
     }
 
     /**
@@ -63,7 +94,7 @@ public class GenbankUtils {
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             numerOfEntries = json.getJSONObject("ngout").getJSONObject("data").getInt("totalCount");
         }catch(IOException | NullPointerException e){
-            LOGGER.error("Erreur de récupération du nombre total d'entrées du règne '"+ reign.getlabel()+"'",e);
+            LOGGER.error("Erreur de récupération du nombre total d'entrées du règne '"+ reign.getSearchTable()+"'",e);
         }
         return numerOfEntries;
     }

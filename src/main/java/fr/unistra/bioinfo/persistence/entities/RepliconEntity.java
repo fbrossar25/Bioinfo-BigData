@@ -10,6 +10,8 @@ public class RepliconEntity extends PersistentEntity{
     private String replicon;
     private String trinucleotides;
     private String dinucleotides;
+    private boolean isDownloaded;
+    private boolean isComputed;
     private HierarchyEntity hierarchy;
     //TODO créer un DTO avec un mapper pour les tri/dinucleotides
 
@@ -46,6 +48,24 @@ public class RepliconEntity extends PersistentEntity{
 
     public void setDinucleotides(String dinucleotides){
         this.dinucleotides = dinucleotides;
+    }
+
+    @Column(name="DOWNLOADED")
+    public boolean isDownloaded() {
+        return isDownloaded;
+    }
+
+    public void setDownloaded(boolean downloaded) {
+        isDownloaded = downloaded;
+    }
+
+    @Column(name="COMPUTED")
+    public boolean isComputed() {
+        return isComputed;
+    }
+
+    public void setComputed(boolean computed) {
+        isComputed = computed;
     }
 
     @ManyToOne

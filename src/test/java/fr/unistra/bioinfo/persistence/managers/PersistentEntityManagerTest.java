@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javax.persistence.Table;
 import java.util.List;
 
 class PersistentEntityManagerTest extends CustomTestCase {
@@ -55,6 +56,11 @@ class PersistentEntityManagerTest extends CustomTestCase {
         mgr.deleteAll();
         PersistentEntityManager<RepliconEntity> mgr2 = PersistentEntityManager.create(RepliconEntity.class);
         mgr2.save(new RepliconEntity());
+        List<RepliconEntity> list = mgr2.getAll();
+        LOGGER.info("Récupération de "+list.size()+" lignes dans "+RepliconEntity.class.getAnnotation(Table.class).name());
+        for(RepliconEntity replicon : list){
+            LOGGER.info(replicon.getId());
+        }
         mgr2.deleteAll();
     }
 }
