@@ -1,32 +1,74 @@
 package fr.unistra.bioinfo;
 
-import java.util.List;
+import fr.unistra.bioinfo.gui.ExceptionDialog;
+import fr.unistra.bioinfo.gui.MainWindowController;
+import fr.unistra.bioinfo.persistence.DBUtils;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 
-public class Main {
+import java.util.Optional;
 
+public class Main extends Application {
+    private static MainWindowController mainWindowController;
     public static void main(String [] args){
-        Sample s1 = new Sample();
-        s1.setDescription("test1");
-        Sample s2 = new Sample();
-        s2.setDescription("test2");
-        Sample s3 = new Sample();
-        s3.setDescription("test3");
-        PersistentEntityManager<Sample> sampleMgr = PersistentEntityManager.create(Sample.class);
-        int n = sampleMgr.deleteAll();
-        System.out.print("Suppression de "+n+" lignes");
-        sampleMgr.save(s1);
-        System.out.println("Before : "+s2.getId());
-        sampleMgr.save(s2);
-        System.out.println("After : "+s2.getId());
-        System.out.println("Before : "+s3.getId());
-        sampleMgr.save(s3);
-        System.out.println("After : "+s3.getId());
-        sampleMgr.delete(s2);
-        List<Sample> samples = sampleMgr.getAll();
-        System.out.println("Récupération de "+samples.size()+" lignes");
-        for(Sample sample : samples){
-            System.out.println(sample.getDescription());
+        Thread.setDefaultUncaughtExceptionHandler(Main::defaultErrorHandling);
+        launch(args);
+    }
+
+    private static void defaultErrorHandling(Thread t, Throwable e){
+        new ExceptionDialog(t, e);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        try {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            FXMLLoader loader = new FXMLLoader(classLoader.getResource("MainWindow.fxml"));
+            Pane root = loader.load();
+            mainWindowController = loader.getController();
+            Scene scene = new Scene(root);
+            primaryStage.setScene(scene);
+            initStage(primaryStage);
+            primaryStage.show();
+            primaryStage.setOnCloseRequest(evt -> {
+                Alert confirmClose = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmClose.setTitle("Confirmation");
+                confirmClose.setHeaderText("Confirmer la fermeture");
+                confirmClose.setContentText("Voulez-vous fermer le logiciel ?");
+                Optional<ButtonType> closeResponse = confirmClose.showAndWait();
+                if (!closeResponse.isPresent() || !ButtonType.OK.equals(closeResponse.get())) {
+                    evt.consume();
+                } else {
+                    shutdown();
+                }
+            });
+        } catch (Exception e) {
+            new ExceptionDialog(e);
+            shutdown();
         }
-        DBUtils.close();
+    }
+
+    public static MainWindowController getMainWindowController(){
+        return mainWindowController;
+    }
+
+    private void initStage(Stage primaryStage) {
+        String version = this.getClass().getPackage().getImplementationVersion();
+        primaryStage.setResizable(true);
+        primaryStage.setMinWidth(800);
+        primaryStage.setMinHeight(600);
+        primaryStage.setTitle("Cellular Automatons" + ((version == null) ? "" : (" " + version)));
+    }
+
+    private void shutdown(){
+        DBUtils.stop();
+        Platform.exit();
+        System.exit(0);
     }
 }

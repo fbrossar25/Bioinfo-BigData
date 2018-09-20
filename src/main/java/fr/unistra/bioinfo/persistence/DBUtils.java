@@ -1,4 +1,4 @@
-package fr.unistra.bioinfo;
+package fr.unistra.bioinfo.persistence;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -10,17 +10,20 @@ public class DBUtils {
     private static Session session;
 
     public static Session getSession(){
-        ensureExistsSessionFactory();
-        if(session != null && session.isOpen()){
-            return session;
-        }
-        try{
-            session = sessionFactory.openSession();
-        }catch (HibernateException e){
-            System.err.println("Erreur de création de la session");
-            e.printStackTrace();
-        }
+        ensureExistsSession();
         return session;
+    }
+
+    private static void ensureExistsSession(){
+        ensureExistsSessionFactory();
+        if(session == null || !session.isOpen()){
+            try{
+                session = sessionFactory.openSession();
+            }catch (HibernateException e){
+                System.err.println("Erreur de création de la session");
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void ensureExistsSessionFactory(){
@@ -34,7 +37,12 @@ public class DBUtils {
         }
     }
 
-    public static void close(){
+    public static void start(){
+        stop();
+        session = getSession();
+    }
+
+    public static void stop(){
         if(session != null && session.isOpen()){
             session.close();
         }

@@ -1,6 +1,8 @@
-package fr.unistra.bioinfo;
+package fr.unistra.bioinfo.persistence.managers;
 
 import com.sun.istack.internal.NotNull;
+import fr.unistra.bioinfo.persistence.DBUtils;
+import fr.unistra.bioinfo.persistence.entities.PersistentEntity;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 

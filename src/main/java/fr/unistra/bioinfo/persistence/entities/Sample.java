@@ -1,4 +1,4 @@
-package fr.unistra.bioinfo;
+package fr.unistra.bioinfo.persistence.entities;
 
 import org.hibernate.annotations.GenericGenerator;
 

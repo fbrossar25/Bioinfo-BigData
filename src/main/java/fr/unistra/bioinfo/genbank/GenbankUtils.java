@@ -1,4 +1,4 @@
-package fr.unistra.bioinfo;
+package fr.unistra.bioinfo.genbank;
 
 public class GenbankUtils {
 

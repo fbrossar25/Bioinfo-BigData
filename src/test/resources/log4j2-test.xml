@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
+        </Console>
+        <File name="logfile" fileName="logs/bioinfo.log" append="false">
+        	<PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO" additivity="false">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="logfile"/>
+        </Root>
+    </Loggers>
+</Configuration>
