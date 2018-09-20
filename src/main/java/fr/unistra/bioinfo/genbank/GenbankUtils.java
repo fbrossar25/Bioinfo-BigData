@@ -1,6 +1,8 @@
 package fr.unistra.bioinfo.genbank;
 
+import com.sun.istack.internal.NotNull;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -41,9 +43,12 @@ public class GenbankUtils {
         return request;
     }
 
+    /**
+     * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
+     * @return l'URL de la requête
+     */
     public static String getFullOrganismsListRequestURL(){
-        //return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=50&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
-        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=0&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\"])";
+        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=0&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
     }
 
     /**
@@ -57,19 +62,42 @@ public class GenbankUtils {
         + reign.getSearchTable()+"\"]).sort(replicons,desc)";
     }
 
-    public static String getReignTotalURL(Reign reign){
+    /**
+     * La requête perettant de récuperer le nombre totale d'entrées pour un règne.
+     * @param reign règne
+     * @return l'URL de la requête
+     */
+    public static String getReignTotalEntriesNumberURL(Reign reign){
         return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&q=[display()].from(GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"])&limit=1";
     }
 
-    private static String normalizeString(String s){
-        return s.replaceAll("[/\\\\:*<>?|]+","").trim();
+    /**
+     * Retourne la chaîne de caractères normalisés, supprimant les caractères interdits pour la création des dossiers sous Windows.
+     * @param s la chaîne à normaliser
+     * @return la chaîne normalisée
+     */
+    public static String normalizeString(String s){
+        return StringUtils.isBlank(s) ? "" : s.replaceAll("[/\\\\:*<>?|]+","").trim();
     }
 
-    public static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
+    /**
+     * Retourne le chemin de l'organisme à l'intérieur de l'arborescence des organismes.</br>
+     * Tous les paramètres sont normalisés et ne doivent pas être null.
+     * @param kingdom royaume de l'organisme
+     * @param group groupe de l'organisme
+     * @param subgroup sous-groupe de l'organisme
+     * @param organism nom de l'organism
+     * @return Le chemin à l'intérieur de l'arborescence des organismes
+     */
+    public static Path getPathOfOrganism(@NotNull String kingdom, @NotNull String group, @NotNull String subgroup, @NotNull String organism){
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
-    public static void createOrganismsTreeStructure(Path rootDirectory){
+    /**
+     * Génère l'arborescence nécessaire pour tous les organismes.
+     * @param rootDirectory dossier devant contenir l'arborescence. Ne doit pas être null.
+     */
+    public static void createOrganismsTreeStructure(@NotNull Path rootDirectory){
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL())){
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
@@ -90,7 +118,7 @@ public class GenbankUtils {
      */
     public static int getNumberOfEntries(Reign reign){
         int numerOfEntries = -1;
-        try(BufferedReader reader = readRequest(getReignTotalURL(reign))){
+        try(BufferedReader reader = readRequest(getReignTotalEntriesNumberURL(reign))){
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             numerOfEntries = json.getJSONObject("ngout").getJSONObject("data").getInt("totalCount");
         }catch(IOException | NullPointerException e){
@@ -99,6 +127,12 @@ public class GenbankUtils {
         return numerOfEntries;
     }
 
+    /**
+     * Retoure un BufferedReader permettant de lire la réponse de la requête donnée
+     * @param requestURL la requête
+     * @return le BufferedReader
+     * @throws IOException Exception lancée si un problème survient à l'instanciation (URL malformée, ...)
+     */
     public static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
