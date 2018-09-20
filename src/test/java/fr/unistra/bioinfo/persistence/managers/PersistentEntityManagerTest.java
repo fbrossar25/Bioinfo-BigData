@@ -2,15 +2,28 @@ package fr.unistra.bioinfo.persistence.managers;
 
 import fr.unistra.bioinfo.CustomTestCase;
 import fr.unistra.bioinfo.persistence.DBUtils;
+import fr.unistra.bioinfo.persistence.entities.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entities.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entities.Sample;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 class PersistentEntityManagerTest extends CustomTestCase {
+    @BeforeAll
+    static void beforeAll(){
+        DBUtils.start();
+    }
+
+    @AfterAll
+    static void afterAll(){
+        DBUtils.stop();
+    }
+
     @Test
     void testPersistence(){
-        DBUtils.start();
         Sample s1 = new Sample();
         s1.setDescription("test1");
         Sample s2 = new Sample();
@@ -33,6 +46,15 @@ class PersistentEntityManagerTest extends CustomTestCase {
         for(Sample sample : samples){
             LOGGER.info(sample.getDescription());
         }
-        DBUtils.stop();
+    }
+
+    @Test
+    void testGenbankEntities(){
+        PersistentEntityManager<HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
+        mgr.save(new HierarchyEntity());
+        mgr.deleteAll();
+        PersistentEntityManager<RepliconEntity> mgr2 = PersistentEntityManager.create(RepliconEntity.class);
+        mgr2.save(new RepliconEntity());
+        mgr2.deleteAll();
     }
 }
