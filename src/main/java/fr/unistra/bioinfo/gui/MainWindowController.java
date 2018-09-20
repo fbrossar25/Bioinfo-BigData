@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.gui;
 
+import fr.unistra.bioinfo.Main;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -21,5 +22,6 @@ public class MainWindowController {
     }
 
     public void quitter(ActionEvent actionEvent) {
+        Main.openExitDialog(actionEvent);
     }
 }

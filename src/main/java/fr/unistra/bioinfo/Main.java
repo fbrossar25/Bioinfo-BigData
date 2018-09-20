@@ -5,6 +5,7 @@ import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.DBUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -37,16 +38,7 @@ public class Main extends Application {
             initStage(primaryStage);
             primaryStage.show();
             primaryStage.setOnCloseRequest(evt -> {
-                Alert confirmClose = new Alert(Alert.AlertType.CONFIRMATION);
-                confirmClose.setTitle("Confirmation");
-                confirmClose.setHeaderText("Confirmer la fermeture");
-                confirmClose.setContentText("Voulez-vous fermer le logiciel ?");
-                Optional<ButtonType> closeResponse = confirmClose.showAndWait();
-                if (!closeResponse.isPresent() || !ButtonType.OK.equals(closeResponse.get())) {
-                    evt.consume();
-                } else {
-                    shutdown();
-                }
+                openExitDialog(evt);
             });
         } catch (Exception e) {
             new ExceptionDialog(e);
@@ -66,7 +58,20 @@ public class Main extends Application {
         primaryStage.setTitle("Cellular Automatons" + ((version == null) ? "" : (" " + version)));
     }
 
-    private void shutdown(){
+    public static void openExitDialog(Event evt){
+        Alert confirmClose = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmClose.setTitle("Confirmation");
+        confirmClose.setHeaderText("Confirmer la fermeture");
+        confirmClose.setContentText("Voulez-vous fermer le logiciel ?");
+        Optional<ButtonType> closeResponse = confirmClose.showAndWait();
+        if (!closeResponse.isPresent() || !ButtonType.OK.equals(closeResponse.get())) {
+            evt.consume();
+        } else {
+            shutdown();
+        }
+    }
+
+    public static void shutdown(){
         DBUtils.stop();
         Platform.exit();
         System.exit(0);
