@@ -63,7 +63,7 @@ class PersistentEntityManagerTest extends CustomTestCase {
         for(RepliconEntity replicon : list){
             LOGGER.info(replicon.getId());
         }
-        mgr2.deleteAll();
-        mgr.deleteAll();
+        mgr2.delete(r);
+        mgr.delete(h);
     }
 }

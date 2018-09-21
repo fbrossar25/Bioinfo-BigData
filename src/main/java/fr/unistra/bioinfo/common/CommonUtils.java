@@ -3,10 +3,7 @@ package fr.unistra.bioinfo.common;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class CommonUtils {
     private static final Logger LOGGER = LogManager.getLogger();

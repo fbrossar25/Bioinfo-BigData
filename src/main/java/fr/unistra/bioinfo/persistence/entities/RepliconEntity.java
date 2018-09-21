@@ -1,10 +1,12 @@
 package fr.unistra.bioinfo.persistence.entities;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.persistence.MapToStringConverter;
 import fr.unistra.bioinfo.persistence.managers.PersistentEntityManager;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.util.HashMap;
 import java.util.Map;
 
 @Entity
@@ -19,11 +21,12 @@ public class RepliconEntity extends PersistentEntity{
     private HierarchyEntity hierarchy;
 
     //Pour Hibernate
-    private RepliconEntity(){}
+    private RepliconEntity(){resetCounters();}
 
     public RepliconEntity(String replicon, HierarchyEntity hierarchy){
         setReplicon(replicon);
         setHierarchy(hierarchy);
+        resetCounters();
     }
 
     @Id
@@ -50,7 +53,7 @@ public class RepliconEntity extends PersistentEntity{
      * @return la chaîne contenant les compteurs des trinucleotides
      */
     @Convert(converter = MapToStringConverter.class)
-    @Column(name="TRINUCLEOTIDES")
+    @Column(name="TRINUCLEOTIDES", columnDefinition = "text")
     public Map<String, Integer> getTrinucleotides() {
         return trinucleotides;
     }
@@ -63,7 +66,7 @@ public class RepliconEntity extends PersistentEntity{
      * @return la chaîne contenant les compteurs des dinucleotides
      */
     @Convert(converter = MapToStringConverter.class)
-    @Column(name="DINUCLEOTIDES")
+    @Column(name="DINUCLEOTIDES", columnDefinition = "text")
     public Map<String, Integer> getDinucleotides() {
         return dinucleotides;
     }
@@ -123,5 +126,18 @@ public class RepliconEntity extends PersistentEntity{
 
     public void setVersion(Integer version) {
         this.version = version;
+    }
+
+    public void resetCounters(){
+        Map<String, Integer> diMap = new HashMap<>();
+        Map<String, Integer> triMap = new HashMap<>();
+        for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+            diMap.put(dinucleotide, 0);
+        }
+        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+            triMap.put(trinucleotide, 0);
+        }
+        setDinucleotides(diMap);
+        setTrinucleotides(triMap);
     }
 }
