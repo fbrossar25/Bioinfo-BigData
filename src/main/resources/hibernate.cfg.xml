@@ -26,7 +26,6 @@
         <property name="show_sql">false</property>
 
         <!-- Mapping files -->
-        <mapping class="fr.unistra.bioinfo.persistence.entities.Sample"/>
         <mapping class="fr.unistra.bioinfo.persistence.entities.RepliconEntity"/>
         <mapping class="fr.unistra.bioinfo.persistence.entities.HierarchyEntity"/>
     </session-factory>

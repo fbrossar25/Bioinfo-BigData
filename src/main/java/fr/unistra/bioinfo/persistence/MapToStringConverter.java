@@ -10,6 +10,7 @@ import java.util.Map;
 
 @Converter
 public class MapToStringConverter implements AttributeConverter<Map<String, Integer>, String> {
+    //TODO zipper/dézipper les chaînes vers et depuis la BDD pour réduire sa taille
     @Override
     public String convertToDatabaseColumn(Map<String, Integer> data) {
         if(data == null){

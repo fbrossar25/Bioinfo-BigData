@@ -53,7 +53,7 @@ public class RepliconEntity extends PersistentEntity{
      * @return la chaîne contenant les compteurs des trinucleotides
      */
     @Convert(converter = MapToStringConverter.class)
-    @Column(name="TRINUCLEOTIDES", columnDefinition = "text")
+    @Column(name="TRINUCLEOTIDES", columnDefinition = "LONGVARCHAR")
     public Map<String, Integer> getTrinucleotides() {
         return trinucleotides;
     }
@@ -66,7 +66,7 @@ public class RepliconEntity extends PersistentEntity{
      * @return la chaîne contenant les compteurs des dinucleotides
      */
     @Convert(converter = MapToStringConverter.class)
-    @Column(name="DINUCLEOTIDES", columnDefinition = "text")
+    @Column(name="DINUCLEOTIDES", columnDefinition = "LONGVARCHAR")
     public Map<String, Integer> getDinucleotides() {
         return dinucleotides;
     }
