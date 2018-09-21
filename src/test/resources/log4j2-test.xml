@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="INFO">
+<Configuration>
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
         </Console>
         <File name="logfile" fileName="logs/bioinfo.log" append="false">
-        	<PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
+            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
         </File>
     </Appenders>
     <Loggers>
-        <Root level="INFO" additivity="false">
+        <Logger name="fr.unistra" level="DEBUG" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="logfile" />
+        </Logger>
+        <!-- Log SQL statements -->
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="logfile" />
+        </Logger>
+        <Root level="ERROR" additivity="false">
             <AppenderRef ref="console"/>
             <AppenderRef ref="logfile"/>
         </Root>
