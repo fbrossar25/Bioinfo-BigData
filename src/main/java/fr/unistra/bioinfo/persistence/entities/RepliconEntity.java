@@ -1,19 +1,30 @@
 package fr.unistra.bioinfo.persistence.entities;
 
+import fr.unistra.bioinfo.persistence.MapToStringConverter;
+import fr.unistra.bioinfo.persistence.managers.PersistentEntityManager;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.util.Map;
 
 @Entity
 @Table(name = "REPLICONS")
 public class RepliconEntity extends PersistentEntity{
     private String replicon;
-    private String trinucleotides;
-    private String dinucleotides;
-    private boolean isDownloaded;
-    private boolean isComputed;
+    private Map<String, Integer> trinucleotides;
+    private Map<String, Integer> dinucleotides;
+    private boolean isDownloaded = false;
+    private boolean isComputed = false;
+    private Integer version;
     private HierarchyEntity hierarchy;
-    //TODO créer un DTO avec un mapper pour les tri/dinucleotides
+
+    //Pour Hibernate
+    private RepliconEntity(){}
+
+    public RepliconEntity(String replicon, HierarchyEntity hierarchy){
+        setReplicon(replicon);
+        setHierarchy(hierarchy);
+    }
 
     @Id
     @Column(name="ID")
@@ -23,7 +34,10 @@ public class RepliconEntity extends PersistentEntity{
         return id;
     }
 
-    @Column(name="REPLICON")
+    /**
+     * @return Le nom du replicon (NC_*)
+     */
+    @Column(name="REPLICON", nullable = false)
     public String getReplicon() {
         return replicon;
     }
@@ -32,24 +46,35 @@ public class RepliconEntity extends PersistentEntity{
         this.replicon = replicon;
     }
 
+    /**
+     * @return la chaîne contenant les compteurs des trinucleotides
+     */
+    @Convert(converter = MapToStringConverter.class)
     @Column(name="TRINUCLEOTIDES")
-    public String getTrinucleotides() {
+    public Map<String, Integer> getTrinucleotides() {
         return trinucleotides;
     }
 
-    public void setTrinucleotides(String trinucleotides) {
+    public void setTrinucleotides(Map<String, Integer> trinucleotides) {
         this.trinucleotides = trinucleotides;
     }
 
+    /**
+     * @return la chaîne contenant les compteurs des dinucleotides
+     */
+    @Convert(converter = MapToStringConverter.class)
     @Column(name="DINUCLEOTIDES")
-    public String getDinucleotides() {
+    public Map<String, Integer> getDinucleotides() {
         return dinucleotides;
     }
 
-    public void setDinucleotides(String dinucleotides){
+    public void setDinucleotides(Map<String, Integer> dinucleotides){
         this.dinucleotides = dinucleotides;
     }
 
+    /**
+     * @return indique si le fichier est présent en local
+     */
     @Column(name="DOWNLOADED")
     public boolean isDownloaded() {
         return isDownloaded;
@@ -59,6 +84,9 @@ public class RepliconEntity extends PersistentEntity{
         isDownloaded = downloaded;
     }
 
+    /**
+     * @return indique si le fichier à été traité, càd que les compteurs sont à jours
+     */
     @Column(name="COMPUTED")
     public boolean isComputed() {
         return isComputed;
@@ -68,7 +96,10 @@ public class RepliconEntity extends PersistentEntity{
         isComputed = computed;
     }
 
-    @ManyToOne
+    /**
+     * @return retourne la hiérarchie du replicon
+     */
+    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "HIERARCHY_ID")
     public HierarchyEntity getHierarchy() {
         return hierarchy;
@@ -76,5 +107,21 @@ public class RepliconEntity extends PersistentEntity{
 
     public void setHierarchy(HierarchyEntity hierarchy) {
         this.hierarchy = hierarchy;
+        if(hierarchy!=null && hierarchy.getId() < 0){
+            PersistentEntityManager<HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
+            mgr.save(this.hierarchy);
+        }
+    }
+
+    /**
+     * @return Retourne la version local du replicon
+     */
+    @Column(name = "VERSION")
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 }

@@ -32,8 +32,6 @@ class PersistentEntityManagerTest extends CustomTestCase {
         Sample s3 = new Sample();
         s3.setDescription("test3");
         PersistentEntityManager<Sample> sampleMgr = PersistentEntityManager.create(Sample.class);
-        int n = sampleMgr.deleteAll();
-        LOGGER.info("Suppression de "+n+" lignes");
         sampleMgr.save(s1);
         LOGGER.info("Before : "+s2.getId());
         sampleMgr.save(s2);
@@ -47,20 +45,25 @@ class PersistentEntityManagerTest extends CustomTestCase {
         for(Sample sample : samples){
             LOGGER.info(sample.getDescription());
         }
+        int n = sampleMgr.deleteAll();
+        LOGGER.info("Suppression de "+n+" lignes");
     }
 
     @Test
     void testGenbankEntities(){
         PersistentEntityManager<HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
-        mgr.save(new HierarchyEntity());
-        mgr.deleteAll();
+        HierarchyEntity h = new HierarchyEntity("TEST", "TEST", "TEST", "TEST");
         PersistentEntityManager<RepliconEntity> mgr2 = PersistentEntityManager.create(RepliconEntity.class);
-        mgr2.save(new RepliconEntity());
+        RepliconEntity r = new RepliconEntity("Test", h);
+        r.setComputed(false);
+        r.setDownloaded(true);
+        mgr2.save(r);
         List<RepliconEntity> list = mgr2.getAll();
         LOGGER.info("Récupération de "+list.size()+" lignes dans "+RepliconEntity.class.getAnnotation(Table.class).name());
         for(RepliconEntity replicon : list){
             LOGGER.info(replicon.getId());
         }
         mgr2.deleteAll();
+        mgr.deleteAll();
     }
 }

@@ -8,10 +8,20 @@ import javax.persistence.*;
 @Entity
 @Table(name = "HIERARCHY")
 public class HierarchyEntity extends PersistentEntity{
-    private String Kingdom;
-    private String Group;
-    private String Subgroup;
-    private String Organism;
+    private String kingdom;
+    private String group;
+    private String subgroup;
+    private String organism;
+
+    //Pour Hibernate
+    private HierarchyEntity(){}
+
+    public HierarchyEntity(String kingdom, String group, String subgroup, String organism) {
+        setKingdom(kingdom);
+        setGroup(group);
+        setSubgroup(subgroup);
+        setOrganism(organism);
+    }
 
     @Id
     @Column(name="HIERARCHY_ID")
@@ -21,40 +31,40 @@ public class HierarchyEntity extends PersistentEntity{
         return id;
     }
 
-    @Column(name="HIERARCHY_KINGDOM")
+    @Column(name="HIERARCHY_KINGDOM", nullable = false)
     public String getKingdom() {
-        return Kingdom;
+        return kingdom;
     }
 
     public void setKingdom(String kingdom) {
-        Kingdom = kingdom;
+        this.kingdom = kingdom;
     }
 
-    @Column(name="HIERARCHY_GROUP")
+    @Column(name="HIERARCHY_GROUP", nullable = false)
     public String getGroup() {
-        return Group;
+        return group;
     }
 
     public void setGroup(String group) {
-        Group = group;
+        this.group = group;
     }
 
-    @Column(name="HIERARCHY_SUBGROUP")
+    @Column(name="HIERARCHY_SUBGROUP", nullable = false)
     public String getSubgroup() {
-        return Subgroup;
+        return subgroup;
     }
 
     public void setSubgroup(String subgroup) {
-        Subgroup = subgroup;
+        this.subgroup = subgroup;
     }
 
-    @Column(name="HIERARCHY_ORGANISM")
+    @Column(name="HIERARCHY_ORGANISM", nullable = false)
     public String getOrganism() {
-        return Organism;
+        return organism;
     }
 
     public void setOrganism(String organism) {
-        Organism = organism;
+        this.organism = organism;
     }
 
 }

@@ -18,6 +18,9 @@ public class PersistentEntityManager<T extends PersistentEntity> {
     }
 
     public void save(T entity){
+        if(entity == null){
+            return;
+        }
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
         s.save(entity);
@@ -25,6 +28,9 @@ public class PersistentEntityManager<T extends PersistentEntity> {
     }
 
     public void delete(T entity){
+        if(entity == null){
+            return;
+        }
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
         s.delete(entity);
