@@ -18,6 +18,6 @@ class GenbankUtilsTest extends CustomTestCase {
     @Disabled("Test long à l'éxectuion")
     @Test
     void createOrganismsTreeStructure(){
-        GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"));
+        GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), false);
     }
 }

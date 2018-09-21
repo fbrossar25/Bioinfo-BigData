@@ -45,10 +45,14 @@ public class GenbankUtils {
 
     /**
      * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
+     * @param ncOnly Ne récupère que les organismes ayant au moins 1 replicons de type NC_*
      * @return l'URL de la requête
      */
-    public static String getFullOrganismsListRequestURL(){
-        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=0&q=[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
+    public static String getFullOrganismsListRequestURL(boolean ncOnly){
+        if(ncOnly){
+            return "https://www.ncbi.nlm.nih.gov/Structure/ngram?limit=0&q=[display(kingdom,group,subgroup,organism,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"] and replicons like \"NC_\")";
+        }
+        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&limit=0&q=[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
     }
 
     /**
@@ -94,11 +98,12 @@ public class GenbankUtils {
     }
 
     /**
-     * Génère l'arborescence nécessaire pour tous les organismes.
+     * Génère l'arborescence nécessaire pour tous les organismes. Prend du temps.
      * @param rootDirectory dossier devant contenir l'arborescence. Ne doit pas être null.
+     * @param ncOnly Ne créer les dossiers que des organismes ayant au moins 1 replicons de type NC_*
      */
-    public static void createOrganismsTreeStructure(@NotNull Path rootDirectory){
-        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL())){
+    public static void createOrganismsTreeStructure(@NotNull Path rootDirectory, boolean ncOnly){
+        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(ncOnly))){
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
             for(Object obj : entries){
