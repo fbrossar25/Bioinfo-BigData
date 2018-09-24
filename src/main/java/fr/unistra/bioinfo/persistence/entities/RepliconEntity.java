@@ -40,7 +40,7 @@ public class RepliconEntity extends PersistentEntity{
     /**
      * @return Le nom du replicon (NC_*)
      */
-    @Column(name="REPLICON", nullable = false)
+    @Column(name="REPLICON", nullable = false, unique = true)
     public String getReplicon() {
         return replicon;
     }

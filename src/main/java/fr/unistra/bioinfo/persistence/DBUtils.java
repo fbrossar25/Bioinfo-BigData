@@ -5,6 +5,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+import javax.persistence.criteria.CriteriaBuilder;
+
 public class DBUtils {
     private static SessionFactory sessionFactory;
     private static Session session;
@@ -35,6 +37,10 @@ public class DBUtils {
                 throw new ExceptionInInitializerError(ex);
             }
         }
+    }
+
+    public static CriteriaBuilder getCriteriaBuilder(){
+        return getSession().getCriteriaBuilder();
     }
 
     public static void start(){

@@ -6,7 +6,12 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "HIERARCHY")
+@Table(name = "HIERARCHY",
+        uniqueConstraints = @UniqueConstraint(
+                name="CONST_UNIQUE_ALL_HIERARCHY",
+                columnNames={"HIERARCHY_KINGDOM", "HIERARCHY_GROUP", "HIERARCHY_SUBGROUP", "HIERARCHY_ORGANISM"}
+                )
+)
 public class HierarchyEntity extends PersistentEntity{
     private String kingdom;
     private String group;

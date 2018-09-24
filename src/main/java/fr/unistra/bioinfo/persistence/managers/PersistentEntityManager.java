@@ -5,9 +5,11 @@ import fr.unistra.bioinfo.persistence.DBUtils;
 import fr.unistra.bioinfo.persistence.entities.PersistentEntity;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
 import java.util.List;
 
 public class PersistentEntityManager<T extends PersistentEntity> {
@@ -37,6 +39,14 @@ public class PersistentEntityManager<T extends PersistentEntity> {
         t.commit();
     }
 
+    public int delete(CriteriaDelete<T> query){
+        Session s = DBUtils.getSession();
+        Transaction t = s.beginTransaction();
+        int deleted = s.createQuery(query).executeUpdate();
+        t.commit();
+        return deleted;
+    }
+
     public List<T> getAll(){
         Session s = DBUtils.getSession();
         CriteriaQuery<T> cq = s.getCriteriaBuilder().createQuery(clazz);
@@ -52,6 +62,19 @@ public class PersistentEntityManager<T extends PersistentEntity> {
         int deleted = s.createQuery(cq).executeUpdate();
         t.commit();
         return deleted;
+    }
+
+    public List<T> select(CriteriaQuery<T> query){
+        return DBUtils.getSession().createQuery(query).getResultList();
+    }
+
+    public int update(CriteriaUpdate<T> query){
+        Session s = DBUtils.getSession();
+        Query update = s.createQuery(query);
+        Transaction t = s.beginTransaction();
+        int result = update.executeUpdate();
+        t.commit();
+        return result;
     }
 
     public static <T extends PersistentEntity> PersistentEntityManager<T> create(Class<T> clazz){
