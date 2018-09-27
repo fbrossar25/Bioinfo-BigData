@@ -29,12 +29,13 @@ class PersistentEntityManagerTest extends CustomTestCase {
 
     @Test
     void testPersistence(){
-        PersistentEntityManager<HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
+        PersistentEntityManager<String, HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
         HierarchyEntity h = new HierarchyEntity("TEST", "TEST", "TEST", "TEST");
-        PersistentEntityManager<RepliconEntity> mgr2 = PersistentEntityManager.create(RepliconEntity.class);
+        PersistentEntityManager<String, RepliconEntity> mgr2 = PersistentEntityManager.create(RepliconEntity.class);
         RepliconEntity r = new RepliconEntity("Test", h);
         r.setComputed(false);
         r.setDownloaded(true);
+        mgr.save(h);
         mgr2.save(r);
         assertTrue(r.getId() >= 0);
         List<RepliconEntity> list = mgr2.getAll();

@@ -11,8 +11,7 @@ import java.util.Map;
 
 @Entity
 @Table(name = "REPLICONS")
-public class RepliconEntity extends PersistentEntity{
-    private String replicon;
+public class RepliconEntity extends PersistentEntity<String>{
     private Map<String, Integer> trinucleotides;
     private Map<String, Integer> dinucleotides;
     private boolean isDownloaded = false;
@@ -21,32 +20,34 @@ public class RepliconEntity extends PersistentEntity{
     private HierarchyEntity hierarchy;
 
     //Pour Hibernate
-    private RepliconEntity(){resetCounters();}
+    public RepliconEntity(){
+        super();
+        resetCounters();
+    }
 
     public RepliconEntity(String replicon, HierarchyEntity hierarchy){
-        setReplicon(replicon);
+        setId(replicon);
         setHierarchy(hierarchy);
         resetCounters();
     }
 
     @Id
-    @Column(name="ID")
-    @GeneratedValue(generator="increment")
-    @GenericGenerator(name="increment", strategy = "increment")
-    public long getId() {
+    @Column(name="REPLICON", nullable = false)
+    public String getId() {
         return id;
     }
 
-    /**
-     * @return Le nom du replicon (NC_*)
-     */
-    @Column(name="REPLICON", nullable = false, unique = true)
-    public String getReplicon() {
-        return replicon;
+    public void setId(String id){
+        this.id = id;
     }
 
-    public void setReplicon(String replicon) {
-        this.replicon = replicon;
+    @Transient
+    public String getReplicon() {
+        return getId();
+    }
+
+    public void setReplicon(String organism) {
+        setId(organism);
     }
 
     /**
@@ -102,18 +103,14 @@ public class RepliconEntity extends PersistentEntity{
     /**
      * @return retourne la hiérarchie du replicon
      */
-    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "HIERARCHY_ID")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
+    @JoinColumn(name = "HIERARCHY_ORGANISM")
     public HierarchyEntity getHierarchy() {
         return hierarchy;
     }
 
     public void setHierarchy(HierarchyEntity hierarchy) {
         this.hierarchy = hierarchy;
-        if(hierarchy!=null && hierarchy.getId() < 0){
-            PersistentEntityManager<HierarchyEntity> mgr = PersistentEntityManager.create(HierarchyEntity.class);
-            mgr.save(this.hierarchy);
-        }
     }
 
     /**

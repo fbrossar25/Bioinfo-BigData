@@ -1,6 +1,8 @@
 package fr.unistra.bioinfo.persistence;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import javax.persistence.AttributeConverter;
@@ -10,6 +12,9 @@ import java.util.Map;
 
 @Converter
 public class MapToStringConverter implements AttributeConverter<Map<String, Integer>, String> {
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
     //TODO zipper/dézipper les chaînes vers et depuis la BDD pour réduire sa taille
     @Override
     public String convertToDatabaseColumn(Map<String, Integer> data) {

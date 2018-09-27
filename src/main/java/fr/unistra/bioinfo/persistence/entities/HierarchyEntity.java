@@ -6,34 +6,39 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "HIERARCHY",
-        uniqueConstraints = @UniqueConstraint(
-                name="CONST_UNIQUE_ALL_HIERARCHY",
-                columnNames={"HIERARCHY_KINGDOM", "HIERARCHY_GROUP", "HIERARCHY_SUBGROUP", "HIERARCHY_ORGANISM"}
-                )
-)
-public class HierarchyEntity extends PersistentEntity{
+@Table(name = "HIERARCHY")
+public class HierarchyEntity extends PersistentEntity<String>{
     private String kingdom;
     private String group;
     private String subgroup;
-    private String organism;
 
     //Pour Hibernate
-    private HierarchyEntity(){}
+    public HierarchyEntity(){super();}
 
     public HierarchyEntity(String kingdom, String group, String subgroup, String organism) {
+        setId(organism);
         setKingdom(kingdom);
         setGroup(group);
         setSubgroup(subgroup);
-        setOrganism(organism);
     }
 
     @Id
-    @Column(name="HIERARCHY_ID")
-    @GeneratedValue(generator="increment")
-    @GenericGenerator(name="increment", strategy = "increment")
-    public long getId() {
+    @Column(name="HIERARCHY_ORGANISM", nullable = false)
+    public String getId() {
         return id;
+    }
+
+    public void setId(String id){
+        this.id = id;
+    }
+
+    @Transient
+    public String getOrganism() {
+        return getId();
+    }
+
+    public void setOrganism(String organism) {
+        setId(organism);
     }
 
     @Column(name="HIERARCHY_KINGDOM", nullable = false)
@@ -61,15 +66,6 @@ public class HierarchyEntity extends PersistentEntity{
 
     public void setSubgroup(String subgroup) {
         this.subgroup = subgroup;
-    }
-
-    @Column(name="HIERARCHY_ORGANISM", nullable = false)
-    public String getOrganism() {
-        return organism;
-    }
-
-    public void setOrganism(String organism) {
-        this.organism = organism;
     }
 
 }

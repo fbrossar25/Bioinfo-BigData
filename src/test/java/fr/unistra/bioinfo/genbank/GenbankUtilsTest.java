@@ -6,7 +6,11 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class GenbankUtilsTest extends CustomTestCase {
+
+    private static final String TEST_STRING = "uirhouirhvgetrh3568rtj866t8j74rjurs{";
 
     @Test
     void getNumberOfEntries() {
@@ -15,9 +19,9 @@ class GenbankUtilsTest extends CustomTestCase {
         }
     }
 
-    @Disabled("Test long à l'éxectuion")
+    @Disabled("Test long à l'éxecution")
     @Test
     void createOrganismsTreeStructure(){
-        GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), false);
+        assertTrue(GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), true));
     }
 }

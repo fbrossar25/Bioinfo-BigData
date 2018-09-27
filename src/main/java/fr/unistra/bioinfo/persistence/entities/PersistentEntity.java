@@ -6,19 +6,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.Serializable;
 
-public abstract class PersistentEntity implements Serializable {
+public abstract class PersistentEntity<K extends Serializable> implements Serializable {
     private static Logger LOGGER = LogManager.getLogger();
-    private static long idCounter = -1;
-    protected long id;
+    protected K id;
 
-    protected PersistentEntity(){
-        setId(idCounter--);
-        LOGGER.debug("New PersistentEntity id : "+id);
+    public PersistentEntity(){
     }
 
-    public abstract long getId();
+    public abstract K getId();
 
-    private void setId(long id){
-        this.id = id;
-    }
+    public abstract void setId(K id);
 }

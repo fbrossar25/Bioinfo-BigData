@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo;
 
+import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
 import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.DBUtils;
@@ -13,6 +14,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
+import java.nio.file.Paths;
 import java.util.Optional;
 
 public class Main extends Application {
@@ -37,9 +39,8 @@ public class Main extends Application {
             primaryStage.setScene(scene);
             initStage(primaryStage);
             primaryStage.show();
-            primaryStage.setOnCloseRequest(evt -> {
-                openExitDialog(evt);
-            });
+            primaryStage.setOnCloseRequest(Main::openExitDialog);
+            GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), true);
         } catch (Exception e) {
             new ExceptionDialog(e);
             shutdown();

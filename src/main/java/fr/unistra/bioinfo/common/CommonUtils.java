@@ -3,7 +3,10 @@ package fr.unistra.bioinfo.common;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class CommonUtils {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -24,7 +27,7 @@ public class CommonUtils {
         }
         DINUCLEOTIDES = Collections.unmodifiableSet(diset);
         TRINUCLEOTIDES = Collections.unmodifiableSet(triset);
-        LOGGER.debug("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.toArray()));
-        LOGGER.debug("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.toArray()));
+        LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.toArray()));
+        LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.toArray()));
     }
 }
