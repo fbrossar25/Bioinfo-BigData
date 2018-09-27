@@ -37,7 +37,7 @@ class PersistentEntityManagerTest extends CustomTestCase {
         r.setDownloaded(true);
         mgr.save(h);
         mgr2.save(r);
-        assertTrue(r.getId() >= 0);
+        assertNotNull(r.getId() );
         List<RepliconEntity> list = mgr2.getAll();
         assertNotNull(list);
         assertFalse(list.isEmpty());
