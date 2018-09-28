@@ -2,10 +2,10 @@
 <Configuration>
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
+            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </Console>
         <File name="logfile" fileName="logs/bioinfo.log" append="false">
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class (ligne %line) - %msg%n" />
+            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </File>
     </Appenders>
     <Loggers>

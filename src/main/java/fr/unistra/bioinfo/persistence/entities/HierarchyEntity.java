@@ -1,44 +1,45 @@
 package fr.unistra.bioinfo.persistence.entities;
 
 
-import org.hibernate.annotations.GenericGenerator;
-
 import javax.persistence.*;
 
 @Entity
-@Table(name = "HIERARCHY")
-public class HierarchyEntity extends PersistentEntity<String>{
+@Table(name = "HIERARCHY", uniqueConstraints = {@UniqueConstraint(columnNames = {"HIERARCHY_ORGANISM"}, name = "CONST_UNIQUE_ORGANISM")})
+public class HierarchyEntity extends AbstractEntity<Long> {
     private String kingdom;
     private String group;
     private String subgroup;
+    private String organism;
 
     //Pour Hibernate
     public HierarchyEntity(){super();}
 
     public HierarchyEntity(String kingdom, String group, String subgroup, String organism) {
-        setId(organism);
+        setOrganism(organism);
         setKingdom(kingdom);
         setGroup(group);
         setSubgroup(subgroup);
     }
 
     @Id
-    @Column(name="HIERARCHY_ORGANISM", nullable = false)
-    public String getId() {
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "HIERARCHY_ID", updatable = false, nullable = false)
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id){
+    public void setId(Long id){
         this.id = id;
     }
 
-    @Transient
+
+    @Column(name="HIERARCHY_ORGANISM", nullable = false)
     public String getOrganism() {
-        return getId();
+        return organism;
     }
 
     public void setOrganism(String organism) {
-        setId(organism);
+        this.organism = organism;
     }
 
     @Column(name="HIERARCHY_KINGDOM", nullable = false)
@@ -67,5 +68,4 @@ public class HierarchyEntity extends PersistentEntity<String>{
     public void setSubgroup(String subgroup) {
         this.subgroup = subgroup;
     }
-
 }

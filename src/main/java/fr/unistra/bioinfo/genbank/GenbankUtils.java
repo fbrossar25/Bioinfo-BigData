@@ -4,7 +4,9 @@ import com.sun.istack.internal.NotNull;
 import fr.unistra.bioinfo.persistence.DBUtils;
 import fr.unistra.bioinfo.persistence.entities.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entities.RepliconEntity;
-import fr.unistra.bioinfo.persistence.managers.PersistentEntityManager;
+import fr.unistra.bioinfo.persistence.managers.HierarchyEntityManager;
+import fr.unistra.bioinfo.persistence.managers.PersistentEntityManagerFactory;
+import fr.unistra.bioinfo.persistence.managers.RepliconEntityManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -82,10 +84,16 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getOrganismsListRequestURL(@NotNull Reign reign){
-        String request = "https://www.ncbi.nlm.nih.gov/Structure/ngram?";
-        request += "&limit=0";
-        request += "&q=[display(),hist(group,subgroup,level)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"]).sort(replicons,desc)";
-        return request;
+        String uri = "";
+        try{
+            URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
+            builder.setParameter("limit", "0");
+            builder.setParameter("q","[display(),hist(group,subgroup,level)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"]).sort(replicons,desc)");
+            uri = builder.build().toString();
+        }catch(URISyntaxException e){
+            // ignore
+        }
+        return uri;
     }
 
     /**
@@ -155,8 +163,8 @@ public class GenbankUtils {
      * @return true si tout c'est bien passé, false sinon
      */
     public static boolean createOrganismsTreeStructure(@NotNull Path rootDirectory, boolean ncOnly){
-        PersistentEntityManager<String, HierarchyEntity> hierarchyManager = PersistentEntityManager.create(HierarchyEntity.class);
-        PersistentEntityManager<String, RepliconEntity> repliconManager = PersistentEntityManager.create(RepliconEntity.class);
+        HierarchyEntityManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
+        RepliconEntityManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
         List<HierarchyEntity> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
         List<RepliconEntity> replicons = new ArrayList<>(BATCH_INSERT_SIZE);
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(ncOnly))){

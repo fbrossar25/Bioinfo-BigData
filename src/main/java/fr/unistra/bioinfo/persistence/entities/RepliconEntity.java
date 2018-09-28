@@ -2,16 +2,17 @@ package fr.unistra.bioinfo.persistence.entities;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.persistence.MapToStringConverter;
-import fr.unistra.bioinfo.persistence.managers.PersistentEntityManager;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "REPLICONS")
-public class RepliconEntity extends PersistentEntity<String>{
+@Table(name = "REPLICONS", uniqueConstraints = {@UniqueConstraint(columnNames = {"REPLICON"}, name = "CONST_UNIQUE_REPLICON")})
+public class RepliconEntity extends AbstractEntity<Long> {
+    private String replicon;
     private Map<String, Integer> trinucleotides;
     private Map<String, Integer> dinucleotides;
     private boolean isDownloaded = false;
@@ -26,28 +27,36 @@ public class RepliconEntity extends PersistentEntity<String>{
     }
 
     public RepliconEntity(String replicon, HierarchyEntity hierarchy){
-        setId(replicon);
+        this(replicon,1, hierarchy);
+    }
+
+    public RepliconEntity(String replicon, Integer version, HierarchyEntity hierarchy){
+        super();
+        setReplicon(replicon);
+        setVersion(version);
         setHierarchy(hierarchy);
         resetCounters();
     }
 
     @Id
-    @Column(name="REPLICON", nullable = false)
-    public String getId() {
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="ID", updatable = false, nullable = false)
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id){
+    public void setId(Long id){
         this.id = id;
     }
 
-    @Transient
+
+    @Column(name="REPLICON", nullable = false, unique = true)
     public String getReplicon() {
-        return getId();
+        return replicon;
     }
 
-    public void setReplicon(String organism) {
-        setId(organism);
+    public void setReplicon(String replicon) {
+        this.replicon = replicon;
     }
 
     /**
@@ -103,8 +112,8 @@ public class RepliconEntity extends PersistentEntity<String>{
     /**
      * @return retourne la hiérarchie du replicon
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
-    @JoinColumn(name = "HIERARCHY_ORGANISM")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "HIERARCHY", nullable = false, foreignKey = @ForeignKey(name = "FK_HIERARCHY"))
     public HierarchyEntity getHierarchy() {
         return hierarchy;
     }

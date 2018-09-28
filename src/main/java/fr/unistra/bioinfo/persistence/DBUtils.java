@@ -5,11 +5,10 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
-import javax.persistence.criteria.CriteriaBuilder;
-
 public class DBUtils {
     private static SessionFactory sessionFactory;
     private static Session session;
+    private static Configuration configuration;
 
     public static Session getSession(){
         ensureExistsSession();
@@ -31,7 +30,8 @@ public class DBUtils {
     private static void ensureExistsSessionFactory(){
         if(sessionFactory == null || !sessionFactory.isOpen()){
             try {
-                sessionFactory = new Configuration().configure().buildSessionFactory();
+                configuration = new Configuration().configure();
+                sessionFactory = configuration.buildSessionFactory();
             } catch (Throwable ex) {
                 // Log exception!
                 throw new ExceptionInInitializerError(ex);
@@ -39,8 +39,8 @@ public class DBUtils {
         }
     }
 
-    public static CriteriaBuilder getCriteriaBuilder(){
-        return getSession().getCriteriaBuilder();
+    public static Configuration getConfiguration(){
+        return configuration;
     }
 
     public static void start(){
