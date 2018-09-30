@@ -1,16 +1,16 @@
 package fr.unistra.bioinfo.persistence;
 
-import com.sun.istack.internal.NotNull;
 import fr.unistra.bioinfo.persistence.properties.PropertiesEnum;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.Collection;
 
 public class QueryUtils {
-    public static String equals(@NotNull PropertiesEnum property, @NotNull Object value){
+    public static String equals(PropertiesEnum property, Object value){
         return equals(property.getHibernateName(), value);
     }
 
-    public static String equals(@NotNull String column, @NotNull Object value){
+    public static String equals(String column, Object value){
         if(String.class.equals(value.getClass())){
             return " "+column+" = '"+value.toString()+"' ";
         }else{
@@ -18,12 +18,16 @@ public class QueryUtils {
         }
     }
 
-    public static String in(@NotNull PropertiesEnum property, @NotNull Collection<?> values){
+    public static String in(PropertiesEnum property, Collection<?> values){
         return in(property.getHibernateName(), values);
     }
 
-    public static String in(@NotNull String column, @NotNull Collection<?> values){
-        StringBuilder in = new StringBuilder(column + " IN ( " );
+    public static String in(String column, Collection<?> values){
+        if(CollectionUtils.isEmpty(values)){
+            return " "+ column + " IN () ";
+        }
+
+        StringBuilder in = new StringBuilder(" " + column + " IN ( " );
         int remaining = values.size();
         for(Object value : values){
             if(String.class.equals(value.getClass())){
@@ -31,11 +35,11 @@ public class QueryUtils {
             }else{
                 in.append(value.toString());
             }
-            if(remaining-- <= 1){
+            if(remaining-- > 1){
                 in.append(", ");
             }
         }
-        in.append(" )");
+        in.append(" ) ");
         return in.toString();
     }
 }

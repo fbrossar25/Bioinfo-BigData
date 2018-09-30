@@ -1,6 +1,5 @@
 package fr.unistra.bioinfo.persistence.managers;
 
-import com.sun.istack.internal.NotNull;
 import fr.unistra.bioinfo.persistence.DBUtils;
 import fr.unistra.bioinfo.persistence.entities.AbstractEntity;
 import org.apache.commons.collections4.CollectionUtils;
@@ -35,7 +34,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
     /** Clause de type ' from TABLE_NAME ' */
     protected String FROM_TABLE;
 
-    protected AbstractEntityManager(@NotNull Class<T> clazz){
+    protected AbstractEntityManager(Class<T> clazz){
         this.clazz = clazz;
         TABLE_NAME = clazz.getAnnotation(Table.class).name();
         HIBERNATE_NAME = clazz.getSimpleName();
@@ -48,7 +47,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
         FROM_TABLE = " from "+HIBERNATE_NAME+" ";
     }
 
-    public T getById(@NotNull K id){
+    public T getById(K id){
         return DBUtils.getSession().get(clazz, id);
     }
 
@@ -60,28 +59,28 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
         return s.createQuery(cq).getSingleResult();
     }
 
-    public void save(@NotNull T entity){
+    public void save(T entity){
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
         s.save(entity);
         t.commit();
     }
 
-    public void delete(@NotNull T entity){
+    public void delete(T entity){
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
         s.delete(entity);
         t.commit();
     }
 
-    private void handleBatchFlush(int count, @NotNull Session s){
+    private void handleBatchFlush(int count, Session s){
         if(count % BATCH_SIZE == 0){
             s.flush();
             s.clear();
         }
     }
 
-    public void delete(@NotNull Collection<T> entities){
+    public void delete(Collection<T> entities){
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
         int i = 0;
@@ -128,7 +127,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
      * @param id l'id à rechercher
      * @return true si l'id existe dans la table
      */
-    public boolean idExists(@NotNull K id){
+    public boolean idExists(K id){
         return CollectionUtils.isNotEmpty(DBUtils.getSession()
                 .createQuery("select :idcolumn "+FROM_TABLE+" where :idcolumn = :id", clazz)
                 .setParameter("idcolumn", ID_COLUMN)
@@ -152,7 +151,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
      * Sauvegarde avec traitement par lot
      * @param entities entités à sauvegarder
      */
-    public void save(@NotNull Collection<T> entities) {
+    public void save(Collection<T> entities) {
         if(entities == null || entities.isEmpty()){
             return;
         }

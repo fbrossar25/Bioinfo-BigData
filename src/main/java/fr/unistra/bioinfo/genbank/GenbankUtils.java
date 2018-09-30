@@ -63,7 +63,7 @@ public class GenbankUtils {
      *                 Si la version n'existe pas, le serveur répond 400. Si fileName est vide, il répond 200.
      * @return l'url
      */
-    public static URI getGBDownloadURL(@NotNull String fileName){
+    public static URI getGBDownloadURL(String fileName){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nucleotide");
@@ -83,7 +83,7 @@ public class GenbankUtils {
      * @param reign règne
      * @return l'URL de la requête
      */
-    public static String getOrganismsListRequestURL(@NotNull Reign reign){
+    public static String getOrganismsListRequestURL(Reign reign){
         String uri = "";
         try{
             URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
@@ -120,7 +120,7 @@ public class GenbankUtils {
      * @param reign règne
      * @return l'URL de la requête
      */
-    public static String getKingdomCountersURL(@NotNull Reign reign){
+    public static String getKingdomCountersURL(Reign reign){
         return "https://www.ncbi.nlm.nih.gov/Structure/ngram?limit=0&q=[hist(group,subgroup,kingdom)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""
         + reign.getSearchTable()+"\"]).sort(replicons,desc)";
     }
@@ -130,7 +130,7 @@ public class GenbankUtils {
      * @param reign règne
      * @return l'URL de la requête
      */
-    public static String getReignTotalEntriesNumberURL(@NotNull Reign reign){
+    public static String getReignTotalEntriesNumberURL(Reign reign){
         return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&q=[display()].from(GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"])&limit=1";
     }
 
@@ -152,7 +152,7 @@ public class GenbankUtils {
      * @param organism nom de l'organism
      * @return Le chemin à l'intérieur de l'arborescence des organismes
      */
-    public static Path getPathOfOrganism(@NotNull String kingdom, @NotNull String group, @NotNull String subgroup, @NotNull String organism){
+    public static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
@@ -162,7 +162,7 @@ public class GenbankUtils {
      * @param ncOnly Ne créer les dossiers que des organismes ayant au moins 1 replicons de type NC_*
      * @return true si tout c'est bien passé, false sinon
      */
-    public static boolean createOrganismsTreeStructure(@NotNull Path rootDirectory, boolean ncOnly){
+    public static boolean createOrganismsTreeStructure(Path rootDirectory, boolean ncOnly){
         HierarchyEntityManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
         RepliconEntityManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
         List<HierarchyEntity> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
@@ -219,7 +219,7 @@ public class GenbankUtils {
         return true;
     }
 
-    private static List<RepliconEntity> extractRepliconsFromJSONEntry(@NotNull JSONObject entry, @NotNull HierarchyEntity hierarchy) {
+    private static List<RepliconEntity> extractRepliconsFromJSONEntry(JSONObject entry, HierarchyEntity hierarchy) {
         List<RepliconEntity> replicons = new ArrayList<>();
         String[] repliconsJSONValues = entry.getString("replicons").split(";");
         Pattern p = Pattern.compile("^.*(NC_[0-9]+\\.[0-9]+).*$");
@@ -238,7 +238,7 @@ public class GenbankUtils {
      * @param reign règne
      * @return nombre d'entrées du royaumes
      */
-    public static int getNumberOfEntries(@NotNull Reign reign){
+    public static int getNumberOfEntries(Reign reign){
         int numerOfEntries = -1;
         try(BufferedReader reader = readRequest(getReignTotalEntriesNumberURL(reign))){
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
@@ -255,7 +255,7 @@ public class GenbankUtils {
      * @return le BufferedReader
      * @throws IOException Exception lancée si un problème survient à l'instanciation (URL malformée, ...)
      */
-    public static BufferedReader readRequest(@NotNull String requestURL) throws IOException {
+    public static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
 }
