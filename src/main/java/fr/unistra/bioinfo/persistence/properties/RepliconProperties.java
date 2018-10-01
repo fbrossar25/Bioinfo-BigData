@@ -1,14 +1,14 @@
 package fr.unistra.bioinfo.persistence.properties;
 
 public enum RepliconProperties implements PropertiesEnum<RepliconProperties> {
-    ID("ID", "id"),
-    TRINUCLEOTIDES("TRINUCLEOTIDES", "trinucleotides"),
-    DINUCLEOTIDES("DINUCLEOTIDES", "dinucleotides"),
-    DOWNLOADED("DOWNLOADED", "downloaded"),
-    COMPUTED("COMPUTED", "computed"),
-    HIERARCHY("HIERARCHY", "hierarchy"),
-    VERSION("VERSION", "version"),
-    REPLICON("REPLICON", "replicon");
+    ID("R_ID", "id"),
+    TRINUCLEOTIDES("R_TRINUCLEOTIDES", "trinucleotides"),
+    DINUCLEOTIDES("R_DINUCLEOTIDES", "dinucleotides"),
+    DOWNLOADED("R_DOWNLOADED", "downloaded"),
+    COMPUTED("R_COMPUTED", "computed"),
+    HIERARCHY("R_HIERARCHY", "hierarchy"),
+    VERSION("R_VERSION", "version"),
+    REPLICON("R_REPLICON", "replicon");
 
     private final String columnName;
     private final String hibernateName;

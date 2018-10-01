@@ -14,7 +14,7 @@ create table HIERARCHY
 )
 ;
 
-create unique index SYS_IDX_CONST_UNIQUE_ORGANISM_10115
+create unique index SYS_IDX_CONST_UNIQUE_ORGANISM_10133
 	on HIERARCHY (H_ORGANISM)
 ;
 

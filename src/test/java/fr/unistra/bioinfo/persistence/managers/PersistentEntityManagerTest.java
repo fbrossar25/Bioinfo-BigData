@@ -35,20 +35,23 @@ class PersistentEntityManagerTest extends CustomTestCase {
         HierarchyEntity h = new HierarchyEntity("TEST", "TEST", "TEST", "TEST");
         RepliconEntity r = new RepliconEntity("Test", h);
 
+        //Si les précédents tests laissent des traces
         hMgr.delete(QueryUtils.equals(HierarchyProperties.ORGANISM, h.getOrganism()));
         rMgr.delete(QueryUtils.equals(RepliconProperties.REPLICON, r.getReplicon()));
 
+        //Sauvegarde de Hierarchy quand sauvegarde de Replicon
         rMgr.save(r);
         assertEquals(h, hMgr.getById(h.getId()));
+
+        //Pas de suppression de Hierarchy quand suppression de Replicon
+        rMgr.delete(r);
+        assertNull(rMgr.getById(r.getId()));
+        assertEquals(h, hMgr.getById(h.getId()));
+
+        //Suppression de Replicon quand suppression de Hierarchy
+        rMgr.save(r);
         hMgr.delete(h);
         assertNull(rMgr.getById(r.getId()));
-
-        rMgr.deleteAll();
-        hMgr.deleteAll();
-        assertTrue(rMgr.getAll().isEmpty());
-        assertTrue(hMgr.getAll().isEmpty());
-        assertEquals(Long.valueOf(0), hMgr.count());
-        assertEquals(Long.valueOf(0), rMgr.count());
     }
 
     @Test

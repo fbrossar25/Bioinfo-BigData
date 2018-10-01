@@ -2,19 +2,23 @@ package fr.unistra.bioinfo.persistence.entities;
 
 
 import javax.persistence.*;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Entity
-@Table(name = "HIERARCHY", uniqueConstraints = {@UniqueConstraint(columnNames = {"HIERARCHY_ORGANISM"}, name = "CONST_UNIQUE_ORGANISM")})
+@Table(name = "HIERARCHY", uniqueConstraints = {@UniqueConstraint(columnNames = {"H_ORGANISM"}, name = "CONST_UNIQUE_ORGANISM")})
 public class HierarchyEntity extends AbstractEntity<Long> {
     private String kingdom;
     private String group;
     private String subgroup;
     private String organism;
+    private Set<RepliconEntity> replicons = new TreeSet<>();
 
     //Pour Hibernate
     public HierarchyEntity(){super();}
 
     public HierarchyEntity(String kingdom, String group, String subgroup, String organism) {
+        super();
         setOrganism(organism);
         setKingdom(kingdom);
         setGroup(group);
@@ -22,8 +26,8 @@ public class HierarchyEntity extends AbstractEntity<Long> {
     }
 
     @Id
+    @Column(name = "H_ID", updatable = false, nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "HIERARCHY_ID", updatable = false, nullable = false)
     public Long getId() {
         return id;
     }
@@ -33,7 +37,7 @@ public class HierarchyEntity extends AbstractEntity<Long> {
     }
 
 
-    @Column(name="HIERARCHY_ORGANISM", nullable = false)
+    @Column(name="H_ORGANISM", nullable = false)
     public String getOrganism() {
         return organism;
     }
@@ -42,7 +46,7 @@ public class HierarchyEntity extends AbstractEntity<Long> {
         this.organism = organism;
     }
 
-    @Column(name="HIERARCHY_KINGDOM", nullable = false)
+    @Column(name="H_KINGDOM", nullable = false)
     public String getKingdom() {
         return kingdom;
     }
@@ -51,7 +55,7 @@ public class HierarchyEntity extends AbstractEntity<Long> {
         this.kingdom = kingdom;
     }
 
-    @Column(name="HIERARCHY_GROUP", nullable = false)
+    @Column(name="H_GROUP", nullable = false)
     public String getGroup() {
         return group;
     }
@@ -60,12 +64,22 @@ public class HierarchyEntity extends AbstractEntity<Long> {
         this.group = group;
     }
 
-    @Column(name="HIERARCHY_SUBGROUP", nullable = false)
+    @Column(name="H_SUBGROUP", nullable = false)
     public String getSubgroup() {
         return subgroup;
     }
 
     public void setSubgroup(String subgroup) {
         this.subgroup = subgroup;
+    }
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name="R_ID", foreignKey = @ForeignKey(name = "FK_HIERARCHY_REF_REPLICONS"))
+    public Set<RepliconEntity> getReplicons() {
+        return replicons;
+    }
+
+    public void setReplicons(Set<RepliconEntity> replicons) {
+        this.replicons = replicons;
     }
 }
