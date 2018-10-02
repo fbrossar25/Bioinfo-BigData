@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.invoke.MethodHandles;
 
-public class CustomTestCase {
+public abstract class CustomTestCase {
     protected static Logger LOGGER;
     static{
         System.setProperty("log4j.configurationFile","log4j2-test.xml");

@@ -2,6 +2,8 @@ package fr.unistra.bioinfo.persistence.managers;
 
 import fr.unistra.bioinfo.persistence.DBUtils;
 import fr.unistra.bioinfo.persistence.entities.AbstractEntity;
+import fr.unistra.bioinfo.persistence.entities.Hierarchy;
+import fr.unistra.bioinfo.persistence.entities.Replicon;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -9,13 +11,12 @@ import org.apache.logging.log4j.Logger;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
-import javax.persistence.Column;
-import javax.persistence.Table;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractEntityManager<K extends Serializable,T extends AbstractEntity<K>> {
     /** Taille pour les traitements par lots */
@@ -25,26 +26,9 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
 
     /** Classe de l'entité */
     protected Class<T> clazz;
-    /** Nom de la table */
-    protected String TABLE_NAME;
-    /** Nom utilisé par Hibernate */
-    protected String HIBERNATE_NAME;
-    /** Nom de la colonne servant d'id */
-    protected String ID_COLUMN;
-    /** Clause de type ' from TABLE_NAME ' */
-    protected String FROM_TABLE;
 
     protected AbstractEntityManager(Class<T> clazz){
         this.clazz = clazz;
-        TABLE_NAME = clazz.getAnnotation(Table.class).name();
-        HIBERNATE_NAME = clazz.getSimpleName();
-        try {
-            ID_COLUMN = clazz.getMethod("getId").getAnnotation(Column.class).name();
-        } catch (NoSuchMethodException e) {
-            LOGGER.warn("pas de méthode getId() pour la classe "+clazz.getSimpleName()+" : le nom de la colonne id seras supposé être ID");
-            ID_COLUMN = "ID";
-        }
-        FROM_TABLE = " from "+HIBERNATE_NAME+" ";
     }
 
     public T getById(K id){
@@ -98,7 +82,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
         }
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
-        int n = s.createQuery("delete "+FROM_TABLE+" where "+where).executeUpdate();
+        int n = s.createQuery("delete from "+getTableName()+" where "+where).executeUpdate();
         t.commit();
         return n;
     }
@@ -109,7 +93,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
      */
     public List<T> getAll(){
         return DBUtils.getSession()
-                .createQuery(FROM_TABLE,clazz)
+                .createQuery("from "+getTableName(),clazz)
                 .getResultList();
     }
 
@@ -119,7 +103,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
      */
     public List<T> getAll(int pagesize, int page){
         return DBUtils.getSession()
-                .createQuery(FROM_TABLE,clazz)
+                .createQuery("from "+getTableName(),clazz)
                 .getResultList();
     }
 
@@ -129,8 +113,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
      */
     public boolean idExists(K id){
         return CollectionUtils.isNotEmpty(DBUtils.getSession()
-                .createQuery("select :idcolumn "+FROM_TABLE+" where :idcolumn = :id", clazz)
-                .setParameter("idcolumn", ID_COLUMN)
+                .createQuery("select * from "+getTableName()+" where id = :id", clazz)
                 .setParameter("id", id)
                 .getResultList());
     }
@@ -142,7 +125,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
     public int deleteAll(){
         Session s = DBUtils.getSession();
         Transaction t = s.beginTransaction();
-        int deleted = s.createQuery("delete "+FROM_TABLE).executeUpdate();
+        int deleted = s.createQuery("delete from "+getTableName()).executeUpdate();
         t.commit();
         return deleted;
     }
@@ -166,15 +149,7 @@ public abstract class AbstractEntityManager<K extends Serializable,T extends Abs
         t.commit();
     }
 
-    public String getIdColumn(){
-        return ID_COLUMN;
-    }
-
     public String getTableName(){
-        return TABLE_NAME;
-    }
-
-    public String getHibernateName(){
-        return HIBERNATE_NAME;
+        return clazz.getSimpleName();
     }
 }

@@ -1,34 +1,58 @@
 package fr.unistra.bioinfo.persistence.entities;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.persistence.MapToStringConverter;
+import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "REPLICONS", uniqueConstraints = {@UniqueConstraint(columnNames = {"R_REPLICON"}, name = "CONST_UNIQUE_REPLICON")})
-public class RepliconEntity extends AbstractEntity<Long> {
-    private String replicon;
-    private Map<String, Integer> trinucleotides;
-    private Map<String, Integer> dinucleotides;
-    private boolean isDownloaded = false;
-    private boolean isComputed = false;
-    private Integer version;
-    private HierarchyEntity hierarchy;
+public class Replicon extends AbstractEntity<Long> implements Comparable<Replicon> {
 
-    //Pour Hibernate
-    public RepliconEntity() {
-        super();
+    @Id
+    @GeneratedValue
+    @Column
+    private Long id;
+
+    @NaturalId
+    private String replicon;
+
+    @Column(nullable = false)
+    private Integer version = 1;
+
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Hierarchy hierarchy;
+
+    @ElementCollection
+    @Column(nullable = false)
+    @CollectionTable
+    @MapKeyColumn
+    private Map<String, Integer> trinucleotides;
+
+    @ElementCollection
+    @Column(nullable = false)
+    @CollectionTable
+    @MapKeyColumn
+    private Map<String, Integer> dinucleotides;
+
+    @Column
+    private boolean isDownloaded = false;
+
+    @Column
+    private boolean isComputed = false;
+
+    public Replicon() {
         resetCounters();
     }
 
-    public RepliconEntity(String replicon, HierarchyEntity hierarchy) {
+    public Replicon(String replicon, Hierarchy hierarchy) {
         this(replicon, 1, hierarchy);
     }
 
-    public RepliconEntity(String replicon, Integer version, HierarchyEntity hierarchy) {
+    public Replicon(String replicon, Integer version, Hierarchy hierarchy) {
         super();
         setReplicon(replicon);
         setVersion(version);
@@ -36,19 +60,16 @@ public class RepliconEntity extends AbstractEntity<Long> {
         resetCounters();
     }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "R_ID", updatable = false, nullable = false)
+    @Override
     public Long getId() {
         return id;
     }
 
+    @Override
     public void setId(Long id) {
         this.id = id;
     }
 
-
-    @Column(name = "R_REPLICON", nullable = false)
     public String getReplicon() {
         return replicon;
     }
@@ -57,11 +78,22 @@ public class RepliconEntity extends AbstractEntity<Long> {
         this.replicon = replicon;
     }
 
-    /**
-     * @return la chaîne contenant les compteurs des trinucleotides
-     */
-    @Column(name = "R_TRINUCLEOTIDES", columnDefinition = "LONGVARCHAR")
-    @Convert(converter = MapToStringConverter.class)
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public Hierarchy getHierarchy() {
+        return hierarchy;
+    }
+
+    public void setHierarchy(Hierarchy hierarchy) {
+        this.hierarchy = hierarchy;
+    }
+
     public Map<String, Integer> getTrinucleotides() {
         return trinucleotides;
     }
@@ -70,11 +102,6 @@ public class RepliconEntity extends AbstractEntity<Long> {
         this.trinucleotides = trinucleotides;
     }
 
-    /**
-     * @return la chaîne contenant les compteurs des dinucleotides
-     */
-    @Column(name = "R_DINUCLEOTIDES", columnDefinition = "LONGVARCHAR")
-    @Convert(converter = MapToStringConverter.class)
     public Map<String, Integer> getDinucleotides() {
         return dinucleotides;
     }
@@ -83,10 +110,6 @@ public class RepliconEntity extends AbstractEntity<Long> {
         this.dinucleotides = dinucleotides;
     }
 
-    /**
-     * @return indique si le fichier est présent en local
-     */
-    @Column(name = "R_DOWNLOADED")
     public boolean isDownloaded() {
         return isDownloaded;
     }
@@ -95,41 +118,12 @@ public class RepliconEntity extends AbstractEntity<Long> {
         isDownloaded = downloaded;
     }
 
-    /**
-     * @return indique si le fichier à été traité, càd que les compteurs sont à jours
-     */
-    @Column(name = "R_COMPUTED")
     public boolean isComputed() {
         return isComputed;
     }
 
     public void setComputed(boolean computed) {
         isComputed = computed;
-    }
-
-    /**
-     * @return retourne la hiérarchie du replicon
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "R_HIERARCHY", nullable = false, foreignKey = @ForeignKey(name = "FK_HIERARCHY"))
-    public HierarchyEntity getHierarchy() {
-        return hierarchy;
-    }
-
-    public void setHierarchy(HierarchyEntity hierarchy) {
-        this.hierarchy = hierarchy;
-    }
-
-    /**
-     * @return Retourne la version local du replicon
-     */
-    @Column(name = "R_VERSION")
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
     }
 
     public void resetCounters() {
@@ -144,4 +138,11 @@ public class RepliconEntity extends AbstractEntity<Long> {
         setDinucleotides(diMap);
         setTrinucleotides(triMap);
     }
+
+    @Override
+    public int compareTo(Replicon o) {
+        // Utilisé par Collection.contains()
+        return ObjectUtils.compare(id, o.id);
+    }
+
 }

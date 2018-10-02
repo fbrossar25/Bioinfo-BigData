@@ -1,12 +1,11 @@
 package fr.unistra.bioinfo.genbank;
 
-import com.sun.istack.internal.NotNull;
 import fr.unistra.bioinfo.persistence.DBUtils;
-import fr.unistra.bioinfo.persistence.entities.HierarchyEntity;
-import fr.unistra.bioinfo.persistence.entities.RepliconEntity;
-import fr.unistra.bioinfo.persistence.managers.HierarchyEntityManager;
+import fr.unistra.bioinfo.persistence.entities.Hierarchy;
+import fr.unistra.bioinfo.persistence.entities.Replicon;
+import fr.unistra.bioinfo.persistence.managers.HierarchyManager;
 import fr.unistra.bioinfo.persistence.managers.PersistentEntityManagerFactory;
-import fr.unistra.bioinfo.persistence.managers.RepliconEntityManager;
+import fr.unistra.bioinfo.persistence.managers.RepliconManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -163,10 +162,10 @@ public class GenbankUtils {
      * @return true si tout c'est bien passé, false sinon
      */
     public static boolean createOrganismsTreeStructure(Path rootDirectory, boolean ncOnly){
-        HierarchyEntityManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
-        RepliconEntityManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
-        List<HierarchyEntity> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
-        List<RepliconEntity> replicons = new ArrayList<>(BATCH_INSERT_SIZE);
+        HierarchyManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
+        RepliconManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
+        List<Hierarchy> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
+        List<Replicon> replicons = new ArrayList<>(BATCH_INSERT_SIZE);
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(ncOnly))){
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
@@ -181,37 +180,37 @@ public class GenbankUtils {
                 Path entryPath = rootDirectory.resolve(getPathOfOrganism(kingdom, group, subgroup, organism));
                 FileUtils.forceMkdir(entryPath.toFile());
                 //Création de l'entrée en BDD
-                HierarchyEntity h = new HierarchyEntity(kingdom, group, subgroup, organism);
+                Hierarchy h = new Hierarchy(kingdom, group, subgroup, organism);
                 hierarchies.add(h);
                 if(hierarchies.size() >= BATCH_INSERT_SIZE){
                     //FIXME prendre en compte les doublons
-                    LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" HierarchyEntity");
+                    LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" Hierarchy");
                     hierarchyManager.save(hierarchies);
                     hierarchies.clear();
                 }
             }
-            LOGGER.info(hierarchyManager.count()+" HierarchyEntity sauvegardés");
+            LOGGER.info(hierarchyManager.count()+" Hierarchy sauvegardés");
             hierarchies.clear();
             for(Object obj : entries) {
                 JSONObject entry = (JSONObject)obj;
                 String organism = entry.getString("organism");
                 Session s = DBUtils.getSession();
-                Query<HierarchyEntity> query = s.createQuery("from HierarchyEntity h where h.id = :id", HierarchyEntity.class).setParameter( "id",  organism);
+                Query<Hierarchy> query = s.createQuery("from Hierarchy h where h.id = :id", Hierarchy.class).setParameter( "id",  organism);
                 try{
-                    HierarchyEntity h = query.getSingleResult();
+                    Hierarchy h = query.getSingleResult();
                     replicons.addAll(extractRepliconsFromJSONEntry(entry, h));
                     if(replicons.size() >= BATCH_INSERT_SIZE){
-                        LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" RepliconEntity");
+                        LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" Replicon");
                         repliconManager.save(replicons);
                         replicons.clear();
                     }
                 }catch (NoResultException e){
                     //FIXME ne devrai pas arriver
-                    LOGGER.error("HierarchyEntity non trouvée : '"+organism+"'", e);
+                    LOGGER.error("Hierarchy non trouvée : '"+organism+"'", e);
                 }
             }
             replicons.clear();
-            LOGGER.info(repliconManager.count()+" RepliconEntity sauvegardés");
+            LOGGER.info(repliconManager.count()+" Replicon sauvegardés");
         }catch(IOException | NullPointerException e){
             LOGGER.error("Erreur de récupération de la liste des organismes",e);
             return false;
@@ -219,15 +218,15 @@ public class GenbankUtils {
         return true;
     }
 
-    private static List<RepliconEntity> extractRepliconsFromJSONEntry(JSONObject entry, HierarchyEntity hierarchy) {
-        List<RepliconEntity> replicons = new ArrayList<>();
+    private static List<Replicon> extractRepliconsFromJSONEntry(JSONObject entry, Hierarchy hierarchy) {
+        List<Replicon> replicons = new ArrayList<>();
         String[] repliconsJSONValues = entry.getString("replicons").split(";");
         Pattern p = Pattern.compile("^.*(NC_[0-9]+\\.[0-9]+).*$");
         Matcher m;
         for(String value : repliconsJSONValues){
             m = p.matcher(value);
             if(m.matches()){
-                replicons.add(new RepliconEntity(m.group(1), hierarchy));
+                replicons.add(new Replicon(m.group(1), hierarchy));
             }
         }
         return replicons;

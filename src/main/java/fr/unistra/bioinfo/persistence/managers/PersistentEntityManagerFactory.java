@@ -1,21 +1,21 @@
 package fr.unistra.bioinfo.persistence.managers;
 
 public class PersistentEntityManagerFactory {
-    private static RepliconEntityManager repliconMgr;
-    private static HierarchyEntityManager hierarchyMgr;
+    private static RepliconManager repliconMgr;
+    private static HierarchyManager hierarchyMgr;
 
     private PersistentEntityManagerFactory(){}
 
-    public static RepliconEntityManager getRepliconManager(){
+    public static RepliconManager getRepliconManager(){
         if(repliconMgr == null){
-            repliconMgr = new RepliconEntityManager();
+            repliconMgr = new RepliconManager();
         }
         return repliconMgr;
     }
 
-    public static HierarchyEntityManager getHierarchyManager(){
+    public static HierarchyManager getHierarchyManager(){
         if(hierarchyMgr == null){
-            hierarchyMgr = new HierarchyEntityManager();
+            hierarchyMgr = new HierarchyManager();
         }
         return hierarchyMgr;
     }
