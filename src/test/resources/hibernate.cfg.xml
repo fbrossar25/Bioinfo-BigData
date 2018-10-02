@@ -24,11 +24,12 @@
 
         <property name="cache.use_second_level_cache">false</property>
         <property name="cache.use_query_cache">false</property>
-        <property name="hbm2ddl.auto">update</property>
+        <!--<property name="hbm2ddl.auto">update</property>-->
+        <property name="hbm2ddl.auto">create</property>
 
         <!-- Echo all executed SQL to stdout -->
-        <property name="show_sql">false</property>
-        <property name="format_sql">true</property>
+        <property name="show_sql">true</property>
+        <property name="format_sql">false</property>
 
         <!-- Mapping files -->
         <mapping class="fr.unistra.bioinfo.persistence.entities.Replicon"/>
