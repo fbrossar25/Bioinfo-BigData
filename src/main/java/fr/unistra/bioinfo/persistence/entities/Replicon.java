@@ -1,6 +1,5 @@
 package fr.unistra.bioinfo.persistence.entities;
 
-import fr.unistra.bioinfo.common.CommonUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.NaturalId;
 
@@ -22,8 +21,7 @@ public class Replicon extends AbstractEntity<Long> implements Comparable<Replico
     @Column(nullable = false)
     private Integer version = 1;
 
-    @ManyToOne
-    @JoinColumn(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Hierarchy hierarchy;
 
     @ElementCollection
@@ -129,12 +127,12 @@ public class Replicon extends AbstractEntity<Long> implements Comparable<Replico
     public void resetCounters() {
         Map<String, Integer> diMap = new HashMap<>();
         Map<String, Integer> triMap = new HashMap<>();
-        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+        /*for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
             diMap.put(dinucleotide, 0);
         }
         for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
             triMap.put(trinucleotide, 0);
-        }
+        }*/
         setDinucleotides(diMap);
         setTrinucleotides(triMap);
     }

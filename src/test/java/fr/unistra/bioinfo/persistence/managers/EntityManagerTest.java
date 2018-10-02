@@ -41,8 +41,10 @@ class EntityManagerTest extends CustomTestCase {
             assertEquals(r1.getId(), rMgr.getById(r1.getId()).getId(), "Sauvegarde des Replicon KO");
 
             List<Replicon> h1Replicons = hMgr.getReplicons(h1);
-            assertTrue(CollectionUtils.isNotEmpty(h1Replicons));
-            assertTrue(h1Replicons.contains(r1));
+            assertTrue(CollectionUtils.isNotEmpty(h1Replicons), "Récupération manuelle des replicons KO");
+            assertTrue(h1Replicons.contains(r1), "Récupération manuelle des replicons KO");
+            // assertTrue(CollectionUtils.isNotEmpty(h1.getReplicons()), "Récupération auto des replicons KO");
+            // assertTrue(h1.getReplicons().contains(r1), "Récupération auto des replicons KO");
             rMgr.save(r2);
             assertEquals(h2.getId(), hMgr.getById(h2.getId()).getId(), "Sauvegarde des Hierarchy lors de la sauvegarde des Replicon KO");
 

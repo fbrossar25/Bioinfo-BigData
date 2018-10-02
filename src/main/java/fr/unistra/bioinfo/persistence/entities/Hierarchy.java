@@ -29,8 +29,8 @@ public class Hierarchy extends AbstractEntity<Long> implements Comparable<Hierar
     @Column(nullable = false)
     private String kingdom;
 
-    //@OneToMany(cascade = CascadeType.ALL, mappedBy = "hierarchy")
-    //private Set<Replicon> replicons = new TreeSet<>();
+//    @OneToMany(cascade = CascadeType.ALL, mappedBy = "hierarchy")
+//    private List<Replicon> replicons = new ArrayList<>();
 
     public Hierarchy(){}
 
@@ -83,6 +83,14 @@ public class Hierarchy extends AbstractEntity<Long> implements Comparable<Hierar
     public void setKingdom(String kingdom) {
         this.kingdom = kingdom;
     }
+
+//    public List<Replicon> getReplicons() {
+//        return replicons;
+//    }
+//
+//    public void setReplicons(List<Replicon> replicons) {
+//        this.replicons = replicons;
+//    }
 
     @Override
     public int compareTo(Hierarchy o) {
