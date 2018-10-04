@@ -1,16 +1,19 @@
 package fr.unistra.bioinfo.genbank;
 
-import fr.unistra.bioinfo.CustomTestCase;
+import fr.unistra.bioinfo.common.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-class GenbankUtilsTest extends CustomTestCase {
-
-    private static final String TEST_STRING = "uirhouirhvgetrh3568rtj866t8j74rjurs{";
+class GenbankUtilsTest {
+    private static final Logger LOGGER = LogManager.getLogger();
 
     @Test
     void getNumberOfEntries() {
@@ -21,7 +24,11 @@ class GenbankUtilsTest extends CustomTestCase {
 
     @Test
     void updateDB(){
-        assertTrue(GenbankUtils.updateNCDatabase());
+        try {
+            assertTrue(GenbankUtils.updateNCDatabase(CommonUtils.DATABASE_PATH));
+        } catch (IOException e) {
+            fail(e);
+        }
     }
 
     @Disabled("Test long à l'éxecution")

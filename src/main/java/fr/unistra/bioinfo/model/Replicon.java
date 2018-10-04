@@ -1,49 +1,24 @@
-package fr.unistra.bioinfo.persistence.entities;
+package fr.unistra.bioinfo.model;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.hibernate.annotations.NaturalId;
+import org.json.JSONObject;
 
-import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@Entity
-public class Replicon extends AbstractEntity<Long> implements Comparable<Replicon> {
-
-    @Id
-    @GeneratedValue
-    @Column
-    private Long id;
-
-    @NaturalId
+public class Replicon implements Comparable<Replicon> {
     private String replicon;
-
-    @Column(nullable = false)
     private Integer version = 1;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     private Hierarchy hierarchy;
-
-    @ElementCollection
-    @Column(nullable = false)
-    @CollectionTable
-    @MapKeyColumn
-    private Map<String, Integer> trinucleotides;
-
-    @ElementCollection
-    @Column(nullable = false)
-    @CollectionTable
-    @MapKeyColumn
-    private Map<String, Integer> dinucleotides;
-
-    @Column
+    private Map<String, Integer> trinucleotides = new HashMap<>();
+    private Map<String, Integer> dinucleotides = new HashMap<>();
     private boolean isDownloaded = false;
-
-    @Column
     private boolean isComputed = false;
 
-    public Replicon() {
-        resetCounters();
+    public Replicon (JSONObject json, Hierarchy hierarchy){
+        this.hierarchy = hierarchy;
+        //TODO
     }
 
     public Replicon(String replicon, Hierarchy hierarchy) {
@@ -56,16 +31,6 @@ public class Replicon extends AbstractEntity<Long> implements Comparable<Replico
         setVersion(version);
         setHierarchy(hierarchy);
         resetCounters();
-    }
-
-    @Override
-    public Long getId() {
-        return id;
-    }
-
-    @Override
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getReplicon() {
@@ -125,22 +90,33 @@ public class Replicon extends AbstractEntity<Long> implements Comparable<Replico
     }
 
     public void resetCounters() {
-        Map<String, Integer> diMap = new HashMap<>();
-        Map<String, Integer> triMap = new HashMap<>();
-        /*for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-            diMap.put(dinucleotide, 0);
+        for(String tri : CommonUtils.TRINUCLEOTIDES){
+            trinucleotides.put(tri, 0);
         }
-        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-            triMap.put(trinucleotide, 0);
-        }*/
-        setDinucleotides(diMap);
-        setTrinucleotides(triMap);
+
+        for(String di : CommonUtils.DINUCLEOTIDES){
+            dinucleotides.put(di, 0);
+        }
+    }
+
+    @Override
+    public String toString(){
+        return replicon + "." + version;
     }
 
     @Override
     public int compareTo(Replicon o) {
-        // Utilisé par Collection.contains()
-        return ObjectUtils.compare(id, o.id);
+        return ObjectUtils.compare(replicon + version, o.replicon + o.version);
     }
 
+    public JSONObject toJson() {
+        JSONObject json = new JSONObject();
+        json.put("replicon",this.replicon);
+        json.put("version",this.version);
+        json.put("isDownloaded",this.isDownloaded);
+        json.put("isComputed",this.isComputed);
+        json.put("trinucleotides",this.trinucleotides);
+        json.put("dinucleotides",this.dinucleotides);
+        return json;
+    }
 }

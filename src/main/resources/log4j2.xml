@@ -13,11 +13,6 @@
             <AppenderRef ref="console" />
             <AppenderRef ref="logfile" />
         </Logger>
-        <!-- Log SQL statements -->
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <AppenderRef ref="console" />
-            <AppenderRef ref="logfile" />
-        </Logger>
         <Root level="ERROR" additivity="false">
             <AppenderRef ref="console"/>
             <AppenderRef ref="logfile"/>

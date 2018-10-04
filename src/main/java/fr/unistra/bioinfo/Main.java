@@ -1,9 +1,9 @@
 package fr.unistra.bioinfo;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
 import fr.unistra.bioinfo.gui.MainWindowController;
-import fr.unistra.bioinfo.persistence.DBUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.Event;
@@ -40,8 +40,8 @@ public class Main extends Application {
             initStage(primaryStage);
             primaryStage.show();
             primaryStage.setOnCloseRequest(Main::openExitDialog);
-            GenbankUtils.updateNCDatabase();
-            GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results"));
+            GenbankUtils.updateNCDatabase(CommonUtils.DATABASE_PATH);
+            GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
         } catch (Exception e) {
             new ExceptionDialog(e);
             shutdown();
@@ -74,7 +74,6 @@ public class Main extends Application {
     }
 
     public static void shutdown(){
-        DBUtils.stop();
         Platform.exit();
         System.exit(0);
     }

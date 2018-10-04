@@ -3,6 +3,8 @@ package fr.unistra.bioinfo.common;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -10,6 +12,7 @@ import java.util.TreeSet;
 
 public class CommonUtils {
     private static final Logger LOGGER = LogManager.getLogger();
+    public static final Path DATABASE_PATH = Paths.get("database").toAbsolutePath();
 
     public static final Set<String> DINUCLEOTIDES;
     public static final Set<String> TRINUCLEOTIDES;

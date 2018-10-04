@@ -4,17 +4,12 @@
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </Console>
-        <File name="logfile" fileName="logs/bioinfo.log" append="false">
+        <File name="logfile" fileName="logs/bioinfo-test.log" append="false">
             <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </File>
     </Appenders>
     <Loggers>
         <Logger name="fr.unistra" level="DEBUG" additivity="false">
-            <AppenderRef ref="console" />
-            <AppenderRef ref="logfile" />
-        </Logger>
-        <!-- Log SQL statements -->
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
             <AppenderRef ref="console" />
             <AppenderRef ref="logfile" />
         </Logger>

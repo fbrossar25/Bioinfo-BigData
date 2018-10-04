@@ -1,18 +1,15 @@
 package fr.unistra.bioinfo.genbank;
 
-import fr.unistra.bioinfo.persistence.DBUtils;
-import fr.unistra.bioinfo.persistence.entities.Hierarchy;
-import fr.unistra.bioinfo.persistence.entities.Replicon;
-import fr.unistra.bioinfo.persistence.managers.HierarchyManager;
-import fr.unistra.bioinfo.persistence.managers.PersistentEntityManagerFactory;
-import fr.unistra.bioinfo.persistence.managers.RepliconManager;
+import fr.unistra.bioinfo.common.JSONUtils;
+import fr.unistra.bioinfo.common.RegexUtils;
+import fr.unistra.bioinfo.model.Hierarchy;
+import fr.unistra.bioinfo.model.Replicon;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hibernate.Session;
-import org.hibernate.query.Query;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -24,12 +21,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
@@ -154,49 +147,33 @@ public class GenbankUtils {
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
-    public static boolean updateNCDatabase(){
-        HierarchyManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
-        RepliconManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
-        List<Hierarchy> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
-        List<Replicon> replicons = new ArrayList<>(BATCH_INSERT_SIZE);
+    public static boolean updateNCDatabase(Path databaseDirectory) throws IOException {
+        Map<String, Hierarchy> hierarchies = new HashMap<>(8192);
+        JSONObject json;
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
-            JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
-            JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
-            LOGGER.info("Traitement de "+entries.length()+" entrées");
-            for(Object obj : entries) {
-                JSONObject entry = (JSONObject) obj;
-                String kingdom = entry.getString("kingdom");
-                String group = entry.getString("group");
-                String subgroup = entry.getString("subgroup");
-                String organism = entry.getString("organism");
-                //Création de l'entrée en BDD
-                Hierarchy h = new Hierarchy(kingdom, group, subgroup, organism);
-                hierarchies.add(h);
-                if (hierarchies.size() >= BATCH_INSERT_SIZE) {
-                    LOGGER.info("Sauvegarde batchée de " + BATCH_INSERT_SIZE + " Hierarchy");
-                    hierarchyManager.save(hierarchies);
-                    hierarchies.clear();
-                }
-
-                Session s = DBUtils.getSession();
-                Query<Hierarchy> query = s.createQuery("from Hierarchy h where h.organism = :organism", Hierarchy.class).setParameter("organism", organism);
-                h = query.getSingleResult();
-                replicons.addAll(extractRepliconsFromJSONEntry(entry, h));
-                if (replicons.size() >= BATCH_INSERT_SIZE) {
-                    LOGGER.info("Sauvegarde batchée de " + BATCH_INSERT_SIZE + " Replicon");
-                    repliconManager.save(replicons);
-                    replicons.clear();
-                }
-            }
+            json = new JSONObject(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
             LOGGER.error("Erreur lors du téléchargement de la liste des entrées", e);
             return false;
         }
+        JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
+        LOGGER.info("Traitement de "+entries.length()+" entrées");
+        for(Object obj : entries) {
+            JSONObject entry = (JSONObject) obj;
+            String organism = entry.getString("organism");
+            //Création de l'entrée en BDD
+            if(!hierarchies.containsKey(organism)){
+                hierarchies.put(organism, new Hierarchy(entry));
+            }
+            Hierarchy h = hierarchies.get(organism);
+            h.getReplicons().addAll(extractRepliconsFromJSONEntry(entry, h));
+        }
+        JSONUtils.saveToFile(databaseDirectory.resolve("database.json"), JSONUtils.toJSON(hierarchies.values()));
         return true;
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){
-        List<Hierarchy> hierarchies = PersistentEntityManagerFactory.getHierarchyManager().getAll();
+        List<Hierarchy> hierarchies = getAllHierarchies();
         try {
             for(Hierarchy hierarchy : hierarchies){
                 //Création du dossier
@@ -210,15 +187,18 @@ public class GenbankUtils {
         return true;
     }
 
-    private static List<Replicon> extractRepliconsFromJSONEntry(JSONObject entry, Hierarchy hierarchy) {
-        List<Replicon> replicons = new ArrayList<>();
+    private static List<Hierarchy> getAllHierarchies() {
+        throw new NotImplementedException("TODO");
+    }
+
+    private static Set<Replicon> extractRepliconsFromJSONEntry(JSONObject entry, Hierarchy hierarchy) {
+        Set<Replicon> replicons = new TreeSet<>();
         String[] repliconsJSONValues = entry.getString("replicons").split(";");
-        Pattern p = Pattern.compile("^.*(NC_[0-9]+\\.[0-9]+).*$");
         Matcher m;
         for(String value : repliconsJSONValues){
-            m = p.matcher(value);
+            m = RegexUtils.REPLICON_PATTERN.matcher(value);
             if(m.matches()){
-                replicons.add(new Replicon(m.group(1), hierarchy));
+                replicons.add(new Replicon(m.group(1), Integer.parseInt(m.group(2)), hierarchy));
             }
         }
         return replicons;
