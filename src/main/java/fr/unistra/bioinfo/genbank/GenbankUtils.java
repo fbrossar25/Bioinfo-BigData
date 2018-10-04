@@ -16,7 +16,6 @@ import org.hibernate.query.Query;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.persistence.NoResultException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -155,64 +154,57 @@ public class GenbankUtils {
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
-    /**
-     * Génère l'arborescence nécessaire pour tous les organismes. Prend du temps.
-     * @param rootDirectory dossier devant contenir l'arborescence. Ne doit pas être null.
-     * @param ncOnly Ne créer les dossiers que des organismes ayant au moins 1 replicons de type NC_*
-     * @return true si tout c'est bien passé, false sinon
-     */
-    public static boolean createOrganismsTreeStructure(Path rootDirectory, boolean ncOnly){
+    public static boolean updateNCDatabase(){
         HierarchyManager hierarchyManager = PersistentEntityManagerFactory.getHierarchyManager();
         RepliconManager repliconManager = PersistentEntityManagerFactory.getRepliconManager();
         List<Hierarchy> hierarchies = new ArrayList<>(BATCH_INSERT_SIZE);
         List<Replicon> replicons = new ArrayList<>(BATCH_INSERT_SIZE);
-        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(ncOnly))){
+        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
             JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
             JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
             LOGGER.info("Traitement de "+entries.length()+" entrées");
-            for(Object obj : entries){
-                JSONObject entry = (JSONObject)obj;
+            for(Object obj : entries) {
+                JSONObject entry = (JSONObject) obj;
                 String kingdom = entry.getString("kingdom");
                 String group = entry.getString("group");
                 String subgroup = entry.getString("subgroup");
                 String organism = entry.getString("organism");
-                //Création du dossier
-                Path entryPath = rootDirectory.resolve(getPathOfOrganism(kingdom, group, subgroup, organism));
-                FileUtils.forceMkdir(entryPath.toFile());
                 //Création de l'entrée en BDD
                 Hierarchy h = new Hierarchy(kingdom, group, subgroup, organism);
                 hierarchies.add(h);
-                if(hierarchies.size() >= BATCH_INSERT_SIZE){
-                    //FIXME prendre en compte les doublons
-                    LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" Hierarchy");
+                if (hierarchies.size() >= BATCH_INSERT_SIZE) {
+                    LOGGER.info("Sauvegarde batchée de " + BATCH_INSERT_SIZE + " Hierarchy");
                     hierarchyManager.save(hierarchies);
                     hierarchies.clear();
                 }
-            }
-            LOGGER.info(hierarchyManager.count()+" Hierarchy sauvegardés");
-            hierarchies.clear();
-            for(Object obj : entries) {
-                JSONObject entry = (JSONObject)obj;
-                String organism = entry.getString("organism");
+
                 Session s = DBUtils.getSession();
-                Query<Hierarchy> query = s.createQuery("from Hierarchy h where h.id = :id", Hierarchy.class).setParameter( "id",  organism);
-                try{
-                    Hierarchy h = query.getSingleResult();
-                    replicons.addAll(extractRepliconsFromJSONEntry(entry, h));
-                    if(replicons.size() >= BATCH_INSERT_SIZE){
-                        LOGGER.info("Sauvegarde batchée de "+BATCH_INSERT_SIZE+" Replicon");
-                        repliconManager.save(replicons);
-                        replicons.clear();
-                    }
-                }catch (NoResultException e){
-                    //FIXME ne devrai pas arriver
-                    LOGGER.error("Hierarchy non trouvée : '"+organism+"'", e);
+                Query<Hierarchy> query = s.createQuery("from Hierarchy h where h.organism = :organism", Hierarchy.class).setParameter("organism", organism);
+                h = query.getSingleResult();
+                replicons.addAll(extractRepliconsFromJSONEntry(entry, h));
+                if (replicons.size() >= BATCH_INSERT_SIZE) {
+                    LOGGER.info("Sauvegarde batchée de " + BATCH_INSERT_SIZE + " Replicon");
+                    repliconManager.save(replicons);
+                    replicons.clear();
                 }
             }
-            replicons.clear();
-            LOGGER.info(repliconManager.count()+" Replicon sauvegardés");
-        }catch(IOException | NullPointerException e){
-            LOGGER.error("Erreur de récupération de la liste des organismes",e);
+        }catch (IOException e){
+            LOGGER.error("Erreur lors du téléchargement de la liste des entrées", e);
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean createAllOrganismsDirectories(Path rootDirectory){
+        List<Hierarchy> hierarchies = PersistentEntityManagerFactory.getHierarchyManager().getAll();
+        try {
+            for(Hierarchy hierarchy : hierarchies){
+                //Création du dossier
+                Path entryPath = rootDirectory.resolve(getPathOfOrganism(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
+                FileUtils.forceMkdir(entryPath.toFile());
+            }
+        } catch (IOException e) {
+            LOGGER.error("Erreur lors de la création de l'arborescence des organismes dans '"+rootDirectory+"'", e);
             return false;
         }
         return true;

@@ -19,9 +19,14 @@ class GenbankUtilsTest extends CustomTestCase {
         }
     }
 
+    @Test
+    void updateDB(){
+        assertTrue(GenbankUtils.updateNCDatabase());
+    }
+
     @Disabled("Test long à l'éxecution")
     @Test
     void createOrganismsTreeStructure(){
-        assertTrue(GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), true));
+        assertTrue(GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results")));
     }
 }

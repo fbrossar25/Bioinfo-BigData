@@ -40,7 +40,8 @@ public class Main extends Application {
             initStage(primaryStage);
             primaryStage.show();
             primaryStage.setOnCloseRequest(Main::openExitDialog);
-            GenbankUtils.createOrganismsTreeStructure(Paths.get(".","Results"), true);
+            GenbankUtils.updateNCDatabase();
+            GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results"));
         } catch (Exception e) {
             new ExceptionDialog(e);
             shutdown();
