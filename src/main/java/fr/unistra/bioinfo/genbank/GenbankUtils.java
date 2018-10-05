@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.genbank;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.model.Hierarchy;
@@ -14,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -33,6 +35,18 @@ public class GenbankUtils {
     public static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
     public static final String EUTILS_EFETCH = "efetch.fcgi";
     public static final int BATCH_INSERT_SIZE = 1000;
+    private static Map<String, Hierarchy> HIERARCHY_DB = new HashMap<>();
+    static{
+        try {
+            updateNCDatabase();
+        } catch (IOException e) {
+            LOGGER.error("Erreur lors du chargement de la base de données des hierarchy", e);
+        }
+    }
+
+    public static List<File> downloadReplicons(List<Replicon> replicons){
+        throw new NotImplementedException("TODO");
+    }
 
     public static URI getEUtilsLink(String application, Map<String, String> params) throws URISyntaxException {
         URIBuilder builder = new URIBuilder(EUTILS_BASE_URL+application);
@@ -147,35 +161,37 @@ public class GenbankUtils {
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
-    public static boolean updateNCDatabase(Path databaseDirectory) throws IOException {
-        Map<String, Hierarchy> hierarchies = new HashMap<>(8192);
-        JSONObject json;
+    /**
+     * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.
+     * @return le singleton de la base de données des hierarchy
+     * @throws IOException
+     */
+    public static Map<String, Hierarchy> updateNCDatabase() throws IOException {
+        JSONObject genbankJSON;
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
-            json = new JSONObject(reader.lines().collect(Collectors.joining()));
+            genbankJSON = new JSONObject(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
-            LOGGER.error("Erreur lors du téléchargement de la liste des entrées", e);
-            return false;
+            throw new IOException("Erreur lors du téléchargement de la liste des entrées", e);
         }
-        JSONArray entries = json.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
+        JSONArray entries = genbankJSON.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
         LOGGER.info("Traitement de "+entries.length()+" entrées");
         for(Object obj : entries) {
             JSONObject entry = (JSONObject) obj;
             String organism = entry.getString("organism");
             //Création de l'entrée en BDD
-            if(!hierarchies.containsKey(organism)){
-                hierarchies.put(organism, new Hierarchy(entry));
+            if(!HIERARCHY_DB.containsKey(organism)){
+                HIERARCHY_DB.put(organism, new Hierarchy(entry));
             }
-            Hierarchy h = hierarchies.get(organism);
-            h.getReplicons().addAll(extractRepliconsFromJSONEntry(entry, h));
+            Hierarchy h = HIERARCHY_DB.get(organism);
+            h.updateReplicons(extractRepliconsFromJSONEntry(entry.getString("replicons"), h));
         }
-        JSONUtils.saveToFile(databaseDirectory.resolve("database.json"), JSONUtils.toJSON(new ArrayList<>(hierarchies.values())));
-        return true;
+        JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
+        return HIERARCHY_DB;
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){
-        List<Hierarchy> hierarchies = getAllHierarchies();
         try {
-            for(Hierarchy hierarchy : hierarchies){
+            for(Hierarchy hierarchy : HIERARCHY_DB.values()){
                 //Création du dossier
                 Path entryPath = rootDirectory.resolve(getPathOfOrganism(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
                 FileUtils.forceMkdir(entryPath.toFile());
@@ -187,13 +203,27 @@ public class GenbankUtils {
         return true;
     }
 
-    private static List<Hierarchy> getAllHierarchies() {
-        throw new NotImplementedException("TODO");
+    /**
+     * @return Map des hierarchies le fichier JSON CommonUtils.DATABASE_PATH. Les clés sont les valeurs d'organism de chaque hierarchy.
+     */
+    private static Map<String, Hierarchy> getAllHierarchiesFromLocalDatabase() {
+        File dbFile = CommonUtils.DATABASE_PATH.toFile();
+        if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
+            try {
+                JSONUtils.fromJSON(JSONUtils.readFromFile(CommonUtils.DATABASE_PATH)).forEach((hierarchy) ->
+                        HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy)
+                );
+                return HIERARCHY_DB;
+            } catch (IOException e) {
+                LOGGER.error("Erreur de lecture de la base de données '"+CommonUtils.DATABASE_PATH+"'",e);
+            }
+        }
+        return new HashMap<>();
     }
 
-    private static Set<Replicon> extractRepliconsFromJSONEntry(JSONObject entry, Hierarchy hierarchy) {
-        Set<Replicon> replicons = new TreeSet<>();
-        String[] repliconsJSONValues = entry.getString("replicons").split(";");
+    private static List<Replicon> extractRepliconsFromJSONEntry(String repliconsList, Hierarchy hierarchy) {
+        List<Replicon> replicons = new ArrayList<>();
+        String[] repliconsJSONValues = repliconsList.split(";");
         Matcher m;
         for(String value : repliconsJSONValues){
             m = RegexUtils.REPLICON_PATTERN.matcher(value);
@@ -228,5 +258,12 @@ public class GenbankUtils {
      */
     public static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
+    }
+
+    /**
+     * @return le singleton de la map des hierarchy sans la mettre à jour
+     */
+    public static Map<String, Hierarchy> getHierarchyDatabase(){
+        return HIERARCHY_DB;
     }
 }

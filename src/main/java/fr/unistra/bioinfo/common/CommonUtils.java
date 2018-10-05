@@ -12,7 +12,7 @@ import java.util.TreeSet;
 
 public class CommonUtils {
     private static final Logger LOGGER = LogManager.getLogger();
-    public static final Path DATABASE_PATH = Paths.get("database").toAbsolutePath();
+    public static final Path DATABASE_PATH = Paths.get("database", "database.json").toAbsolutePath();
 
     public static final Set<String> DINUCLEOTIDES;
     public static final Set<String> TRINUCLEOTIDES;

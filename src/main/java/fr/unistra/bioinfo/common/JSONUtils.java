@@ -2,7 +2,6 @@ package fr.unistra.bioinfo.common;
 
 import fr.unistra.bioinfo.model.Hierarchy;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -12,17 +11,19 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class JSONUtils {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static JSONObject database;
 
     public static File saveToFile(Path filePath, JSONObject json) throws IOException{
         File f = filePath.toFile();
         FileUtils.touch(f);
         try(BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8)){
-            writer.write(json.toString(4));
+            writer.write(json.toString(0));
         }catch(IOException e){
             LOGGER.error("Erreur à la sauvegarde du fichier JSON '"+filePath.toAbsolutePath()+"'", e);
             throw e;
@@ -58,9 +59,10 @@ public class JSONUtils {
         return json;
     }
 
-
-
     public static List<Hierarchy> fromJSON(JSONObject json){
-        throw new NotImplementedException("TODO");
+        JSONArray hierarchiesArray = json.getJSONArray("hierarchies");
+        List<Hierarchy> hierarchies = new ArrayList<>();
+        hierarchiesArray.toList().forEach((hierarchy) -> hierarchies.add(new Hierarchy((JSONObject) hierarchy)));
+        return hierarchies;
     }
 }

@@ -7,8 +7,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Hierarchy implements Comparable<Hierarchy>{
 
@@ -16,7 +17,7 @@ public class Hierarchy implements Comparable<Hierarchy>{
     private String subgroup;
     private String group;
     private String kingdom;
-    private Set<Replicon> replicons = new TreeSet<>();
+    private Map<String, Replicon> replicons = new HashMap<>();
 
     public Hierarchy (JSONObject json){
         kingdom = json.getString("kingdom");
@@ -25,6 +26,10 @@ public class Hierarchy implements Comparable<Hierarchy>{
         organism = json.getString("organism");
         try{
             JSONArray repliconsArray = json.getJSONArray("replicons");
+            for(Object replicon : repliconsArray){
+                JSONObject repliconJSON = (JSONObject) replicon;
+                replicons.put(repliconJSON.getString("replicon"), new Replicon(repliconJSON, this));
+            }
         }catch(JSONException e){
             //ignore
         }
@@ -70,11 +75,11 @@ public class Hierarchy implements Comparable<Hierarchy>{
         this.kingdom = kingdom;
     }
 
-    public Set<Replicon> getReplicons() {
+    public Map<String, Replicon> getReplicons() {
         return replicons;
     }
 
-    public void setReplicons(Set<Replicon> replicons) {
+    public void setReplicons(Map<String, Replicon> replicons) {
         this.replicons = replicons;
     }
 
@@ -85,7 +90,7 @@ public class Hierarchy implements Comparable<Hierarchy>{
         json.put("subgroup",this.subgroup);
         json.put("group",this.group);
         json.put("kingdom",this.kingdom);
-        for(Replicon replicon : replicons){
+        for(Replicon replicon : replicons.values()){
             repliconsArray.put(replicon.toJson());
         }
         json.put("replicons", repliconsArray);
@@ -100,5 +105,15 @@ public class Hierarchy implements Comparable<Hierarchy>{
     @Override
     public int compareTo(Hierarchy o) {
         return ObjectUtils.compare(organism, o.organism);
+    }
+
+    public void updateReplicons(Collection<Replicon> repliconsToUpdate) {
+        for(Replicon repliconToUpdate : repliconsToUpdate){
+            if(!replicons.containsKey(repliconToUpdate.getReplicon())){
+                replicons.put(repliconToUpdate.getReplicon(), repliconToUpdate);
+            }else{
+                replicons.get(repliconToUpdate.getReplicon()).updateWith(repliconToUpdate);
+            }
+        }
     }
 }

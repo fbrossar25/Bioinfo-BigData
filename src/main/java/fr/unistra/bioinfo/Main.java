@@ -1,6 +1,5 @@
 package fr.unistra.bioinfo;
 
-import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
 import fr.unistra.bioinfo.gui.MainWindowController;
@@ -40,7 +39,7 @@ public class Main extends Application {
             initStage(primaryStage);
             primaryStage.show();
             primaryStage.setOnCloseRequest(Main::openExitDialog);
-            GenbankUtils.updateNCDatabase(CommonUtils.DATABASE_PATH);
+            GenbankUtils.updateNCDatabase();
             GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
         } catch (Exception e) {
             new ExceptionDialog(e);

@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.model;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -17,8 +18,24 @@ public class Replicon implements Comparable<Replicon> {
     private boolean isComputed = false;
 
     public Replicon (JSONObject json, Hierarchy hierarchy){
+        resetCounters();
+        replicon = (String)json.get("replicon");
         this.hierarchy = hierarchy;
-        //TODO
+        this.isDownloaded = json.getBoolean("isDownloaded");
+        this.isComputed = json.getBoolean("isComputed");
+        this.version = json.getInt("version");
+        int i = 0;
+        JSONArray diArray = json.getJSONArray("dinucleotides");
+        for(String di : CommonUtils.DINUCLEOTIDES){
+            dinucleotides.put(di, i >= diArray.length() ? 0 : (Integer)diArray.get(i));
+            i++;
+        }
+        i = 0;
+        JSONArray triArray = json.getJSONArray("trinucleotides");
+        for(String tri : CommonUtils.TRINUCLEOTIDES){
+            trinucleotides.put(tri, i >= triArray.length() ? 0 : (Integer)triArray.get(i));
+            i++;
+        }
     }
 
     public Replicon(String replicon, Hierarchy hierarchy) {
@@ -73,6 +90,22 @@ public class Replicon implements Comparable<Replicon> {
         this.dinucleotides = dinucleotides;
     }
 
+    public Integer getTrinucleotide(String trinucleotide) {
+        return trinucleotides.get(trinucleotide);
+    }
+
+    public void setTrinucleotide(String trinucleotide, Integer value) {
+        this.trinucleotides.put(trinucleotide, value);
+    }
+
+    public Integer getDinucleotide(String dinucleotide) {
+        return dinucleotides.get(dinucleotide);
+    }
+
+    public void setDinucleotide(String dinucleotide, Integer value) {
+        this.dinucleotides.put(dinucleotide, value);
+    }
+
     public boolean isDownloaded() {
         return isDownloaded;
     }
@@ -115,8 +148,18 @@ public class Replicon implements Comparable<Replicon> {
         json.put("version",this.version);
         json.put("isDownloaded",this.isDownloaded);
         json.put("isComputed",this.isComputed);
-        json.put("trinucleotides",this.trinucleotides);
-        json.put("dinucleotides",this.dinucleotides);
+        json.put("trinucleotides",this.trinucleotides.values());
+        json.put("dinucleotides",this.dinucleotides.values());
         return json;
+    }
+
+    public void updateWith(Replicon other) {
+        if(other.version > this.version){
+            //Mise à jour
+            this.isDownloaded = false;
+            this.isComputed = false;
+            this.version = other.version;
+            resetCounters();
+        }
     }
 }
