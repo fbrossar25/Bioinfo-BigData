@@ -168,7 +168,7 @@ public class GenbankUtils {
             Hierarchy h = hierarchies.get(organism);
             h.getReplicons().addAll(extractRepliconsFromJSONEntry(entry, h));
         }
-        JSONUtils.saveToFile(databaseDirectory.resolve("database.json"), JSONUtils.toJSON(hierarchies.values()));
+        JSONUtils.saveToFile(databaseDirectory.resolve("database.json"), JSONUtils.toJSON(new ArrayList<>(hierarchies.values())));
         return true;
     }
 
