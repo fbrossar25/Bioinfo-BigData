@@ -10,6 +10,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
@@ -39,11 +40,15 @@ public class Main extends Application {
             initStage(primaryStage);
             primaryStage.show();
             primaryStage.setOnCloseRequest(Main::openExitDialog);
-            GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
+            //primaryStage.setResizable(false);
         } catch (Exception e) {
             new ExceptionDialog(e);
             shutdown();
         }
+    }
+
+    public static void generateOrganismDirectories(){
+        GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
     }
 
     public static MainWindowController getMainWindowController(){
@@ -55,7 +60,7 @@ public class Main extends Application {
         primaryStage.setResizable(true);
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
-        primaryStage.setTitle("Cellular Automatons" + ((version == null) ? "" : (" " + version)));
+        primaryStage.setTitle("BioInfo" + ((version == null) ? "" : (" " + version)));
     }
 
     public static void openExitDialog(Event evt){
