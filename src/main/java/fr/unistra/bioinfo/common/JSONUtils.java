@@ -62,7 +62,9 @@ public class JSONUtils {
     public static List<Hierarchy> fromJSON(JSONObject json){
         JSONArray hierarchiesArray = json.getJSONArray("hierarchies");
         List<Hierarchy> hierarchies = new ArrayList<>();
-        hierarchiesArray.toList().forEach((hierarchy) -> hierarchies.add(new Hierarchy((JSONObject) hierarchy)));
+        for(int i=0; i<hierarchiesArray.length(); i++){
+            hierarchies.add(new Hierarchy(hierarchiesArray.getJSONObject(i)));
+        }
         return hierarchies;
     }
 }

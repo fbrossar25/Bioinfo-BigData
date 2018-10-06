@@ -37,11 +37,7 @@ public class GenbankUtils {
     public static final int BATCH_INSERT_SIZE = 1000;
     private static Map<String, Hierarchy> HIERARCHY_DB = new HashMap<>();
     static{
-        try {
-            updateNCDatabase();
-        } catch (IOException e) {
-            LOGGER.error("Erreur lors du chargement de la base de données des hierarchy", e);
-        }
+        loadLocalDatabase();
     }
 
     public static List<File> downloadReplicons(List<Replicon> replicons){
@@ -63,17 +59,15 @@ public class GenbankUtils {
 
     /**
      * Retourne l'URL permettant de télécharger le fichier dont le nom est donné.
-     * @param fileName le nom du fichier sous la forme NC_X.Y, X est le nom du fichier, Y est la version.<br/>
-     *                 Si Y n'est pas renseigné (i.e. on donns NC_X), la dernière version est récupérée.<br/>
-     *                 Si la version n'existe pas, le serveur répond 400. Si fileName est vide, il répond 200.
+     * @param replicon le replicon à télécharger
      * @return l'url
      */
-    public static URI getGBDownloadURL(String fileName){
+    public static URI getGBDownloadURL(Replicon replicon){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nucleotide");
         params.put("rettype", "gb");
-        params.put("id", fileName);
+        params.put("id", replicon.getReplicon()+"."+replicon.getVersion());
         try{
             uri = getEUtilsLink(EUTILS_EFETCH, params);
         }catch(URISyntaxException e){
@@ -206,19 +200,20 @@ public class GenbankUtils {
     /**
      * @return Map des hierarchies le fichier JSON CommonUtils.DATABASE_PATH. Les clés sont les valeurs d'organism de chaque hierarchy.
      */
-    private static Map<String, Hierarchy> getAllHierarchiesFromLocalDatabase() {
+    private static void loadLocalDatabase() {
         File dbFile = CommonUtils.DATABASE_PATH.toFile();
         if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
             try {
                 JSONUtils.fromJSON(JSONUtils.readFromFile(CommonUtils.DATABASE_PATH)).forEach((hierarchy) ->
                         HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy)
                 );
-                return HIERARCHY_DB;
+                LOGGER.info(HIERARCHY_DB.size()+" entrées chargées");
             } catch (IOException e) {
                 LOGGER.error("Erreur de lecture de la base de données '"+CommonUtils.DATABASE_PATH+"'",e);
             }
+        }else{
+            LOGGER.warn("Le fichier '"+dbFile.getAbsolutePath()+"' n'existe pas ou n'est pas accessible.");
         }
-        return new HashMap<>();
     }
 
     private static List<Replicon> extractRepliconsFromJSONEntry(String repliconsList, Hierarchy hierarchy) {
