@@ -1,5 +1,7 @@
 package fr.unistra.bioinfo.genbank;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
@@ -11,8 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -23,7 +23,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -161,25 +164,27 @@ public class GenbankUtils {
      * @throws IOException
      */
     public static Map<String, Hierarchy> updateNCDatabase() throws IOException {
-        JSONObject genbankJSON;
+        JsonNode genbankJSON;
+        ObjectMapper mapper = new ObjectMapper();
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
-            genbankJSON = new JSONObject(reader.lines().collect(Collectors.joining()));
+            genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
             throw new IOException("Erreur lors du téléchargement de la liste des entrées", e);
         }
-        JSONArray entries = genbankJSON.getJSONObject("ngout").getJSONObject("data").getJSONArray("content");
-        LOGGER.info("Traitement de "+entries.length()+" entrées");
-        for(Object obj : entries) {
-            JSONObject entry = (JSONObject) obj;
-            String organism = entry.getString("organism");
+        JsonNode dataNode = genbankJSON.get("ngout").get("data");
+        JsonNode contentNode = dataNode.get("content");
+        LOGGER.info("Traitement de "+dataNode.get("totalCount").intValue()+" entrées");
+        for(JsonNode entry : contentNode) {
+            String organism = entry.get("organism").textValue();
             //Création de l'entrée en BDD
             if(!HIERARCHY_DB.containsKey(organism)){
-                HIERARCHY_DB.put(organism, new Hierarchy(entry));
+                HIERARCHY_DB.put(organism, mapper.treeToValue(entry, Hierarchy.class));
             }
             Hierarchy h = HIERARCHY_DB.get(organism);
-            h.updateReplicons(extractRepliconsFromJSONEntry(entry.getString("replicons"), h));
+            h.updateReplicons(extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h));
         }
-        JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
+        JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, HIERARCHY_DB.values());
+        //JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
         return HIERARCHY_DB;
     }
 
@@ -204,7 +209,7 @@ public class GenbankUtils {
         File dbFile = CommonUtils.DATABASE_PATH.toFile();
         if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
             try {
-                JSONUtils.fromJSON(JSONUtils.readFromFile(CommonUtils.DATABASE_PATH)).forEach((hierarchy) ->
+                JSONUtils.readFromFile(CommonUtils.DATABASE_PATH).forEach((hierarchy) ->
                         HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy)
                 );
                 LOGGER.info(HIERARCHY_DB.size()+" entrées chargées");
@@ -237,8 +242,8 @@ public class GenbankUtils {
     public static int getNumberOfEntries(Reign reign){
         int numerOfEntries = -1;
         try(BufferedReader reader = readRequest(getReignTotalEntriesNumberURL(reign))){
-            JSONObject json = new JSONObject(reader.lines().collect(Collectors.joining()));
-            numerOfEntries = json.getJSONObject("ngout").getJSONObject("data").getInt("totalCount");
+            JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
+            numerOfEntries = json.get("ngout").get("data").get("totalCount").intValue();
         }catch(IOException | NullPointerException e){
             LOGGER.error("Erreur de récupération du nombre total d'entrées du règne '"+ reign.getSearchTable()+"'",e);
         }

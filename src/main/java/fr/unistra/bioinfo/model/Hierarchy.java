@@ -3,14 +3,13 @@ package fr.unistra.bioinfo.model;
 
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+//@JsonDeserialize(using = JSONUtils.HierarchyDeserializer.class)
+//@JsonSerialize(using = JSONUtils.HierarchySerializer.class)
 public class Hierarchy implements Comparable<Hierarchy>{
 
     private String organism;
@@ -19,21 +18,7 @@ public class Hierarchy implements Comparable<Hierarchy>{
     private String kingdom;
     private Map<String, Replicon> replicons = new HashMap<>();
 
-    public Hierarchy (JSONObject json){
-        kingdom = json.getString("kingdom");
-        group = json.getString("group");
-        subgroup = json.getString("subgroup");
-        organism = json.getString("organism");
-        try{
-            JSONArray repliconsArray = json.getJSONArray("replicons");
-            for(Object replicon : repliconsArray){
-                JSONObject repliconJSON = (JSONObject) replicon;
-                replicons.put(repliconJSON.getString("replicon"), new Replicon(repliconJSON, this));
-            }
-        }catch(JSONException e){
-            //ignore
-        }
-    }
+    public Hierarchy(){}
 
     public Hierarchy(String kingdom, String group, String subgroup, String organism) {
         super();
@@ -81,20 +66,6 @@ public class Hierarchy implements Comparable<Hierarchy>{
 
     public void setReplicons(Map<String, Replicon> replicons) {
         this.replicons = replicons;
-    }
-
-    public JSONObject toJSON(){
-        JSONObject json = new JSONObject();
-        JSONArray repliconsArray = new JSONArray();
-        json.put("organism",this.organism);
-        json.put("subgroup",this.subgroup);
-        json.put("group",this.group);
-        json.put("kingdom",this.kingdom);
-        for(Replicon replicon : replicons.values()){
-            repliconsArray.put(replicon.toJson());
-        }
-        json.put("replicons", repliconsArray);
-        return json;
     }
 
     @Override

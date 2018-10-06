@@ -1,32 +1,60 @@
 package fr.unistra.bioinfo.common;
 
+import fr.unistra.bioinfo.model.Hierarchy;
 import fr.unistra.bioinfo.model.Replicon;
-import org.json.JSONObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 class JSONUtilsTest {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     @Test
-    public void repliconJSON(){
-        JSONObject json = new JSONObject("{\"isDownloaded\":false,\"replicon\":\"NC_013023\",\"isComputed\":true,\"dinucleotides\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],\"trinucleotides\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63],\"version\":2}");
-        Replicon r = new Replicon(json, null);
-        assertTrue(r.isComputed());
-        assertFalse(r.isDownloaded());
-        assertEquals("NC_013023", r.getReplicon());
-        assertEquals(2, r.getVersion().intValue());
-        int i = 0;
-        for(String di : CommonUtils.DINUCLEOTIDES){
-            assertEquals(i, r.getDinucleotide(di).intValue());
-            i++;
-        }
-        i = 0;
-        for(String tri : CommonUtils.TRINUCLEOTIDES){
-            assertEquals(i, r.getTrinucleotide(tri).intValue());
-            i++;
+    public void readFromJson() throws URISyntaxException {
+        Path p = null;
+        try {
+            URL url = getClass().getClassLoader().getResource("test.json");
+            assertNotNull(url, "Fichier resources/test.json");
+            p = Paths.get(url.toURI());
+            List<Hierarchy> hierarchies = JSONUtils.readFromFile(p);
+            assertEquals(1, hierarchies.size());
+            Hierarchy h = hierarchies.get(0);
+            assertEquals("TestOrganism", h.getOrganism());
+            assertEquals("TestKingdom", h.getKingdom());
+            assertEquals("TestGroup", h.getGroup());
+            assertEquals("TestSubgroup", h.getSubgroup());
+            assertEquals(1, h.getReplicons().size());
+            assertTrue(h.getReplicons().containsKey("NC_013023"));
+            Replicon r = h.getReplicons().get("NC_013023");
+            assertEquals("NC_013023", r.getReplicon());
+            assertFalse(r.isDownloaded());
+            assertTrue(r.isComputed());
+            assertEquals(1, r.getVersion().intValue());
+            for(String di : CommonUtils.DINUCLEOTIDES){
+                if("CG".equals(di)){
+                    assertEquals(21, r.getDinucleotide(di).intValue());
+                }else{
+                    assertEquals(0, r.getDinucleotide(di).intValue());
+                }
+            }
+            for(String tri : CommonUtils.TRINUCLEOTIDES){
+                if("ATT".equals(tri)){
+                    assertEquals(1, r.getTrinucleotide(tri).intValue());
+                }else{
+                    assertEquals(0, r.getTrinucleotide(tri).intValue());
+                }
+            }
+        } catch (IOException e) {
+            fail("Erreur lors de la lecture du fichier '"+p.toString()+"'",e);
         }
     }
 }
