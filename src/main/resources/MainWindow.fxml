@@ -30,15 +30,21 @@
       </BorderPane>
    </left>
    <center>
-      <Pane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-         <children>
-            <Label layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés" />
-            <Button layoutX="326.0" layoutY="100.0" mnemonicParsing="false" text="Démarrer" />
-            <TitledPane animated="false" expanded="false" layoutY="339.0" prefHeight="239.0" prefWidth="600.0" text="Logs">
-               <TextArea editable="false" prefHeight="242.0" prefWidth="598.0" />
+      <BorderPane BorderPane.alignment="CENTER">
+         <center>
+            <Pane prefHeight="200.0" prefWidth="200.0">
+               <children>
+                  <Label layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés" />
+                  <Button fx:id="btnMain" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer" text="Démarrer" />
+                  <ProgressBar layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
+               </children>
+            </Pane>
+         </center>
+         <bottom>
+            <TitledPane animated="false" collapsible="false" prefHeight="239.0" prefWidth="600.0" text="Logs" BorderPane.alignment="CENTER">
+               <TextArea fx:id="logs" editable="false" prefHeight="229.0" prefWidth="598.0" />
             </TitledPane>
-            <ProgressBar layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
-         </children>
-      </Pane>
+         </bottom>
+      </BorderPane>
    </center>
 </BorderPane>
