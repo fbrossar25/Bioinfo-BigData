@@ -9,6 +9,11 @@ version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
 
+mainClassName = "bioinfo.main.Main"
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
+
 repositories {
     mavenCentral()
 }
@@ -16,19 +21,15 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.0.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.3'
-    compile group: 'org.hibernate', name: 'hibernate-core', version: '5.3.6.Final'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.8'
-    compile group: 'org.hsqldb', name: 'hsqldb', version: '2.4.1'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.7'
-    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
-    compile group: 'org.apache.poi', name: 'poi', version: '3.17'
-    compile group: 'org.jfxtras', name: 'jfxtras-all', version: '8.0-r6'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "2.11.1"
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "2.11.1"
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.8'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
+    implementation group: 'org.apache.poi', name: 'poi', version: '3.17'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: "2.11.1"
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: "2.11.1"
+    implementation group: 'org.json', name: 'json', version: '20180813'
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.6'
 }
-
-mainClassName = "bioinfo.main.Main"
-applicationDefaultJvmArgs = ["-Dfile.encoding=utf-8"]
 
 test {
     useJUnitPlatform()

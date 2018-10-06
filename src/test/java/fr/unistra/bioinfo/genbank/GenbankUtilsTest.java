@@ -1,0 +1,37 @@
+package fr.unistra.bioinfo.genbank;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class GenbankUtilsTest {
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    @Test
+    void getNumberOfEntries() {
+        for(Reign k : Reign.values()){
+            LOGGER.info("Number of "+k.getSearchTable()+" entries : "+GenbankUtils.getNumberOfEntries(k));
+        }
+    }
+
+    @Test
+    void updateDB(){
+        try {
+            assertFalse(GenbankUtils.updateNCDatabase().isEmpty());
+        } catch (IOException e) {
+            fail(e);
+        }
+    }
+
+    @Disabled("Test long à l'éxecution")
+    @Test
+    void createOrganismsTreeStructure(){
+        assertTrue(GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results")));
+    }
+}
