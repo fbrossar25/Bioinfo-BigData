@@ -1,8 +1,13 @@
 package fr.unistra.bioinfo.common;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import fr.unistra.bioinfo.Main;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.lang.NonNull;
 
+import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -11,7 +16,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class CommonUtils {
-    private static final Logger LOGGER = LogManager.getLogger();
+
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final Path DATABASE_PATH = Paths.get("database", "database.json").toAbsolutePath();
 
     public static final Set<String> DINUCLEOTIDES;
@@ -32,5 +38,9 @@ public class CommonUtils {
         TRINUCLEOTIDES = Collections.unmodifiableSet(triset);
         LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.toArray()));
         LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.toArray()));
+    }
+
+    public static URL getResourceURL(@NonNull String resourceName) throws IOException {
+        return new ClassPathResource(resourceName).getURL();
     }
 }

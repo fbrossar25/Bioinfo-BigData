@@ -1,8 +1,8 @@
 package fr.unistra.bioinfo;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
-import fr.unistra.bioinfo.gui.MainWindowController;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.Event;
@@ -10,15 +10,22 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextArea;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.nio.file.Paths;
 import java.util.Optional;
 
+@SpringBootApplication
 public class Main extends Application {
-    private static MainWindowController mainWindowController;
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static Main mainInstance;
+    private ConfigurableApplicationContext springContext;
+
     public static void main(String [] args){
         Thread.setDefaultUncaughtExceptionHandler(Main::defaultErrorHandling);
         launch(args);
@@ -30,29 +37,29 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        Thread.setDefaultUncaughtExceptionHandler(Main::defaultErrorHandling);
         try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            FXMLLoader loader = new FXMLLoader(classLoader.getResource("MainWindow.fxml"));
-            Pane root = loader.load();
-            mainWindowController = loader.getController();
-            Scene scene = new Scene(root);
+            FXMLLoader loader = new FXMLLoader(CommonUtils.getResourceURL("fxml/MainWindow.fxml"));
+            loader.setControllerFactory(springContext::getBean);
+            Scene scene = new Scene(loader.load());
             primaryStage.setScene(scene);
             initStage(primaryStage);
-            primaryStage.show();
             primaryStage.setOnCloseRequest(Main::openExitDialog);
-            //primaryStage.setResizable(false);
+            primaryStage.show();
         } catch (Exception e) {
             new ExceptionDialog(e);
-            shutdown();
+            Main.closeApplication(-1);
         }
+    }
+
+    @Override
+    public void init() {
+        Main.mainInstance = this;
+        springContext = SpringApplication.run(Main.class, getParameters().getRaw().toArray(new String[0]));
     }
 
     public static void generateOrganismDirectories(){
         GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
-    }
-
-    public static MainWindowController getMainWindowController(){
-        return mainWindowController;
     }
 
     private void initStage(Stage primaryStage) {
@@ -72,12 +79,26 @@ public class Main extends Application {
         if (!closeResponse.isPresent() || !ButtonType.OK.equals(closeResponse.get())) {
             evt.consume();
         } else {
-            shutdown();
+            Main.closeApplication();
         }
     }
 
-    public static void shutdown(){
+    public static void closeApplication(int status){
+        LOGGER.info("Fermeture de l'application...");
+        if(Main.mainInstance != null){
+            Main.mainInstance.stop();
+        }
         Platform.exit();
-        System.exit(0);
+        System.exit(status);
+    }
+
+    public static void closeApplication(){
+        Main.closeApplication(0);
+    }
+
+    @Override
+    public void stop() {
+        LOGGER.info("Fermeture du contexte Springboot...");
+        springContext.stop();
     }
 }

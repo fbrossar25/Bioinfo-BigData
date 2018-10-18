@@ -2,17 +2,18 @@ package fr.unistra.bioinfo.genbank;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.common.JSONUtils;
+import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.RegexUtils;
-import fr.unistra.bioinfo.model.Hierarchy;
-import fr.unistra.bioinfo.model.Replicon;
+import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
+import fr.unistra.bioinfo.persistence.manager.RepliconManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,19 +32,16 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
+    private static RepliconManager repliconManager;
+    private static HierarchyManager hierarchyManager;
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3 */
     public static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
     public static final String EUTILS_EFETCH = "efetch.fcgi";
-    public static final int BATCH_INSERT_SIZE = 1000;
-    private static Map<String, Hierarchy> HIERARCHY_DB = new HashMap<>();
-    static{
-        loadLocalDatabase();
-    }
 
-    public static List<File> downloadReplicons(List<Replicon> replicons){
+    public static List<File> downloadReplicons(List<RepliconEntity> replicons){
         throw new NotImplementedException("TODO");
     }
 
@@ -65,12 +63,12 @@ public class GenbankUtils {
      * @param replicon le replicon à télécharger
      * @return l'url
      */
-    public static URI getGBDownloadURL(Replicon replicon){
+    public static URI getGBDownloadURL(RepliconEntity replicon){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nucleotide");
         params.put("rettype", "gb");
-        params.put("id", replicon.getReplicon()+"."+replicon.getVersion());
+        params.put("id", replicon.getName()+"."+replicon.getVersion());
         try{
             uri = getEUtilsLink(EUTILS_EFETCH, params);
         }catch(URISyntaxException e){
@@ -160,10 +158,9 @@ public class GenbankUtils {
 
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.
-     * @return le singleton de la base de données des hierarchy
-     * @throws IOException
+     * @throws IOException si un problème interviens lors de la requête à genbank
      */
-    public static Map<String, Hierarchy> updateNCDatabase() throws IOException {
+    public static void updateNCDatabase() throws IOException {
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
@@ -175,22 +172,19 @@ public class GenbankUtils {
         JsonNode contentNode = dataNode.get("content");
         LOGGER.info("Traitement de "+dataNode.get("totalCount").intValue()+" entrées");
         for(JsonNode entry : contentNode) {
+            String kingdom = entry.get("kingdom").textValue();
+            String group = entry.get("group").textValue();
+            String subgroup = entry.get("subgroup").textValue();
             String organism = entry.get("organism").textValue();
-            //Création de l'entrée en BDD
-            if(!HIERARCHY_DB.containsKey(organism)){
-                HIERARCHY_DB.put(organism, mapper.treeToValue(entry, Hierarchy.class));
-            }
-            Hierarchy h = HIERARCHY_DB.get(organism);
-            h.updateReplicons(extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h));
+            HierarchyEntity h = new HierarchyEntity(kingdom, group, subgroup, organism);
+            extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h).forEach(h::addRepliconEntity);
+            hierarchyManager.save(h);
         }
-        JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, HIERARCHY_DB.values());
-        //JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
-        return HIERARCHY_DB;
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){
         try {
-            for(Hierarchy hierarchy : HIERARCHY_DB.values()){
+            for(HierarchyEntity hierarchy : hierarchyManager.getAll()){
                 //Création du dossier
                 Path entryPath = rootDirectory.resolve(getPathOfOrganism(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
                 FileUtils.forceMkdir(entryPath.toFile());
@@ -202,33 +196,14 @@ public class GenbankUtils {
         return true;
     }
 
-    /**
-     * @return Map des hierarchies le fichier JSON CommonUtils.DATABASE_PATH. Les clés sont les valeurs d'organism de chaque hierarchy.
-     */
-    private static void loadLocalDatabase() {
-        File dbFile = CommonUtils.DATABASE_PATH.toFile();
-        if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
-            try {
-                JSONUtils.readFromFile(CommonUtils.DATABASE_PATH).forEach((hierarchy) ->
-                        HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy)
-                );
-                LOGGER.info(HIERARCHY_DB.size()+" entrées chargées");
-            } catch (IOException e) {
-                LOGGER.error("Erreur de lecture de la base de données '"+CommonUtils.DATABASE_PATH+"'",e);
-            }
-        }else{
-            LOGGER.warn("Le fichier '"+dbFile.getAbsolutePath()+"' n'existe pas ou n'est pas accessible.");
-        }
-    }
-
-    private static List<Replicon> extractRepliconsFromJSONEntry(String repliconsList, Hierarchy hierarchy) {
-        List<Replicon> replicons = new ArrayList<>();
+    private static List<RepliconEntity> extractRepliconsFromJSONEntry(String repliconsList, HierarchyEntity hierarchy) {
+        List<RepliconEntity> replicons = new ArrayList<>();
         String[] repliconsJSONValues = repliconsList.split(";");
         Matcher m;
         for(String value : repliconsJSONValues){
             m = RegexUtils.REPLICON_PATTERN.matcher(value);
             if(m.matches()){
-                replicons.add(new Replicon(m.group(1), Integer.parseInt(m.group(2)), hierarchy));
+                replicons.add(new RepliconEntity(m.group(1), Integer.parseInt(m.group(2)), hierarchy));
             }
         }
         return replicons;
@@ -260,10 +235,11 @@ public class GenbankUtils {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
 
-    /**
-     * @return le singleton de la map des hierarchy sans la mettre à jour
-     */
-    public static Map<String, Hierarchy> getHierarchyDatabase(){
-        return HIERARCHY_DB;
+    public static void setRepliconManager(RepliconManager repliconManager) {
+        GenbankUtils.repliconManager = repliconManager;
+    }
+
+    public static void setHierarchyManager(HierarchyManager hierarchyManager) {
+        GenbankUtils.hierarchyManager = hierarchyManager;
     }
 }

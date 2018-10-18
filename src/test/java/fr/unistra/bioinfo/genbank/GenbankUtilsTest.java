@@ -1,17 +1,35 @@
 package fr.unistra.bioinfo.genbank;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import fr.unistra.bioinfo.Main;
+import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
+import fr.unistra.bioinfo.persistence.manager.RepliconManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
 class GenbankUtilsTest {
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
+    @Autowired
+    private HierarchyManager hierarchyManager;
+    @Autowired
+    private RepliconManager repliconManager;
+
+    @BeforeEach
+    public void beforeEach(){
+        assertNotNull(hierarchyManager);
+        assertNotNull(repliconManager);
+    }
 
     @Test
     void getNumberOfEntries() {
@@ -23,7 +41,9 @@ class GenbankUtilsTest {
     @Test
     void updateDB(){
         try {
-            assertFalse(GenbankUtils.updateNCDatabase().isEmpty());
+            GenbankUtils.updateNCDatabase();
+            assertFalse(hierarchyManager.getAll().isEmpty());
+            assertFalse(repliconManager.getAll().isEmpty());
         } catch (IOException e) {
             fail(e);
         }

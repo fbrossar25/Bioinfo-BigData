@@ -1,72 +1,40 @@
 package fr.unistra.bioinfo.gui;
 
-import javafx.application.Platform;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.AppenderBase;
 import javafx.scene.control.TextArea;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.Layout;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.appender.AbstractAppender;
-import org.apache.logging.log4j.core.appender.AppenderLoggingException;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.PluginFactory;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 
+import java.nio.charset.StandardCharsets;
 
-import java.io.Serializable;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
 
-@Plugin(name="TextAreaAppender", category="Core", elementType = "appender", printObject = true)
-public class TextAreaAppender extends AbstractAppender {
-    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-    private final Lock readLock = rwLock.readLock();
-
-    private static TextArea ta;
-
-    protected TextAreaAppender(String name, Filter filter, Layout<? extends Serializable> layout, final boolean ignoreExceptions) {
-        super(name, filter, layout,ignoreExceptions);
-    }
+    private TextArea textAera;
+    private PatternLayoutEncoder encoder;
 
     @Override
-    public void append(LogEvent event) {
-        readLock.lock();
-        try {
-            final byte[] bytes = getLayout().toByteArray(event);
-            String s = new String(bytes, "UTF-8");
-            ta.appendText(s);
-        } catch (Exception ex) {
-            if (!ignoreExceptions()) {
-                throw new AppenderLoggingException(ex);
-            }
-        } finally {
-            readLock.unlock();
+    protected void append(ILoggingEvent eventObject) {
+        if(textAera != null){
+            textAera.appendText(new String(encoder.encode(eventObject), StandardCharsets.UTF_8));
         }
     }
 
-    // Your custom appender needs to declare a factory method
-    // annotated with `@PluginFactory`. Log4j will parse the configuration
-    // and call this factory method to construct an appender instance with
-    // the configured attributes.
-    @PluginFactory
-    public static TextAreaAppender createAppender(
-            @PluginAttribute("name") String name,
-            @PluginElement("Layout") Layout<? extends Serializable> layout,
-            @PluginElement("Filter") final Filter filter,
-            @PluginAttribute("otherAttribute") String otherAttribute) {
-        if (name == null) {
-            LOGGER.error("No name provided for MyCustomAppenderImpl");
-            return null;
-        }
-        if (layout == null) {
-            layout = PatternLayout.createDefaultLayout();
-        }
-        return new TextAreaAppender(name, filter, layout, true);
+    public TextArea getTextAera() {
+        return textAera;
     }
 
-    public static void setTa(TextArea t){
-        ta = t;
+    public void setTextAera(TextArea textAera) {
+        this.textAera = textAera;
+        if(textAera != null){
+            textAera.setEditable(false);
+        }
+    }
+
+    public void setEncoder(PatternLayoutEncoder encoder){
+        this.encoder = encoder;
+    }
+
+    public PatternLayoutEncoder getEncoder(){
+        return encoder;
     }
 }
