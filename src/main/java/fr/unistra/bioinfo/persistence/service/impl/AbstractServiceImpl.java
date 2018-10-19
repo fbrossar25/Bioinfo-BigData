@@ -13,7 +13,6 @@ import java.util.List;
 
 public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serializable> implements AbstractService<T, K> {
     protected EntityManagerFactory entityManagerFactory;
-    protected static final Integer BATCH_SIZE = 1000;
     private Class<T> clazz;
     protected SessionFactory sessionFactory;
 

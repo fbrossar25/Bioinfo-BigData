@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
+import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -9,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-public class RepliconEntity implements IEntity<Long>{
+public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
@@ -196,6 +197,15 @@ public class RepliconEntity implements IEntity<Long>{
                 .append(id)
                 .append(name)
                 .append(version)
+                .build();
+    }
+
+    @Override
+    public int compareTo(RepliconEntity o) {
+        return new CompareToBuilder()
+                .append(getGenbankName(), o.getGenbankName())
+                .append(isComputed, o.isComputed)
+                .append(isDownloaded, o.isDownloaded)
                 .build();
     }
 }

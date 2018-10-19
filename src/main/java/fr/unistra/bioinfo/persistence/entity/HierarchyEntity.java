@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.persistence.entity;
 
+import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.hibernate.annotations.NaturalId;
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class HierarchyEntity implements IEntity<Long>{
+public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntity>{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
@@ -134,6 +135,16 @@ public class HierarchyEntity implements IEntity<Long>{
                 .append(id)
                 .append(kingdom)
                 .append(group)
+                .build();
+    }
+
+    @Override
+    public int compareTo(HierarchyEntity o) {
+        return new CompareToBuilder()
+                .append(kingdom, o.kingdom)
+                .append(group, o.group)
+                .append(subgroup, o.subgroup)
+                .append(organism, o.organism)
                 .build();
     }
 }

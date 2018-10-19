@@ -5,13 +5,18 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.platform.commons.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,14 +73,26 @@ class RepliconServiceTest {
     @Test
     public void batchSaveTest(){
         HierarchyEntity h = new HierarchyEntity("K1","G1","S1","O1");
-        List<RepliconEntity> replicons = new ArrayList<>(10000);
-        for(int i=0; i<10000; i++){
-            replicons.add(new RepliconEntity("",1, h));
-        }
-        repliconService.saveAll(replicons);
-        assertEquals(10000, repliconService.count().longValue());
+        int N = 10000;
+        //Création de N replicons
+        List<RepliconEntity> replicons = new ArrayList<>(N);
+        IntStream
+                .range(0, N)
+                .parallel()
+                .forEach(i -> {
+            synchronized (replicons){
+                replicons.add(new RepliconEntity("R"+i,1, h));
+            }
+        });
+
+       repliconService.saveAll(replicons);
+
+        //Tests
+        assertEquals(replicons.size(), repliconService.count().longValue());
         List<RepliconEntity> allReplicons = repliconService.getAll();
-        assertEquals(10000, allReplicons.size());
-        replicons.forEach(r -> assertTrue(allReplicons.contains(r)));
+        Collections.sort(replicons);
+        Collections.sort(allReplicons);
+        assertEquals(replicons.size(), allReplicons.size());
+        IntStream.range(0, 10000).parallel().forEach(i -> assertEquals(replicons.get(i), allReplicons.get(i)));
     }
 }
