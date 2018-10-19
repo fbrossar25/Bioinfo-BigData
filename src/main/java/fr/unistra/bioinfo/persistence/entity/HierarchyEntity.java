@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class HierarchyEntity {
+public class HierarchyEntity implements IEntity<Long>{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
@@ -95,10 +95,10 @@ public class HierarchyEntity {
 
     public void addRepliconEntity(RepliconEntity repliconEntity, boolean set){
         if(repliconEntity != null){
-            if(getRepliconEntities().contains(repliconEntity)){
-                getRepliconEntities().set(getRepliconEntities().indexOf(repliconEntity), repliconEntity);
+            if(repliconEntities.contains(repliconEntity)){
+                repliconEntities.set(repliconEntities.indexOf(repliconEntity), repliconEntity);
             }else{
-                getRepliconEntities().add(repliconEntity);
+                repliconEntities.add(repliconEntity);
             }
             if(set){
                 repliconEntity.setHirarchyEntity(this, false);

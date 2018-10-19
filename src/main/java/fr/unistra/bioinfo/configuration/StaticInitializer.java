@@ -14,25 +14,25 @@ import javax.annotation.PostConstruct;
 public class StaticInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
 
-    private final RepliconManager repliconManager;
-    private final HierarchyManager hierarchyManager;
+    private final RepliconManager repliconService;
+    private final HierarchyManager hierarchyService;
 
     @Autowired
-    public StaticInitializer(RepliconManager repliconManager, HierarchyManager hierarchyManager) {
-        this.repliconManager = repliconManager;
-        this.hierarchyManager = hierarchyManager;
+    public StaticInitializer(RepliconManager repliconService, HierarchyManager hierarchyService) {
+        this.repliconService = repliconService;
+        this.hierarchyService = hierarchyService;
     }
 
     @PostConstruct
     public void postConstruct(){
-        if(hierarchyManager == null){
+        if(hierarchyService == null){
             throw new IllegalStateException("Le HierarchyManager n'a pas été initialisé");
         }
-        GenbankUtils.setHierarchyManager(hierarchyManager);
-        if(repliconManager == null){
+        GenbankUtils.setHierarchyService(hierarchyService);
+        if(repliconService == null){
             throw new IllegalStateException("Le RepliconManager n'a pas été initialisé");
         }
-        GenbankUtils.setRepliconManager(repliconManager);
+        GenbankUtils.setRepliconService(repliconService);
         LOGGER.debug("Initialisation statique OK");
     }
 }

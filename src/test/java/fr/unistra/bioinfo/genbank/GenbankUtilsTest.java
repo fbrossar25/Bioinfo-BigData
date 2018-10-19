@@ -21,14 +21,14 @@ class GenbankUtilsTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     @Autowired
-    private HierarchyManager hierarchyManager;
+    private HierarchyManager hierarchyService;
     @Autowired
-    private RepliconManager repliconManager;
+    private RepliconManager repliconService;
 
     @BeforeEach
     public void beforeEach(){
-        assertNotNull(hierarchyManager);
-        assertNotNull(repliconManager);
+        assertNotNull(hierarchyService);
+        assertNotNull(repliconService);
     }
 
     @Test
@@ -42,8 +42,8 @@ class GenbankUtilsTest {
     void updateDB(){
         try {
             GenbankUtils.updateNCDatabase();
-            assertFalse(hierarchyManager.getAll().isEmpty());
-            assertFalse(repliconManager.getAll().isEmpty());
+            assertFalse(hierarchyService.getAll().isEmpty());
+            assertFalse(repliconService.getAll().isEmpty());
         } catch (IOException e) {
             fail(e);
         }

@@ -32,8 +32,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
-    private static RepliconManager repliconManager;
-    private static HierarchyManager hierarchyManager;
+    private static RepliconManager repliconService;
+    private static HierarchyManager hierarchyService;
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
@@ -178,13 +178,13 @@ public class GenbankUtils {
             String organism = entry.get("organism").textValue();
             HierarchyEntity h = new HierarchyEntity(kingdom, group, subgroup, organism);
             extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h).forEach(h::addRepliconEntity);
-            hierarchyManager.save(h);
+            hierarchyService.save(h);
         }
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){
         try {
-            for(HierarchyEntity hierarchy : hierarchyManager.getAll()){
+            for(HierarchyEntity hierarchy : hierarchyService.getAll()){
                 //Création du dossier
                 Path entryPath = rootDirectory.resolve(getPathOfOrganism(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
                 FileUtils.forceMkdir(entryPath.toFile());
@@ -235,11 +235,11 @@ public class GenbankUtils {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
 
-    public static void setRepliconManager(RepliconManager repliconManager) {
-        GenbankUtils.repliconManager = repliconManager;
+    public static void setRepliconService(RepliconManager repliconService) {
+        GenbankUtils.repliconService = repliconService;
     }
 
-    public static void setHierarchyManager(HierarchyManager hierarchyManager) {
-        GenbankUtils.hierarchyManager = hierarchyManager;
+    public static void setHierarchyService(HierarchyManager hierarchyService) {
+        GenbankUtils.hierarchyService = hierarchyService;
     }
 }

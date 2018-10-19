@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-public class RepliconEntity {
+public class RepliconEntity implements IEntity<Long>{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
@@ -20,7 +20,7 @@ public class RepliconEntity {
     @Column(nullable = false)
     private Integer version = 1;
 
-    @ManyToOne(cascade = {CascadeType.REFRESH, CascadeType.MERGE, CascadeType.DETACH})
+    @ManyToOne(cascade = {CascadeType.REFRESH, CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST})
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 

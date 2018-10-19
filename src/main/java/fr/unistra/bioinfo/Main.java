@@ -16,11 +16,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.nio.file.Paths;
 import java.util.Optional;
 
 @SpringBootApplication
+@ComponentScan({"fr.unistra.bioinfo.persistence.service"})
 public class Main extends Application {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static Main mainInstance;

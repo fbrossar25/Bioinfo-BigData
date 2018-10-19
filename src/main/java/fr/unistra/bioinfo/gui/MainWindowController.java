@@ -12,14 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 
-@Component
+@Controller
 public class MainWindowController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainWindowController.class);
 
-    private final HierarchyManager hierarchyManager;
-    private final RepliconManager repliconManager;
+    private final HierarchyManager hierarchyService;
+    private final RepliconManager repliconService;
     private TextAreaAppender loggerTextAeraAppender;
 
     @Value("${log.textaera.appender.name}")
@@ -35,9 +35,9 @@ public class MainWindowController {
     @FXML private TextArea logs;
 
     @Autowired
-    public MainWindowController(HierarchyManager hierarchyManager, RepliconManager repliconManager) {
-        this.hierarchyManager = hierarchyManager;
-        this.repliconManager = repliconManager;
+    public MainWindowController(HierarchyManager hierarchyService, RepliconManager repliconService) {
+        this.hierarchyService = hierarchyService;
+        this.repliconService = repliconService;
     }
 
 

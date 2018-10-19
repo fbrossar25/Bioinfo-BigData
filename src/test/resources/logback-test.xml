@@ -6,10 +6,13 @@
         <encoder>
             <pattern>${log.pattern}</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
     <appender name="file" class="ch.qos.logback.core.FileAppender">
-        <file>logs/app.log</file>
+        <file>logs/app-test.log</file>
         <append>false</append>
         <encoder>
             <pattern>${log.pattern}</pattern>
@@ -25,13 +28,13 @@
         </filter>
     </appender>
 
-    <logger name="fr.unistra.bioinfo" level="DEBUG"/>
+    <logger name="fr.unistra.bioinfo" level="INFO"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->
     <logger name="org.hibernate" level="ERROR"/>
     <!-- DEBUG pour logger les requêtes -->
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="OFF"/>
     <!-- TRACE pour logger la valeurs des paramètres -->
     <logger name="org.hibernate.type.descriptor.sql" level="OFF"/>
 
