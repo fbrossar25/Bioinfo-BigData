@@ -34,9 +34,9 @@
     <!-- Logs hibernate -->
     <logger name="org.hibernate" level="ERROR"/>
     <!-- DEBUG pour logger les requêtes -->
-    <logger name="org.hibernate.SQL" level="OFF"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
     <!-- TRACE pour logger la valeurs des paramètres -->
-    <logger name="org.hibernate.type.descriptor.sql" level="OFF"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/>
 
     <logger name="com.zaxxer" level="INFO"/>
 

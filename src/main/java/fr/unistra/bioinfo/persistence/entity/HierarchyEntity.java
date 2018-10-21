@@ -3,7 +3,6 @@ package fr.unistra.bioinfo.persistence.entity;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -14,7 +13,7 @@ import java.util.List;
 @Entity
 public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntity>{
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue
     private Long id;
 
     @Column(nullable = false)
@@ -26,7 +25,7 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
     @Column(nullable = false)
     private String subgroup;
 
-    @NaturalId
+    @Column(nullable = false)
     private String organism;
 
     @OneToMany(mappedBy = "hierarchyEntity", orphanRemoval = true, cascade = CascadeType.REMOVE)

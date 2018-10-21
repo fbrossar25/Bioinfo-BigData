@@ -6,8 +6,8 @@ import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
-import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
-import fr.unistra.bioinfo.persistence.manager.RepliconManager;
+import fr.unistra.bioinfo.persistence.service.HierarchyService;
+import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -32,8 +32,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
-    private static RepliconManager repliconService;
-    private static HierarchyManager hierarchyService;
+    private static RepliconService repliconService;
+    private static HierarchyService hierarchyService;
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
@@ -235,11 +235,11 @@ public class GenbankUtils {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
 
-    public static void setRepliconService(RepliconManager repliconService) {
+    public static void setRepliconService(RepliconService repliconService) {
         GenbankUtils.repliconService = repliconService;
     }
 
-    public static void setHierarchyService(HierarchyManager hierarchyService) {
+    public static void setHierarchyService(HierarchyService hierarchyService) {
         GenbankUtils.hierarchyService = hierarchyService;
     }
 }

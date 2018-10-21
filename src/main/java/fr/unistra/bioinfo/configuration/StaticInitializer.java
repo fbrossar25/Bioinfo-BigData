@@ -1,8 +1,8 @@
 package fr.unistra.bioinfo.configuration;
 
 import fr.unistra.bioinfo.genbank.GenbankUtils;
-import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
-import fr.unistra.bioinfo.persistence.manager.RepliconManager;
+import fr.unistra.bioinfo.persistence.service.HierarchyService;
+import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +14,11 @@ import javax.annotation.PostConstruct;
 public class StaticInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
 
-    private final RepliconManager repliconService;
-    private final HierarchyManager hierarchyService;
+    private final RepliconService repliconService;
+    private final HierarchyService hierarchyService;
 
     @Autowired
-    public StaticInitializer(RepliconManager repliconService, HierarchyManager hierarchyService) {
+    public StaticInitializer(RepliconService repliconService, HierarchyService hierarchyService) {
         this.repliconService = repliconService;
         this.hierarchyService = hierarchyService;
     }

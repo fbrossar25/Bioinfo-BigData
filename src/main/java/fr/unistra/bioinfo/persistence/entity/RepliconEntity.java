@@ -12,7 +12,7 @@ import java.util.Map;
 @Entity
 public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>{
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue
     private Long id;
 
     @Column(nullable = false)
