@@ -2,13 +2,14 @@ package fr.unistra.bioinfo.genbank;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.model.Hierarchy;
 import fr.unistra.bioinfo.model.Replicon;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -23,28 +24,60 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    public static final Integer REQUEST_LIMIT = 10;
     public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3 */
     public static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
     public static final String EUTILS_EFETCH = "efetch.fcgi";
-    public static final int BATCH_INSERT_SIZE = 1000;
     private static Map<String, Hierarchy> HIERARCHY_DB = new HashMap<>();
     static{
         loadLocalDatabase();
     }
 
-    public static List<File> downloadReplicons(List<Replicon> replicons){
-        throw new NotImplementedException("TODO");
+    public static List<Replicon> getAllReplicons(){
+        List<Replicon> replicons = new ArrayList<>();
+        HIERARCHY_DB.values().forEach(h -> replicons.addAll(h.getReplicons().values()));
+        return replicons;
+    }
+
+    public static void downloadReplicons(List<Replicon> replicons, final CompletableFuture<List<File>> callback) {
+        final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
+        final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
+        final RateLimiter rateLimiter = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
+
+        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, rateLimiter)));
+        try {
+            final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
+            if(callback != null){
+                new Thread(() -> {
+                    try {
+                        ses.shutdown();
+                        ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                        List<File> files = new ArrayList<>(replicons.size());
+                        for(Future<File> future : futuresFiles){
+                            files.add(future.get());
+                        }
+                        callback.complete(files);
+                    } catch (ExecutionException | InterruptedException e) {
+                        LOGGER.error("Erreur d'attente de terminaison des téléchargements",e);
+                    }
+                }).start();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.error("Erreur durant les téléchargements des replicons",e);
+        }
+    }
+
+    public static void downloadAllReplicons(CompletableFuture<List<File>> callback) throws IOException{
+        downloadReplicons(getAllReplicons(), callback);
     }
 
     public static URI getEUtilsLink(String application, Map<String, String> params) throws URISyntaxException {
@@ -107,7 +140,9 @@ public class GenbankUtils {
         String uri = "";
         try{
             URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
-            builder.setParameter("limit", "0");
+            // TODO enlever la limite après tests
+//            builder.setParameter("limit", "0");
+            builder.setParameter("limit", "5");
             builder.setParameter("q","[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"]"+(ncOnly ? " and replicons like \"*NC_*\"" : "")+")");
             uri = builder.build().toString();
         }catch(URISyntaxException e){
@@ -158,6 +193,14 @@ public class GenbankUtils {
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
+    public static Path getPathOfOrganism(Hierarchy h){
+        return Paths.get(h.getKingdom(), h.getGroup(), h.getSubgroup(), h.getOrganism());
+    }
+
+    public static Path getPathOfReplicon(Replicon h){
+        return getPathOfOrganism(h.getHierarchy()).resolve(h.getReplicon()+".gb");
+    }
+
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.
      * @return le singleton de la base de données des hierarchy
@@ -166,6 +209,9 @@ public class GenbankUtils {
     public static Map<String, Hierarchy> updateNCDatabase() throws IOException {
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
+        SimpleModule genBankModule = new SimpleModule();
+        genBankModule.addDeserializer(Hierarchy.class, new JSONUtils.HierarchyFromGenbankDeserializer());
+        mapper.registerModule(genBankModule);
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
@@ -209,9 +255,10 @@ public class GenbankUtils {
         File dbFile = CommonUtils.DATABASE_PATH.toFile();
         if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
             try {
-                JSONUtils.readFromFile(CommonUtils.DATABASE_PATH).forEach((hierarchy) ->
-                        HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy)
-                );
+                JSONUtils.readFromFile(CommonUtils.DATABASE_PATH).forEach((hierarchy) ->{
+                    HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy);
+                    hierarchy.getReplicons().values().forEach(r -> r.setHierarchy(hierarchy));
+                });
                 LOGGER.info(HIERARCHY_DB.size()+" entrées chargées");
             } catch (IOException e) {
                 LOGGER.error("Erreur de lecture de la base de données '"+CommonUtils.DATABASE_PATH+"'",e);
@@ -221,7 +268,7 @@ public class GenbankUtils {
         }
     }
 
-    private static List<Replicon> extractRepliconsFromJSONEntry(String repliconsList, Hierarchy hierarchy) {
+    public static List<Replicon> extractRepliconsFromJSONEntry(String repliconsList, Hierarchy hierarchy) {
         List<Replicon> replicons = new ArrayList<>();
         String[] repliconsJSONValues = repliconsList.split(";");
         Matcher m;
@@ -258,6 +305,10 @@ public class GenbankUtils {
      */
     public static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
+    }
+
+    public static BufferedReader readRequest(URL requestURL) throws IOException {
+        return new BufferedReader(new InputStreamReader(requestURL.openStream()));
     }
 
     /**

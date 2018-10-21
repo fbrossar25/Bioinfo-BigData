@@ -20,12 +20,15 @@ public class Hierarchy implements Comparable<Hierarchy>{
 
     public Hierarchy(){}
 
-    public Hierarchy(String kingdom, String group, String subgroup, String organism) {
+    public Hierarchy(String kingdom, String group, String subgroup, String organism, String replicons) {
         super();
         setOrganism(organism);
         setKingdom(kingdom);
         setGroup(group);
         setSubgroup(subgroup);
+        for(Replicon r : GenbankUtils.extractRepliconsFromJSONEntry(replicons, this)){
+            this.replicons.put(r.getReplicon(), r);
+        }
     }
 
     public String getOrganism() {
@@ -80,6 +83,7 @@ public class Hierarchy implements Comparable<Hierarchy>{
 
     public void updateReplicons(Collection<Replicon> repliconsToUpdate) {
         for(Replicon repliconToUpdate : repliconsToUpdate){
+            repliconToUpdate.setHierarchy(this);
             if(!replicons.containsKey(repliconToUpdate.getReplicon())){
                 replicons.put(repliconToUpdate.getReplicon(), repliconToUpdate);
             }else{
