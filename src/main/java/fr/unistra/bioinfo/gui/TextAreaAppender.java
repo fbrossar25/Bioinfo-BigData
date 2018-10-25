@@ -1,6 +1,8 @@
 package fr.unistra.bioinfo.gui;
 
+import javafx.application.Platform;
 import javafx.scene.control.TextArea;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -22,6 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class TextAreaAppender extends AbstractAppender {
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Lock readLock = rwLock.readLock();
+    private final StringBuffer buffer = new StringBuffer(1024);
 
     private static TextArea ta;
 
@@ -31,11 +34,25 @@ public class TextAreaAppender extends AbstractAppender {
 
     @Override
     public void append(LogEvent event) {
+        if (ta == null) {
+            return;
+        }
         readLock.lock();
         try {
             final byte[] bytes = getLayout().toByteArray(event);
             String s = new String(bytes, StandardCharsets.UTF_8);
-            ta.appendText(s);
+            String[] lines = StringUtils.split(buffer.append(s).toString(), System.lineSeparator());
+            int numberOfLines = lines.length;
+            int overFlowLines = numberOfLines - 200; //200 lignes maximum
+            if(overFlowLines > 0){
+                buffer.setLength(0);
+                for(int i=overFlowLines; i<numberOfLines; i++){
+                    buffer.append(lines[i]).append(System.lineSeparator());
+                }
+                Platform.runLater(() -> ta.setText(buffer.toString()));
+            }else{
+                Platform.runLater(() -> ta.appendText(s));
+            }
         } catch (Exception ex) {
             if (!ignoreExceptions()) {
                 throw new AppenderLoggingException(ex);
@@ -43,6 +60,10 @@ public class TextAreaAppender extends AbstractAppender {
         } finally {
             readLock.unlock();
         }
+    }
+
+    public void clear(){
+        ta.clear();
     }
 
     // Your custom appender needs to declare a factory method

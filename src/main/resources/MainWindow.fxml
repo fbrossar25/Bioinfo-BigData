@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
 
-<BorderPane fx:id="panelPrincipal" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.unistra.bioinfo.gui.MainWindowController">
+<BorderPane fx:id="panelPrincipal" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.unistra.bioinfo.gui.MainWindowController">
    <top>
       <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
          <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
@@ -25,7 +25,7 @@
    <left>
       <BorderPane>
          <center>
-            <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0" />
+            <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0"/>
          </center>
       </BorderPane>
    </left>
@@ -33,11 +33,10 @@
       <BorderPane BorderPane.alignment="CENTER">
          <center>
             <Pane prefHeight="200.0" prefWidth="200.0">
-               <children>
-                  <Label layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés" />
-                  <Button fx:id="btnMain" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer" text="Démarrer" />
-                  <ProgressBar layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
-               </children>
+               <Label layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés"/>
+               <Button fx:id="btnDemarrer" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer"
+                       text="Démarrer"/>
+               <ProgressBar layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0"/>
             </Pane>
          </center>
          <bottom>

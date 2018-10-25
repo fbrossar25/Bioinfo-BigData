@@ -13,17 +13,21 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
 public class Main extends Application {
     private static MainWindowController mainWindowController;
+    private static final Logger LOGGER = LogManager.getLogger();
     public static void main(String [] args){
         Thread.setDefaultUncaughtExceptionHandler(Main::defaultErrorHandling);
         launch(args);
     }
 
     private static void defaultErrorHandling(Thread t, Throwable e){
+        LOGGER.error("Erreur non gérée", e);
         new ExceptionDialog(t, e);
     }
 

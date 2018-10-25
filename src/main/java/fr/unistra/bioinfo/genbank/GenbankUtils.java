@@ -212,13 +212,15 @@ public class GenbankUtils {
         genBankModule.addDeserializer(Hierarchy.class, new JSONUtils.HierarchyFromGenbankDeserializer());
         mapper.registerModule(genBankModule);
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
+            LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
             throw new IOException("Erreur lors du téléchargement de la liste des entrées", e);
         }
         JsonNode dataNode = genbankJSON.get("ngout").get("data");
         JsonNode contentNode = dataNode.get("content");
-        LOGGER.info("Traitement de "+dataNode.get("totalCount").intValue()+" entrées");
+        int numberOfOrganisms = dataNode.get("totalCount").intValue(), i =0;
+        LOGGER.info("Traitement de "+numberOfOrganisms+" entrées");
         for(JsonNode entry : contentNode) {
             String organism = entry.get("organism").textValue();
             //Création de l'entrée en BDD
@@ -227,6 +229,9 @@ public class GenbankUtils {
             }
             Hierarchy h = HIERARCHY_DB.get(organism);
             h.updateReplicons(extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h));
+            if(++i % 100 == 0){
+                LOGGER.debug(i+"/"+numberOfOrganisms+" organismes traités");
+            }
         }
         JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, HIERARCHY_DB.values());
         //JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
@@ -254,11 +259,17 @@ public class GenbankUtils {
         File dbFile = CommonUtils.DATABASE_PATH.toFile();
         if(dbFile.exists() && dbFile.isFile() && dbFile.canRead()){
             try {
-                JSONUtils.readFromFile(CommonUtils.DATABASE_PATH).forEach((hierarchy) ->{
+                List<Hierarchy> hierarchies = JSONUtils.readFromFile(CommonUtils.DATABASE_PATH);
+                int i = 0, numberOfHierarchies = hierarchies.size();
+                LOGGER.info("Le fichier '"+dbFile.getAbsolutePath()+"' contient "+numberOfHierarchies+" entrées");
+                for(Hierarchy hierarchy : hierarchies){
                     HIERARCHY_DB.put(hierarchy.getOrganism(), hierarchy);
                     hierarchy.getReplicons().values().forEach(r -> r.setHierarchy(hierarchy));
-                });
-                LOGGER.info(HIERARCHY_DB.size()+" entrées chargées");
+                    if(++i % 100 == 0){
+                        LOGGER.debug(i+"/"+numberOfHierarchies+" organismes chargés");
+                    }
+                }
+                LOGGER.info("Tout les organismes et leurs replicons ont été chargés depuis le fichier '"+dbFile.getAbsolutePath()+"'");
             } catch (IOException e) {
                 LOGGER.error("Erreur de lecture de la base de données '"+CommonUtils.DATABASE_PATH+"'",e);
             }
