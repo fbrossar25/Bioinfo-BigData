@@ -1,6 +1,5 @@
 package fr.unistra.bioinfo.gui;
 
-import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
@@ -13,8 +12,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
-
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,7 +34,7 @@ public class TextAreaAppender extends AbstractAppender {
         readLock.lock();
         try {
             final byte[] bytes = getLayout().toByteArray(event);
-            String s = new String(bytes, "UTF-8");
+            String s = new String(bytes, StandardCharsets.UTF_8);
             ta.appendText(s);
         } catch (Exception ex) {
             if (!ignoreExceptions()) {

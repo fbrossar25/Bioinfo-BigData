@@ -9,7 +9,7 @@
         </File>
     </Appenders>
     <Loggers>
-        <Logger name="fr.unistra" level="DEBUG" additivity="false">
+        <Logger name="fr.unistra" level="TRACE" additivity="false">
             <AppenderRef ref="console" />
             <AppenderRef ref="logfile" />
         </Logger>

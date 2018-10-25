@@ -1,9 +1,9 @@
 package fr.unistra.bioinfo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.unistra.bioinfo.common.CommonUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,32 +11,14 @@ import java.util.Map;
 public class Replicon implements Comparable<Replicon> {
     private String replicon;
     private Integer version = 1;
+    @JsonIgnore
     private Hierarchy hierarchy;
     private Map<String, Integer> trinucleotides = new HashMap<>();
     private Map<String, Integer> dinucleotides = new HashMap<>();
     private boolean isDownloaded = false;
     private boolean isComputed = false;
 
-    public Replicon (JSONObject json, Hierarchy hierarchy){
-        resetCounters();
-        replicon = (String)json.get("replicon");
-        this.hierarchy = hierarchy;
-        this.isDownloaded = json.getBoolean("isDownloaded");
-        this.isComputed = json.getBoolean("isComputed");
-        this.version = json.getInt("version");
-        int i = 0;
-        JSONArray diArray = json.getJSONArray("dinucleotides");
-        for(String di : CommonUtils.DINUCLEOTIDES){
-            dinucleotides.put(di, i >= diArray.length() ? 0 : (Integer)diArray.get(i));
-            i++;
-        }
-        i = 0;
-        JSONArray triArray = json.getJSONArray("trinucleotides");
-        for(String tri : CommonUtils.TRINUCLEOTIDES){
-            trinucleotides.put(tri, i >= triArray.length() ? 0 : (Integer)triArray.get(i));
-            i++;
-        }
-    }
+    public Replicon(){}
 
     public Replicon(String replicon, Hierarchy hierarchy) {
         this(replicon, 1, hierarchy);
@@ -142,19 +124,8 @@ public class Replicon implements Comparable<Replicon> {
         return ObjectUtils.compare(replicon + version, o.replicon + o.version);
     }
 
-    public JSONObject toJson() {
-        JSONObject json = new JSONObject();
-        json.put("replicon",this.replicon);
-        json.put("version",this.version);
-        json.put("isDownloaded",this.isDownloaded);
-        json.put("isComputed",this.isComputed);
-        json.put("trinucleotides",this.trinucleotides.values());
-        json.put("dinucleotides",this.dinucleotides.values());
-        return json;
-    }
-
     public void updateWith(Replicon other) {
-        if(other.version > this.version){
+        if(StringUtils.equals(replicon, other.replicon) && other.version > this.version){
             //Mise à jour
             this.isDownloaded = false;
             this.isComputed = false;

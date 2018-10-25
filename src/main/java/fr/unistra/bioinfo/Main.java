@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
 import fr.unistra.bioinfo.gui.MainWindowController;
@@ -10,11 +11,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextArea;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
-import java.nio.file.Paths;
 import java.util.Optional;
 
 public class Main extends Application {
@@ -48,7 +47,7 @@ public class Main extends Application {
     }
 
     public static void generateOrganismDirectories(){
-        GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
+        GenbankUtils.createAllOrganismsDirectories(CommonUtils.RESULTS_PATH);
     }
 
     public static MainWindowController getMainWindowController(){
