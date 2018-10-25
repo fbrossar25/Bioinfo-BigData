@@ -10,6 +10,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class MainWindowController {
     public static Logger LOGGER = LogManager.getLogger();
@@ -21,12 +25,14 @@ public class MainWindowController {
     @FXML public MenuItem btnSupprimerFichiersGEnomes;
     @FXML public MenuItem btnQuitter;
     @FXML public TextArea logs;
-    public TreeView<String> treeView;
+    @FXML public TreeView<Path> treeView;
+
+    private static boolean init = true;
+    private static final String ROOT_FOLDER = "Results";
 
     //Méthode appelée juste après le constructeur du controleur
     @FXML
     public void initialize(){
-    public static int count = 0;
 
     }
 
@@ -37,12 +43,17 @@ public class MainWindowController {
             GenbankUtils.updateNCDatabase();
             Main.generateOrganismDirectories();
         } catch (IOException e) {
-            LOGGER.error("Erreur lros de la mise à jour de la base de données", e);
+            LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
         }
-        if(count == 0){
-            createArborescence();
+        if(init){
+            try {
+                createArborescence();
+            }catch(IOException e){
+                LOGGER.error("Erreur lors de la création de l'arborescence");
+                e.printStackTrace();
+            }
+                init = false;
         }else{
-            count ++;
             updateArborescence();
         }
     }
@@ -60,17 +71,39 @@ public class MainWindowController {
         Main.openExitDialog(actionEvent);
     }
 
-    private void createArborescence(){
-        TreeItem<String> root = new TreeItem<String>("Root Node");
-        root.setExpanded(true);
-        root.getChildren().addAll(new TreeItem<String>("Item 1"), new TreeItem<String>("Item 2"), new TreeItem<String>("Item 3"));
-        treeView.setRoot(root);
+    private void createArborescence() throws IOException{
+        // create root
+        TreeItem<Path> treeItem = new TreeItem<Path>(Paths.get( ROOT_FOLDER));
+        treeItem.setExpanded(true);
+
+        createTree( treeItem);
+
+        treeView.setRoot(treeItem);
+    }
+
+    public static void createTree(TreeItem<Path> rootItem) throws IOException{
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(rootItem.getValue())) {
+            for (Path path : directoryStream) {
+                Path p = Paths.get(path.getParent().toString(),path.toString());
+                int count = path.getNameCount();
+
+                TreeItem<Path> newItem = new TreeItem<Path>(path.getName(count));
+                newItem.setExpanded(true);
+
+                rootItem.getChildren().add(newItem);
+
+                if (Files.isDirectory(p)) {
+                    createTree(newItem);
+                }
+            }
+        }
     }
 
     private void updateArborescence(){
-        TreeItem<String> root = treeView.getRoot();
-        root.getChildren().add(new TreeItem<>("Item 4"));
+        TreeItem<Path> root = treeView.getRoot();
         treeView.setRoot(root);
+
+
     }
 
 }
