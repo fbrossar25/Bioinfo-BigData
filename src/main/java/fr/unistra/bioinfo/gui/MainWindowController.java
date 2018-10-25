@@ -76,24 +76,23 @@ public class MainWindowController {
         TreeItem<Path> treeItem = new TreeItem<Path>(Paths.get( ROOT_FOLDER));
         treeItem.setExpanded(true);
 
-        createTree( treeItem);
+        createTree("", treeItem);
 
         treeView.setRoot(treeItem);
     }
 
-    public static void createTree(TreeItem<Path> rootItem) throws IOException{
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(rootItem.getValue())) {
+    public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
+        Path p = Paths.get(pathToParent,rootItem.getValue().toString());
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(p)) {
             for (Path path : directoryStream) {
-                Path p = Paths.get(path.getParent().toString(),path.toString());
-                int count = path.getNameCount();
-
+                int count= path.getNameCount()-1;
                 TreeItem<Path> newItem = new TreeItem<Path>(path.getName(count));
                 newItem.setExpanded(true);
 
                 rootItem.getChildren().add(newItem);
 
-                if (Files.isDirectory(p)) {
-                    createTree(newItem);
+                if (Files.isDirectory(path)) {
+                    createTree(pathToParent+rootItem.getValue().toString()+"/", newItem);
                 }
             }
         }
