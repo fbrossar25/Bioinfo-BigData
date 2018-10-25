@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.*;
 import fr.unistra.bioinfo.model.Hierarchy;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -18,7 +20,11 @@ public class JSONUtils {
     public static void saveToFile(Path filePath, Collection<Hierarchy> hierarchies) throws IOException{
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(filePath.toFile(), hierarchies);
+        File f = filePath.toFile();
+        if(!f.exists()){
+            FileUtils.touch(f);
+        }
+        mapper.writeValue(f, hierarchies);
     }
 
     public static List<Hierarchy> readFromFile(Path filePath) throws IOException{

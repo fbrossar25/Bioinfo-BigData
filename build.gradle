@@ -9,7 +9,7 @@ version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
 
-mainClassName = "bioinfo.main.Main"
+mainClassName = "fr.unistra.bioinfo.Main"
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 applicationDefaultJvmArgs = ["-Dfile.encoding=UTF-8"]
@@ -35,6 +35,12 @@ dependencies {
     implementation group: 'com.google.guava', name: 'guava', version: '26.0-jre'
     // extension de guava
     implementation "com.github.rholder:guava-retrying:2.0.0"
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": mainClassName)
+    }
 }
 
 test {

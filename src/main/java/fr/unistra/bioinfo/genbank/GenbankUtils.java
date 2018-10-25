@@ -140,9 +140,8 @@ public class GenbankUtils {
         String uri = "";
         try{
             URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
-            // TODO enlever la limite après tests
-//            builder.setParameter("limit", "0");
-            builder.setParameter("limit", "5");
+            builder.setParameter("limit", "0"); // 0 -> charge tous les résultats
+            //builder.setParameter("limit", "5"); // charge les 5 premiers résultats
             builder.setParameter("q","[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"]"+(ncOnly ? " and replicons like \"*NC_*\"" : "")+")");
             uri = builder.build().toString();
         }catch(URISyntaxException e){
