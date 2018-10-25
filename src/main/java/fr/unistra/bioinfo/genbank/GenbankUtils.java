@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.genbank;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unistra.bioinfo.Main;
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -158,9 +159,11 @@ public class GenbankUtils {
 
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.
+     * Les logs d'hibernante sont désactivés pour cette méthodes
      * @throws IOException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws IOException {
+        CommonUtils.disableHibernateLogging();
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
@@ -170,16 +173,33 @@ public class GenbankUtils {
         }
         JsonNode dataNode = genbankJSON.get("ngout").get("data");
         JsonNode contentNode = dataNode.get("content");
-        LOGGER.info("Traitement de "+dataNode.get("totalCount").intValue()+" entrées");
+        int organismCount = 0, organismTotal = dataNode.get("totalCount").intValue();
+        LOGGER.info("Traitement de "+organismTotal+" organismes");
+        List<RepliconEntity> replicons = new ArrayList<>(organismTotal);
         for(JsonNode entry : contentNode) {
-            String kingdom = entry.get("kingdom").textValue();
-            String group = entry.get("group").textValue();
-            String subgroup = entry.get("subgroup").textValue();
             String organism = entry.get("organism").textValue();
-            HierarchyEntity h = new HierarchyEntity(kingdom, group, subgroup, organism);
-            extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h).forEach(h::addRepliconEntity);
-            hierarchyService.save(h);
+            HierarchyEntity h = hierarchyService.getByOrganism(organism);
+            if(h == null){
+                String kingdom = entry.get("kingdom").textValue();
+                String group = entry.get("group").textValue();
+                String subgroup = entry.get("subgroup").textValue();
+                h = new HierarchyEntity(kingdom, group, subgroup, organism);
+                hierarchyService.save(h);
+            }
+            organismCount++;
+            if(organismCount % 100 == 0){
+                LOGGER.info(organismCount+"/"+organismTotal+" organismes traités");
+            }
+            LOGGER.trace("Traitement de l'organisme "+h);
+            List<RepliconEntity> extractedReplicons = extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h);
+            replicons.addAll(extractedReplicons);
+            for(RepliconEntity r : extractedReplicons){
+                r.setHierarchyEntity(h);
+            }
         }
+        LOGGER.info("Sauvegarde de "+replicons.size()+" replicons");
+        repliconService.saveAll(replicons);
+        CommonUtils.enableHibernateLogging(false);
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){

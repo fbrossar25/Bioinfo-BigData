@@ -1,5 +1,7 @@
 package fr.unistra.bioinfo.common;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import fr.unistra.bioinfo.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,47 @@ public class CommonUtils {
         TRINUCLEOTIDES = Collections.unmodifiableSet(triset);
         LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.toArray()));
         LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.toArray()));
+    }
+
+    /**
+     * Définis le niveau de log du package donné
+     * @param packageName le package
+     * @param level le niveau de log
+     * @return l'ancien niveau de log du package ou null s'il n'a pas été trouvé
+     */
+    public static Level setLogLevelForPackage(String packageName, Level level){
+        if(packageName == null){
+            return null;
+        }
+        LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
+        ch.qos.logback.classic.Logger rootLogger = loggerContext.getLogger(packageName);
+        if(rootLogger == null){
+            return null;
+        }
+        Level previousLevel = rootLogger.getLevel();
+        rootLogger.setLevel(level);
+        return previousLevel;
+    }
+
+    /**
+     * Définis le niveau de log d'hibernate à erreur uniquement
+     */
+    public static void disableHibernateLogging(){
+        LOGGER.info("Désactivation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"'");
+        setLogLevelForPackage("org.hibernate.SQL", Level.ERROR);
+        setLogLevelForPackage("org.hibernate.type.descriptor.sql", Level.ERROR);
+    }
+
+    /**
+     * Active le logging des requêtes d'hibernate
+     * @param preventBindingLogging si true, empêche le logging des binding (paramètres des requêtes)
+     */
+    public static void enableHibernateLogging(boolean preventBindingLogging){
+        LOGGER.info("Activation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"' "+(preventBindingLogging ? "avec" : "sans") + " les bindings");
+        setLogLevelForPackage("org.hibernate.SQL", Level.DEBUG);
+        if(!preventBindingLogging){
+            setLogLevelForPackage("org.hibernate.type.descriptor.sql", Level.TRACE);
+        }
     }
 
     public static URL getResourceURL(@NonNull String resourceName) throws IOException {

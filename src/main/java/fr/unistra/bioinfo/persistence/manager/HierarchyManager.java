@@ -8,4 +8,6 @@ import java.util.List;
 public interface HierarchyManager extends IManager<HierarchyEntity, Long> {
     @Query("from HierarchyEntity")
     List<HierarchyEntity> getAll();
+
+    HierarchyEntity getByOrganism(String organism);
 }

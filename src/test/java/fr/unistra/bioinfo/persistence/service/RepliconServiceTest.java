@@ -1,11 +1,14 @@
 package fr.unistra.bioinfo.persistence.service;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
@@ -17,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
@@ -24,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class RepliconServiceTest {
+    public static final Logger LOGGER = LoggerFactory.getLogger(RepliconServiceTest.class);
+
     @Autowired
     private RepliconService repliconService;
 
@@ -38,6 +44,7 @@ class RepliconServiceTest {
 
     @Test
     public void removeTest(){
+        CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", 1, h);
         repliconService.save(r);
@@ -49,11 +56,14 @@ class RepliconServiceTest {
         assertNotNull(h.getId());
         assertTrue(hierarchyService.existsById(h.getId()));
         assertFalse(repliconService.existsById(rId));
-        assertTrue(h.getRepliconEntities().isEmpty());
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
+        assertNotNull(replicons);
+        assertTrue(replicons.isEmpty());
     }
 
     @Test
     public void saveTest(){
+        CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", 1, h);
         repliconService.save(r);
@@ -66,26 +76,31 @@ class RepliconServiceTest {
         assertEquals(r.getHierarchyEntity(), h);
         assertTrue(repliconService.existsById(r.getId()));
         assertTrue(hierarchyService.existsById(h.getId()));
-        assertFalse(h.getRepliconEntities().isEmpty());
-        assertTrue(h.getRepliconEntities().contains(r));
+
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
+        assertNotNull(replicons);
+        assertFalse(replicons.isEmpty());
+        assertTrue(replicons.contains(r));
     }
 
     @Test
     public void batchSaveTest(){
+        CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1","G1","S1","O1");
         int N = 10000;
         //Création de N replicons
-        List<RepliconEntity> replicons = new ArrayList<>(N);
+        List<RepliconEntity> replicons = Collections.synchronizedList(new ArrayList<>(N));
         IntStream
                 .range(0, N)
                 .parallel()
-                .forEach(i -> {
-            synchronized (replicons){
-                replicons.add(new RepliconEntity("R"+i,1, h));
-            }
-        });
+                .forEach(i -> replicons.add(new RepliconEntity("R"+i,1, h)));
 
-       repliconService.saveAll(replicons);
+        long begin = System.currentTimeMillis();
+        assertTimeout(ofSeconds(60), () ->
+                repliconService.saveAll(replicons)
+        );
+        long end = System.currentTimeMillis();
+        LOGGER.info("Save time ("+N+" entities) : "+(end - begin)+"ms");
 
         //Tests
         assertEquals(replicons.size(), repliconService.count().longValue());
@@ -93,6 +108,12 @@ class RepliconServiceTest {
         Collections.sort(replicons);
         Collections.sort(allReplicons);
         assertEquals(replicons.size(), allReplicons.size());
-        IntStream.range(0, 10000).parallel().forEach(i -> assertEquals(replicons.get(i), allReplicons.get(i)));
+        List<RepliconEntity> repliconsByHierarchy = new ArrayList<>(replicons.size());
+        assertTimeout(ofSeconds(10), () ->
+            repliconsByHierarchy.addAll(repliconService.getByHierarchy(h))
+        );
+        assertNotNull(repliconsByHierarchy);
+        assertEquals(repliconsByHierarchy.size(), allReplicons.size());
+        IntStream.range(0, N).parallel().forEach(i -> assertEquals(replicons.get(i), allReplicons.get(i)));
     }
 }

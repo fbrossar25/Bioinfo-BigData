@@ -1,46 +1,62 @@
 package fr.unistra.bioinfo.persistence.service.impl;
 
+import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
 import fr.unistra.bioinfo.persistence.manager.RepliconManager;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
-import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.List;
 
 @Service
+@Transactional
 public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Long> implements RepliconService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepliconServiceImpl.class);
     private final RepliconManager repliconManager;
+    private final HierarchyManager hierarchyManager;
 
     @Autowired
-    public RepliconServiceImpl(RepliconManager repliconManager, EntityManagerFactory entityManagerFactory) {
+    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager, EntityManagerFactory entityManagerFactory) {
         super(entityManagerFactory, RepliconEntity.class);
         this.repliconManager = repliconManager;
+        this.hierarchyManager = hierarchyManager;
     }
 
     @Override
-    public void delete(RepliconEntity entity) {
-        if(entity.getHierarchyEntity() != null){
-            entity.getHierarchyEntity().removeRepliconEntity(entity);
+    public RepliconEntity save(RepliconEntity entity) {
+        HierarchyEntity h = entity.getHierarchyEntity();
+        if(h != null && h.getId() == null){
+            hierarchyManager.save(h);
         }
-        super.delete(entity);
+        return super.save(entity);
     }
 
     @Override
-    public void deleteAll(List<RepliconEntity> entities) {
-        if(CollectionUtils.isNotEmpty(entities)){
-            entities.forEach(e -> {
-                if(e.getHierarchyEntity() != null){
-                    e.getHierarchyEntity().removeRepliconEntity(e);
-                }
-            });
+    public List<RepliconEntity> saveAll(List<RepliconEntity> entities) {
+        for(RepliconEntity entity : entities){
+            HierarchyEntity h = entity.getHierarchyEntity();
+            if(h != null && h.getId() == null){
+                hierarchyManager.save(h);
+            }
         }
-        super.deleteAll(entities);
+        return super.saveAll(entities);
     }
 
     public RepliconManager getManager(){
         return repliconManager;
+    }
+
+    @Override
+    public List<RepliconEntity> getByHierarchy(HierarchyEntity hierarchy) {
+        LOGGER.debug("Calling with '"+hierarchy.getOrganism()+"'");
+        List<RepliconEntity> entities = repliconManager.getAllByHierarchyEntity(hierarchy);
+        LOGGER.debug("Matched '"+entities.size()+"' replicons");
+        return entities;
     }
 }

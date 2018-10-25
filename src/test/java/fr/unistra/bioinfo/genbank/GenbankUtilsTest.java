@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(SpringExtension.class)
 @Import({StaticInitializer.class})
 @SpringBootTest
+@TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankUtilsTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 

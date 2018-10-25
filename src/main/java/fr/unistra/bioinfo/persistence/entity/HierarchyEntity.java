@@ -3,12 +3,11 @@ package fr.unistra.bioinfo.persistence.entity;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
 @Entity
 public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntity>{
@@ -28,9 +27,9 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
     @Column(nullable = false)
     private String organism;
 
-    @OneToMany(mappedBy = "hierarchyEntity", orphanRemoval = true, cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private List<RepliconEntity> repliconEntities = new ArrayList<>();
+//    @OneToMany(mappedBy = "hierarchyEntity", orphanRemoval = true, cascade = CascadeType.REMOVE)
+//    @OnDelete(action = OnDeleteAction.CASCADE)
+//    private List<RepliconEntity> repliconEntities = new ArrayList<>();
 
     public HierarchyEntity(){}
 
@@ -82,36 +81,36 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
         this.organism = organism;
     }
 
-    /**
-     * @return une copie défensive de la liste des repliconEntities de l'auteur
-     */
-    public List<RepliconEntity> getRepliconEntities() {
-        return new ArrayList<>(repliconEntities);
-    }
-
-    public void addRepliconEntity(RepliconEntity repliconEntity){
-        addRepliconEntity(repliconEntity, true);
-    }
-
-    public void addRepliconEntity(RepliconEntity repliconEntity, boolean set){
-        if(repliconEntity != null){
-            if(repliconEntities.contains(repliconEntity)){
-                repliconEntities.set(repliconEntities.indexOf(repliconEntity), repliconEntity);
-            }else{
-                repliconEntities.add(repliconEntity);
-            }
-            if(set){
-                repliconEntity.setHirarchyEntity(this, false);
-            }
-        }
-    }
-
-    public void removeRepliconEntity(RepliconEntity repliconEntity){
-        if(repliconEntity != null && repliconEntities.contains(repliconEntity)){
-            repliconEntities.remove(repliconEntity);
-            repliconEntity.setHierarchyEntity(null);
-        }
-    }
+//    /**
+//     * @return une copie défensive de la liste des repliconEntities de l'auteur
+//     */
+//    public List<RepliconEntity> getRepliconEntities() {
+//        return new ArrayList<>(repliconEntities);
+//    }
+//
+//    public void addRepliconEntity(RepliconEntity repliconEntity){
+//        addRepliconEntity(repliconEntity, true);
+//    }
+//
+//    public void addRepliconEntity(RepliconEntity repliconEntity, boolean set){
+//        if(repliconEntity != null){
+//            if(repliconEntities.contains(repliconEntity)){
+//                repliconEntities.set(repliconEntities.indexOf(repliconEntity), repliconEntity);
+//            }else{
+//                repliconEntities.add(repliconEntity);
+//            }
+//            if(set){
+//                repliconEntity.setHirarchyEntity(this, false);
+//            }
+//        }
+//    }
+//
+//    public void removeRepliconEntity(RepliconEntity repliconEntity){
+//        if(repliconEntity != null && repliconEntities.contains(repliconEntity)){
+//            repliconEntities.remove(repliconEntity);
+//            repliconEntity.setHierarchyEntity(null);
+//        }
+//    }
 
     @Override
     public boolean equals(Object object) {
@@ -134,6 +133,8 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
                 .append(id)
                 .append(kingdom)
                 .append(group)
+                .append(subgroup)
+                .append(organism)
                 .build();
     }
 
@@ -146,4 +147,8 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
                 .append(organism, o.organism)
                 .build();
     }
+
+//    public boolean containsReplicon(RepliconEntity r) {
+//        return this.repliconEntities.contains(r);
+//    }
 }

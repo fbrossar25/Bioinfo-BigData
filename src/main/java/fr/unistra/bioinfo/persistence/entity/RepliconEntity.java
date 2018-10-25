@@ -21,7 +21,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private Integer version = 1;
 
-    @ManyToOne(cascade = {CascadeType.REFRESH, CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST})
+    @ManyToOne
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 
@@ -79,17 +79,21 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     }
 
     public void setHierarchyEntity(HierarchyEntity hierarchyEntity) {
-        setHirarchyEntity(hierarchyEntity, true);
+        this.hierarchyEntity = hierarchyEntity;
     }
 
-    public void setHirarchyEntity(HierarchyEntity hierarchyEntity, boolean add) {
-        if(this.hierarchyEntity == null || !this.hierarchyEntity.equals(hierarchyEntity)){
-            this.hierarchyEntity = hierarchyEntity;
-            if(add && hierarchyEntity != null){
-                hierarchyEntity.addRepliconEntity(this, false);
-            }
-        }
-    }
+    //    public void setHierarchyEntity(HierarchyEntity hierarchyEntity) {
+//        setHirarchyEntity(hierarchyEntity, true);
+//    }
+//
+//    public void setHirarchyEntity(HierarchyEntity hierarchyEntity, boolean add) {
+//        if(this.hierarchyEntity == null || !this.hierarchyEntity.equals(hierarchyEntity)){
+//            this.hierarchyEntity = hierarchyEntity;
+//            if(add && hierarchyEntity != null){
+//                hierarchyEntity.addRepliconEntity(this, false);
+//            }
+//        }
+//    }
 
     public Integer getVersion() {
         return version;
