@@ -2,17 +2,19 @@
 <Configuration packages="fr.unistra.bioinfo.gui">
     <Appenders>
         <Console name="console" target="SYSTEM_OUT" follow="true">
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </Console>
         <TextAreaAppender name="taa" >
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} - %msg%n" />
         </TextAreaAppender>
         <File name="logfile" fileName="logs/bioinfo.log" append="false">
             <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
         </File>
     </Appenders>
     <Loggers>
-        <Logger name="fr.unistra" level="INFO" additivity="false">
+        <Logger name="fr.unistra" level="TRACE" additivity="false">
             <AppenderRef ref="taa"/>
             <AppenderRef ref="console" />
             <AppenderRef ref="logfile" />
