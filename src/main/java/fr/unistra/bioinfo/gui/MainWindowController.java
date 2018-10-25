@@ -21,10 +21,12 @@ public class MainWindowController {
     @FXML public MenuItem btnSupprimerFichiersGEnomes;
     @FXML public MenuItem btnQuitter;
     @FXML public TextArea logs;
+    public TreeView<String> treeView;
 
     //Méthode appelée juste après le constructeur du controleur
     @FXML
     public void initialize(){
+    public static int count = 0;
 
     }
 
@@ -36,6 +38,12 @@ public class MainWindowController {
             Main.generateOrganismDirectories();
         } catch (IOException e) {
             LOGGER.error("Erreur lros de la mise à jour de la base de données", e);
+        }
+        if(count == 0){
+            createArborescence();
+        }else{
+            count ++;
+            updateArborescence();
         }
     }
 
@@ -51,4 +59,18 @@ public class MainWindowController {
     public void quitter(ActionEvent actionEvent) {
         Main.openExitDialog(actionEvent);
     }
+
+    private void createArborescence(){
+        TreeItem<String> root = new TreeItem<String>("Root Node");
+        root.setExpanded(true);
+        root.getChildren().addAll(new TreeItem<String>("Item 1"), new TreeItem<String>("Item 2"), new TreeItem<String>("Item 3"));
+        treeView.setRoot(root);
+    }
+
+    private void updateArborescence(){
+        TreeItem<String> root = treeView.getRoot();
+        root.getChildren().add(new TreeItem<>("Item 4"));
+        treeView.setRoot(root);
+    }
+
 }
