@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.gui;
 
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -16,11 +17,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MainWindowController {
-    public static Logger LOGGER = LogManager.getLogger();
+    private static Logger LOGGER = LogManager.getLogger();
+    private static MainWindowController singleton;
+
     @FXML public BorderPane panelPrincipal;
     @FXML public MenuBar barreMenu;
     @FXML public Menu menuFichier;
-    @FXML public Button btnMain;
+    @FXML public Button btnDemarrer;
     @FXML public MenuItem btnNettoyerDonnees;
     @FXML public MenuItem btnSupprimerFichiersGEnomes;
     @FXML public MenuItem btnQuitter;
@@ -33,32 +36,37 @@ public class MainWindowController {
     //Méthode appelée juste après le constructeur du controleur
     @FXML
     public void initialize(){
-
+        singleton = this;
+        TextAreaAppender.setTa(logs);
+        LOGGER.debug("treeView.isResizable() -> "+treeView.isResizable());
     }
 
     @FXML
     public void demarrer(ActionEvent actionEvent){
-        TextAreaAppender.setTa(logs);
-        try {
-            GenbankUtils.updateNCDatabase();
-            Main.generateOrganismDirectories();
-        } catch (IOException e) {
-            LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
-        }
-        try {
-            createArborescence();
-        }catch(IOException e){
-            LOGGER.error("Erreur lors de la création de l'arborescence");
-            e.printStackTrace();
-        }
+        btnDemarrer.setDisable(true);
+        new Thread(() -> {
+            try {
+                LOGGER.info("Mise à jour de la base de données");
+                GenbankUtils.updateNCDatabase();
+                Main.generateOrganismDirectories();
+                createArborescence();
+                LOGGER.info("Mise à jour terminée");
+            } catch (IOException e) {
+                LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
+            }finally {
+                btnDemarrer.setDisable(false);
+            }
+        }).start();
     }
 
     @FXML
     public void nettoyerDonnees(ActionEvent actionEvent) {
+        LOGGER.info("Nettoyage des données...");
     }
 
     @FXML
     public void supprimerFichiersGenomes(ActionEvent actionEvent) {
+        LOGGER.info("Nettoyage des fichiers genomes...");
     }
 
     @FXML
@@ -68,12 +76,12 @@ public class MainWindowController {
 
     private void createArborescence() throws IOException{
         // create root
-        TreeItem<Path> treeItem = new TreeItem<Path>(Paths.get( ROOT_FOLDER));
+        TreeItem<Path> treeItem = new TreeItem<>(Paths.get( ROOT_FOLDER));
         treeItem.setExpanded(true);
 
         createTree("", treeItem);
 
-        treeView.setRoot(treeItem);
+        Platform.runLater(() -> treeView.setRoot(treeItem));
     }
 
     //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
@@ -94,5 +102,7 @@ public class MainWindowController {
         }
     }
 
-
+    public static MainWindowController get(){
+        return singleton;
+    }
 }
