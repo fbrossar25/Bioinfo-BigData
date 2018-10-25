@@ -45,16 +45,11 @@ public class MainWindowController {
         } catch (IOException e) {
             LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
         }
-        if(init){
-            try {
-                createArborescence();
-            }catch(IOException e){
-                LOGGER.error("Erreur lors de la création de l'arborescence");
-                e.printStackTrace();
-            }
-                init = false;
-        }else{
-            updateArborescence();
+        try {
+            createArborescence();
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de la création de l'arborescence");
+            e.printStackTrace();
         }
     }
 
@@ -81,6 +76,7 @@ public class MainWindowController {
         treeView.setRoot(treeItem);
     }
 
+    //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
     public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
         Path p = Paths.get(pathToParent,rootItem.getValue().toString());
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(p)) {
@@ -98,11 +94,5 @@ public class MainWindowController {
         }
     }
 
-    private void updateArborescence(){
-        TreeItem<Path> root = treeView.getRoot();
-        treeView.setRoot(root);
-
-
-    }
 
 }
