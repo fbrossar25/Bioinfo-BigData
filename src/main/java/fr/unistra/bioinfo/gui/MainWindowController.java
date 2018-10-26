@@ -23,10 +23,12 @@ public class MainWindowController {
     @FXML public BorderPane panelPrincipal;
     @FXML public MenuBar barreMenu;
     @FXML public Menu menuFichier;
+    @FXML public Menu menuEdition;
     @FXML public Button btnDemarrer;
     @FXML public MenuItem btnNettoyerDonnees;
     @FXML public MenuItem btnSupprimerFichiersGEnomes;
     @FXML public MenuItem btnQuitter;
+    @FXML public MenuItem btnViderLogs;
     @FXML public TextArea logs;
     @FXML public TreeView<Path> treeView;
     @FXML public ProgressBar progressBar;
@@ -76,6 +78,12 @@ public class MainWindowController {
         Main.openExitDialog(actionEvent);
     }
 
+    @FXML
+    public void viderLogs(ActionEvent actionEvent){
+        TextAreaAppender.clear();
+    }
+
+
     private void createArborescence() throws IOException{
         // create root
         TreeItem<Path> treeItem = new TreeItem<>(Paths.get( ROOT_FOLDER));
@@ -85,7 +93,6 @@ public class MainWindowController {
 
         Platform.runLater(() -> treeView.setRoot(treeItem));
     }
-
     //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
     public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
         Path p = Paths.get(pathToParent,rootItem.getValue().toString());

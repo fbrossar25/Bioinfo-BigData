@@ -20,6 +20,11 @@
             <MenuItem fx:id="btnSupprimerFichiersGEnomes" mnemonicParsing="false" onAction="#supprimerFichiersGenomes" text="Supprimer les fichiers genomes" />
             <MenuItem fx:id="btnQuitter" mnemonicParsing="false" onAction="#quitter" text="Quitter" />
          </Menu>
+         <Menu fx:id="menuEdition" mnemonicParsing="false" text="Edition">
+           <items>
+             <MenuItem fx:id="btnViderLogs" mnemonicParsing="false" onAction="#viderLogs" text="Vider Logs" />
+           </items>
+         </Menu>
       </MenuBar>
    </top>
    <center>

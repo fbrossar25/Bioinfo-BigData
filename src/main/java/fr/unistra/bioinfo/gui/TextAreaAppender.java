@@ -63,7 +63,7 @@ public class TextAreaAppender extends AbstractAppender {
         }
     }
 
-    public void clear(){
+    public static void clear(){
         ta.clear();
     }
 
