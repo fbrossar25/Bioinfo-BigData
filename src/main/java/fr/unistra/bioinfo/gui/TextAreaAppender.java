@@ -13,6 +13,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.core.pattern.HighlightConverter;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -75,7 +76,7 @@ public class TextAreaAppender extends AbstractAppender {
             @PluginAttribute("name") String name,
             @PluginElement("Layout") Layout<? extends Serializable> layout,
             @PluginElement("Filter") final Filter filter,
-            @PluginAttribute("otherAttribute") String otherAttribute) {
+            @PluginAttribute("otherAttribute") String otherAttribute, @PluginElement("highlight") HighlightConverter highlightConverter) {
         if (name == null) {
             LOGGER.error("No name provided for MyCustomAppenderImpl");
             return null;

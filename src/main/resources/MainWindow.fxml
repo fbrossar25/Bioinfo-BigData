@@ -22,13 +22,6 @@
          </Menu>
       </MenuBar>
    </top>
-   <left>
-      <BorderPane>
-         <center>
-            <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0" />
-         </center>
-      </BorderPane>
-   </left>
    <center>
       <BorderPane BorderPane.alignment="CENTER">
          <center>
@@ -45,4 +38,11 @@
          </bottom>
       </BorderPane>
    </center>
+   <left>
+      <BorderPane BorderPane.alignment="CENTER">
+         <center>
+            <TreeView fx:id="treeView" prefHeight="571.0" prefWidth="248.0" BorderPane.alignment="CENTER" />
+         </center>
+      </BorderPane>
+   </left>
 </BorderPane>

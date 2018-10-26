@@ -3,14 +3,14 @@
     <Appenders>
         <Console name="console" target="SYSTEM_OUT" follow="true">
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
+            <PatternLayout pattern="%highlight{%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n}" />
         </Console>
         <TextAreaAppender name="taa" >
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} - %msg%n" />
+            <PatternLayout pattern=" %-5level : %date{HH:mm:ss.SSS} - %msg%n" />
         </TextAreaAppender>
         <File name="logfile" fileName="logs/bioinfo.log" append="false">
-            <PatternLayout pattern="%-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n" />
+            <PatternLayout pattern="%highlight{ %-5level : %date{HH:mm:ss.SSS} [thread : %t] : %class.%M (ligne %line) - %msg%n}" />
         </File>
     </Appenders>
     <Loggers>

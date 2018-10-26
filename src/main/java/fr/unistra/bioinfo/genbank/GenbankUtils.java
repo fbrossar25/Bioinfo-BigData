@@ -236,11 +236,11 @@ public class GenbankUtils {
                 float d = ((float)i / (float)numberOfOrganisms);
                 MainWindowController.get().progressBar.setProgress(d);
                 final int j = i;
-                Platform.runLater(()->MainWindowController.get().labelDownload.setText(j+"/"+numberOfOrganisms+" fichiers traités"));
+                Platform.runLater(()->MainWindowController.get().labelDownload.setText(j+"/"+numberOfOrganisms+" fichiers téléchargés"));
             }
         }
         MainWindowController.get().progressBar.setProgress(1.0F);
-        Platform.runLater(()->MainWindowController.get().labelDownload.setText(numberOfOrganisms+"/"+numberOfOrganisms+" fichiers traités"));
+        Platform.runLater(()->MainWindowController.get().labelDownload.setText(numberOfOrganisms+"/"+numberOfOrganisms+" fichiers téléchargés"));
         JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, HIERARCHY_DB.values());
         //JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
         return HIERARCHY_DB;
