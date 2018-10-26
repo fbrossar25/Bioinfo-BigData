@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property resource="application.properties"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
+        <file>logs/app.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="${log.textaera.appender.name}" class="fr.unistra.bioinfo.gui.TextAreaAppender">
+        <encoder>
+            <pattern>${log.textaera.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${log.textaera.level}</level>
+        </filter>
+    </appender>
+
+    <logger name="fr.unistra.bioinfo" level="DEBUG"/>
+    <logger name="org.springframework" level="ERROR"/>
+
+    <!-- Logs hibernate -->
+    <logger name="org.hibernate" level="ERROR"/>
+    <!-- DEBUG pour logger les requêtes -->
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <!-- TRACE pour logger la valeurs des paramètres -->
+    <logger name="org.hibernate.type.descriptor.sql" level="OFF"/>
+
+    <logger name="com.zaxxer" level="INFO"/>
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="file" />
+        <appender-ref ref="${log.textaera.appender.name}" />
+    </root>
+</configuration>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+
+<BorderPane fx:id="panelPrincipal" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.unistra.bioinfo.gui.MainWindowController">
+   <top>
+      <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
+         <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
+            <MenuItem fx:id="btnNettoyerDonnees" mnemonicParsing="false" onAction="#nettoyerDonnees" text="Nettoyer les données" />
+            <MenuItem fx:id="btnSupprimerFichiersGEnomes" mnemonicParsing="false" onAction="#supprimerFichiersGenomes" text="Supprimer les fichiers genomes" />
+            <MenuItem fx:id="btnQuitter" mnemonicParsing="false" onAction="#quitter" text="Quitter" />
+         </Menu>
+         <Menu fx:id="menuEdition" mnemonicParsing="false" text="Edition">
+           <items>
+             <MenuItem fx:id="btnViderLogs" mnemonicParsing="false" onAction="#viderLogs" text="Vider Logs" />
+           </items>
+         </Menu>
+      </MenuBar>
+   </top>
+   <left>
+      <BorderPane>
+         <center>
+            <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0" />
+         </center>
+      </BorderPane>
+   </left>
+   <center>
+      <BorderPane BorderPane.alignment="CENTER">
+         <center>
+            <Pane prefHeight="200.0" prefWidth="200.0">
+               <Label fx:id="downloadLabel" layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés" />
+               <Button fx:id="btnDemarrer" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer" text="Démarrer" />
+               <ProgressBar fx:id="progressBar" layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
+            </Pane>
+         </center>
+         <bottom>
+            <TitledPane animated="false" collapsible="false" prefHeight="239.0" prefWidth="600.0" text="Logs" BorderPane.alignment="CENTER">
+               <TextArea fx:id="logs" editable="false" prefHeight="229.0" prefWidth="598.0" />
+            </TitledPane>
+         </bottom>
+      </BorderPane>
+   </center>
+</BorderPane>
