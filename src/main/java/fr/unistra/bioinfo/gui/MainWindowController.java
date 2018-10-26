@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.gui;
 
+import ch.qos.logback.core.Appender;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
@@ -34,7 +35,7 @@ public class MainWindowController {
     
     @Value("${log.textaera.appender.name}")
     private String textAeraAppenderName;
-    private TextAreaAppender loggerTextAeraAppender;
+    private TextAreaAppender logsAppender;
 
     @FXML private BorderPane panelPrincipal;
     @FXML private MenuBar barreMenu;
@@ -43,6 +44,8 @@ public class MainWindowController {
     @FXML private MenuItem btnNettoyerDonnees;
     @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
+    @FXML private ProgressBar progressBar;
+    @FXML private Label downloadLabel;
     @FXML private TextArea logs;
     @FXML private TreeView<Path> treeView;
 
@@ -56,12 +59,20 @@ public class MainWindowController {
     @FXML
     public void initialize(){
         singleton = this;
-        Logger l = LoggerFactory.getLogger(textAeraAppenderName);
-        if(l instanceof TextAreaAppender){
-            loggerTextAeraAppender = (TextAreaAppender) l;
-            loggerTextAeraAppender.setTextAera(logs);
+        Logger l = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        if(textAeraAppenderName != null && l instanceof ch.qos.logback.classic.Logger){
+            Appender a = ((ch.qos.logback.classic.Logger) l).getAppender(textAeraAppenderName);
+            if(a instanceof TextAreaAppender){
+                logsAppender = (TextAreaAppender) a;
+                logsAppender.setTextAera(logs);
+                LOGGER.info("Logging IHM initialisé");
+            }else{
+                logsAppender = null;
+                logs.setText("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+                LOGGER.warn("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+            }
         }else{
-            loggerTextAeraAppender = null;
+            logsAppender = null;
             logs.setText("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
             LOGGER.warn("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
         }
@@ -100,16 +111,21 @@ public class MainWindowController {
         Main.openExitDialog(actionEvent);
     }
 
+    @FXML
+    public void viderLogs(ActionEvent actionEvent){
+        logsAppender.clear();
+    }
+
+
     private void createArborescence() throws IOException{
         // create root
-        TreeItem<Path> treeItem = new TreeItem<>(Paths.get( ROOT_FOLDER));
+        TreeItem<Path> treeItem = new TreeItem<>(Paths.get(ROOT_FOLDER));
         treeItem.setExpanded(true);
 
         createTree("", treeItem);
 
         Platform.runLater(() -> treeView.setRoot(treeItem));
     }
-
     //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
     public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
         Path p = Paths.get(pathToParent,rootItem.getValue().toString());
@@ -126,6 +142,14 @@ public class MainWindowController {
                 }
             }
         }
+    }
+
+    public ProgressBar getProgressBar(){
+        return progressBar;
+    }
+
+    public Label getDownloadLabel(){
+        return downloadLabel;
     }
 
     public static MainWindowController get(){

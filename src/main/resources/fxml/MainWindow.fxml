@@ -25,7 +25,7 @@
    <left>
       <BorderPane>
          <center>
-            <TreeView prefHeight="200.0" prefWidth="200.0" />
+            <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0" />
          </center>
       </BorderPane>
    </left>
@@ -33,10 +33,10 @@
       <BorderPane BorderPane.alignment="CENTER">
          <center>
             <Pane prefHeight="200.0" prefWidth="200.0">
-               <Label layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés"/>
-               <Button fx:id="btnMain" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer"
+               <Label fx:id="downloadLabel" layoutX="429.0" layoutY="77.0" text="0/0 Fichiers téléchargés"/>
+               <Button fx:id="btnDemarrer" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer"
                        text="Démarrer"/>
-               <ProgressBar layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0"/>
+               <ProgressBar fx:id="progressBar" layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0"/>
             </Pane>
          </center>
          <bottom>

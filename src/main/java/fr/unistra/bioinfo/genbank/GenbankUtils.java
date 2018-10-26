@@ -12,6 +12,8 @@ import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import javafx.application.Platform;
+import fr.unistra.bioinfo.gui.MainWindowController;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -216,6 +218,7 @@ public class GenbankUtils {
      * @throws IOException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws IOException {
+        MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
@@ -230,9 +233,9 @@ public class GenbankUtils {
         }
         JsonNode dataNode = genbankJSON.get("ngout").get("data");
         JsonNode contentNode = dataNode.get("content");
-        int organismCount = 0, organismTotal = dataNode.get("totalCount").intValue();
-        LOGGER.info("Traitement de "+organismTotal+" organismes");
-        List<RepliconEntity> replicons = new ArrayList<>(organismTotal);
+        int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
+        LOGGER.info("Traitement de "+numberOfOrganisms+" organismes");
+        List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
         for(JsonNode entry : contentNode) {
             String organism = entry.get("organism").textValue();
             HierarchyEntity h = hierarchyService.getByOrganism(organism);
@@ -244,13 +247,23 @@ public class GenbankUtils {
                 hierarchyService.save(h);
             }
             if(++organismCount % 100 == 0){
-                LOGGER.debug(organismCount+"/"+organismTotal+" organismes traités");
+                LOGGER.debug(organismCount+"/"+numberOfOrganisms+" organismes traités");
+                float d = ((float)organismCount / numberOfOrganisms);
+                if(controller != null){
+                    MainWindowController.get().getProgressBar().setProgress(d);
+                    final int j = organismCount;
+                    Platform.runLater(()->MainWindowController.get().getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
+                }
             }
             List<RepliconEntity> extractedReplicons = extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h);
             replicons.addAll(extractedReplicons);
             for(RepliconEntity r : extractedReplicons){
                 r.setHierarchyEntity(h);
             }
+        }
+        if(controller != null){
+            Platform.runLater(()->MainWindowController.get().getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" fichiers téléchargés"));
+            MainWindowController.get().getProgressBar().setProgress(1.0F);
         }
         LOGGER.info("Sauvegarde de "+replicons.size()+" replicons");
         repliconService.saveAll(replicons);

@@ -10,19 +10,17 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
 
 import java.util.Optional;
 
 @SpringBootApplication
-@ComponentScan({"fr.unistra.bioinfo.persistence.service"})
+//@ComponentScan({"fr.unistra.bioinfo.persistence.service", "fr.unistra.bioinfo.gui"})
 public class Main extends Application {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static Main mainInstance;
