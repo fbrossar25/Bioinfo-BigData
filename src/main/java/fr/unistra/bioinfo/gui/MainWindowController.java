@@ -29,6 +29,8 @@ public class MainWindowController {
     @FXML public MenuItem btnQuitter;
     @FXML public TextArea logs;
     @FXML public TreeView<Path> treeView;
+    @FXML public ProgressBar progressBar;
+    @FXML public Label labelDownload;
 
     private static boolean init = true;
     private static final String ROOT_FOLDER = "Results";

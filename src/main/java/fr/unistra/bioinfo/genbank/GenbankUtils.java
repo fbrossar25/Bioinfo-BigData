@@ -7,8 +7,10 @@ import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
+import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.model.Hierarchy;
 import fr.unistra.bioinfo.model.Replicon;
+import javafx.application.Platform;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -229,10 +231,16 @@ public class GenbankUtils {
             }
             Hierarchy h = HIERARCHY_DB.get(organism);
             h.updateReplicons(extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h));
-            if(++i % 100 == 0){
-                LOGGER.debug(i+"/"+numberOfOrganisms+" organismes traités");
+            if(++i % 100 == 0) {
+                LOGGER.debug(i + "/" + numberOfOrganisms + " organismes traités");
+                float d = ((float)i / (float)numberOfOrganisms);
+                MainWindowController.get().progressBar.setProgress(d);
+                final int j = i;
+                Platform.runLater(()->MainWindowController.get().labelDownload.setText(j+"/"+numberOfOrganisms+" fichiers traités"));
             }
         }
+        MainWindowController.get().progressBar.setProgress(1.0F);
+        Platform.runLater(()->MainWindowController.get().labelDownload.setText(numberOfOrganisms+"/"+numberOfOrganisms+" fichiers traités"));
         JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, HIERARCHY_DB.values());
         //JSONUtils.saveToFile(CommonUtils.DATABASE_PATH, JSONUtils.toJSON(new ArrayList<>(HIERARCHY_DB.values())));
         return HIERARCHY_DB;
