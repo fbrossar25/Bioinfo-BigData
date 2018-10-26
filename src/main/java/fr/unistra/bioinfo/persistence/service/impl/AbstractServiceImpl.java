@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManagerFactory;
@@ -68,9 +69,7 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
     @Transactional
     public void delete(T entity) {
         getManager().delete(entity);
-        if(entity != null){
-            entity.setId(null);
-        }
+        entity.setId(null);
     }
 
     @Override
@@ -94,7 +93,7 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
     }
 
     @Override
-    public Page<T> getAll(Integer pageNumber, Direction sortDirection, EntityMembers... properties) {
+    public Page<T> getAll(int pageNumber, @NonNull Direction sortDirection, @NonNull EntityMembers... properties) {
         String[] propertiesNames = new String[properties.length];
         for(int i=0; i<properties.length; i++){
             propertiesNames[i] = properties[i].getName();

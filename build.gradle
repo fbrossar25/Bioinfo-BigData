@@ -50,6 +50,20 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
     implementation group: 'org.hibernate', name: 'hibernate-core', version: "${hibernateVersion}"
 
+    implementation group: 'com.google.guava', name: 'guava', version: '26.0-jre'
+    implementation "com.github.rholder:guava-retrying:2.0.0"
+}
+
+//println "${rootProject.projectDir}"
+
+clean {
+    delete("${rootProject.projectDir}/db", "${rootProject.projectDir}/logs")
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": mainClassName)
+    }
 }
 
 test {

@@ -30,5 +30,5 @@ public interface AbstractService<T extends IEntity<K>, K extends Serializable> {
      * @param properties propriétés à trier
      * @return
      */
-    Page<T> getAll(@NonNull Integer page, @NonNull Direction sortDirection, @NonNull EntityMembers<T>... properties);
+    Page<T> getAll(int page, @NonNull Direction sortDirection, @NonNull EntityMembers<T>... properties);
 }

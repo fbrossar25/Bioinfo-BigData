@@ -17,10 +17,12 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class CommonUtils {
+public final class CommonUtils {
+    private CommonUtils(){}
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final Path DATABASE_PATH = Paths.get("database", "database.json").toAbsolutePath();
+    public static final Path RESULTS_PATH = Paths.get("Results").toAbsolutePath();
 
     public static final Set<String> DINUCLEOTIDES;
     public static final Set<String> TRINUCLEOTIDES;

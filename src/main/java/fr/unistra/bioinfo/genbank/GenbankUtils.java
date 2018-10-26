@@ -2,15 +2,17 @@ package fr.unistra.bioinfo.genbank;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -25,10 +27,13 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -38,12 +43,45 @@ public class GenbankUtils {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
-    /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3 */
+    /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
     public static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
+    public static final Integer REQUEST_LIMIT = (StringUtils.isNotBlank(EUTILS_API_KEY) && LocalDateTime.now().isAfter(LocalDateTime.of(2018, Month.DECEMBER, 1, 12, 0))) ?  10 : 3;
     public static final String EUTILS_EFETCH = "efetch.fcgi";
 
-    public static List<File> downloadReplicons(List<RepliconEntity> replicons){
-        throw new NotImplementedException("TODO");
+    static{
+        LOGGER.info("Nombre de requêtes limitées à "+REQUEST_LIMIT+" par secondes");
+    }
+
+    public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
+        final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
+        final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
+        final RateLimiter rateLimiter = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
+
+        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, rateLimiter)));
+        try {
+            final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
+            if(callback != null){
+                new Thread(() -> {
+                    try {
+                        ses.shutdown();
+                        ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                        List<File> files = new ArrayList<>(replicons.size());
+                        for(Future<File> future : futuresFiles){
+                            files.add(future.get());
+                        }
+                        callback.complete(files);
+                    } catch (ExecutionException | InterruptedException e) {
+                        LOGGER.error("Erreur d'attente de terminaison des téléchargements",e);
+                    }
+                }).start();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.error("Erreur durant les téléchargements des replicons",e);
+        }
+    }
+
+    public static void downloadAllReplicons(CompletableFuture<List<File>> callback) throws IOException{
+        downloadReplicons(repliconService.getAll(), callback);
     }
 
     public static URI getEUtilsLink(String application, Map<String, String> params) throws URISyntaxException {
@@ -106,7 +144,8 @@ public class GenbankUtils {
         String uri = "";
         try{
             URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
-            builder.setParameter("limit", "0");
+            builder.setParameter("limit", "0"); // 0 -> charge tous les résultats
+            //builder.setParameter("limit", "5"); // charge les 5 premiers résultats
             builder.setParameter("q","[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"]"+(ncOnly ? " and replicons like \"*NC_*\"" : "")+")");
             uri = builder.build().toString();
         }catch(URISyntaxException e){
@@ -157,16 +196,34 @@ public class GenbankUtils {
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
+    public static Path getPathOfOrganism(HierarchyEntity h){
+        return Paths.get(h.getKingdom(), h.getGroup(), h.getSubgroup(), h.getOrganism());
+    }
+
     /**
-     * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.
-     * Les logs d'hibernante sont désactivés pour cette méthodes
+     * Retourne le chemin  du replicon à l'intérieur de l'arborescence des organismes avec le nom du fichier *.gb.</br>
+     * Le replicon doit avoir un organism non-null.
+     * @param r le replicon
+     * @return le chemin du fichier *.gb
+     */
+    public static Path getPathOfReplicon(RepliconEntity r){
+        return getPathOfOrganism(r.getHierarchyEntity()).resolve(r.getName()+".gb");
+    }
+
+    /**
+     * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.</br>
+     * Les logs d'hibernante sont désactivés pour cette méthode
      * @throws IOException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws IOException {
         CommonUtils.disableHibernateLogging();
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
+        SimpleModule genBankModule = new SimpleModule();
+        genBankModule.addDeserializer(HierarchyEntity.class, new JSONUtils.HierarchyFromGenbankDeserializer());
+        mapper.registerModule(genBankModule);
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
+            LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
             throw new IOException("Erreur lors du téléchargement de la liste des entrées", e);
@@ -186,11 +243,9 @@ public class GenbankUtils {
                 h = new HierarchyEntity(kingdom, group, subgroup, organism);
                 hierarchyService.save(h);
             }
-            organismCount++;
-            if(organismCount % 100 == 0){
-                LOGGER.info(organismCount+"/"+organismTotal+" organismes traités");
+            if(++organismCount % 100 == 0){
+                LOGGER.debug(organismCount+"/"+organismTotal+" organismes traités");
             }
-            LOGGER.trace("Traitement de l'organisme "+h);
             List<RepliconEntity> extractedReplicons = extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h);
             replicons.addAll(extractedReplicons);
             for(RepliconEntity r : extractedReplicons){
@@ -253,6 +308,16 @@ public class GenbankUtils {
      */
     public static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
+    }
+
+    /**
+     * Retoure un BufferedReader permettant de lire la réponse de la requête donnée
+     * @param requestURL la requête
+     * @return le BufferedReader
+     * @throws IOException Exception lancée si un problème survient à l'instanciation (URL malformée, ...)
+     */
+    public static BufferedReader readRequest(URL requestURL) throws IOException {
+        return new BufferedReader(new InputStreamReader(requestURL.openStream()));
     }
 
     public static void setRepliconService(RepliconService repliconService) {

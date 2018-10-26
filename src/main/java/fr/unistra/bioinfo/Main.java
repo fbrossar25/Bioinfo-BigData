@@ -10,6 +10,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 
-import java.nio.file.Paths;
 import java.util.Optional;
 
 @SpringBootApplication
@@ -34,6 +34,7 @@ public class Main extends Application {
     }
 
     private static void defaultErrorHandling(Thread t, Throwable e){
+        LOGGER.error("Erreur non gérée", e);
         new ExceptionDialog(t, e);
     }
 
@@ -61,7 +62,7 @@ public class Main extends Application {
     }
 
     public static void generateOrganismDirectories(){
-        GenbankUtils.createAllOrganismsDirectories(Paths.get("Results"));
+        GenbankUtils.createAllOrganismsDirectories(CommonUtils.RESULTS_PATH);
     }
 
     private void initStage(Stage primaryStage) {

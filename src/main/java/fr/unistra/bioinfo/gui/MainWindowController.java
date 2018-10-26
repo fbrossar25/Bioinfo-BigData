@@ -1,9 +1,10 @@
 package fr.unistra.bioinfo.gui;
 
-import ch.qos.logback.core.Appender;
 import fr.unistra.bioinfo.Main;
-import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
-import fr.unistra.bioinfo.persistence.manager.RepliconManager;
+import fr.unistra.bioinfo.genbank.GenbankUtils;
+import fr.unistra.bioinfo.persistence.service.HierarchyService;
+import fr.unistra.bioinfo.persistence.service.RepliconService;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -14,62 +15,120 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @Controller
 public class MainWindowController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainWindowController.class);
+    private static final String ROOT_FOLDER = "Results";
 
-    private final HierarchyManager hierarchyService;
-    private final RepliconManager repliconService;
-    private TextAreaAppender loggerTextAeraAppender;
+    private static MainWindowController singleton;
+    private static boolean init = true;
 
+    private final HierarchyService hierarchyService;
+    private final RepliconService repliconService;
+    
     @Value("${log.textaera.appender.name}")
     private String textAeraAppenderName;
+    private TextAreaAppender loggerTextAeraAppender;
 
     @FXML private BorderPane panelPrincipal;
     @FXML private MenuBar barreMenu;
     @FXML private Menu menuFichier;
-    @FXML private Button btnMain;
+    @FXML private Button btnDemarrer;
     @FXML private MenuItem btnNettoyerDonnees;
     @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
     @FXML private TextArea logs;
+    @FXML private TreeView<Path> treeView;
 
     @Autowired
-    public MainWindowController(HierarchyManager hierarchyService, RepliconManager repliconService) {
+    public MainWindowController(HierarchyService hierarchyService, RepliconService repliconService){
         this.hierarchyService = hierarchyService;
         this.repliconService = repliconService;
     }
 
-
+    //Méthode appelée juste après le constructeur du controleur
     @FXML
     public void initialize(){
-        LOGGER.info("initialisation de la fenêtre principale...");
-        Logger rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        if(textAeraAppenderName != null && rootLogger instanceof ch.qos.logback.classic.Logger){
-            Appender taaAppender = ((ch.qos.logback.classic.Logger) rootLogger).getAppender(textAeraAppenderName);
-            if(taaAppender instanceof TextAreaAppender){
-                loggerTextAeraAppender = (TextAreaAppender) taaAppender;
-                loggerTextAeraAppender.setTextAera(logs);
-                LOGGER.debug("Appender '"+textAeraAppenderName+"' initialisé");
-            }
+        singleton = this;
+        Logger l = LoggerFactory.getLogger(textAeraAppenderName);
+        if(l instanceof TextAreaAppender){
+            loggerTextAeraAppender = (TextAreaAppender) l;
+            loggerTextAeraAppender.setTextAera(logs);
         }else{
-            LOGGER.warn("L'appender '"+textAeraAppenderName+"' n'a pas été trouvé");
+            loggerTextAeraAppender = null;
+            logs.setText("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+            LOGGER.warn("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
         }
     }
 
+    @FXML
     public void demarrer(ActionEvent actionEvent){
-        LOGGER.debug("Clic sur le bouton 'démarrer'");
+        btnDemarrer.setDisable(true);
+        new Thread(() -> {
+            try {
+                LOGGER.info("Mise à jour de la base de données");
+                GenbankUtils.updateNCDatabase();
+                Main.generateOrganismDirectories();
+                createArborescence();
+                LOGGER.info("Mise à jour terminée");
+            } catch (IOException e) {
+                LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
+            }finally {
+                btnDemarrer.setDisable(false);
+            }
+        }).start();
     }
 
+    @FXML
     public void nettoyerDonnees(ActionEvent actionEvent) {
         LOGGER.info("Nettoyage des données...");
     }
 
+    @FXML
     public void supprimerFichiersGenomes(ActionEvent actionEvent) {
         LOGGER.info("Suppression des fichiers genomes...");
     }
 
+    @FXML
     public void quitter(ActionEvent actionEvent) {
         Main.openExitDialog(actionEvent);
+    }
+
+    private void createArborescence() throws IOException{
+        // create root
+        TreeItem<Path> treeItem = new TreeItem<>(Paths.get( ROOT_FOLDER));
+        treeItem.setExpanded(true);
+
+        createTree("", treeItem);
+
+        Platform.runLater(() -> treeView.setRoot(treeItem));
+    }
+
+    //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
+    public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
+        Path p = Paths.get(pathToParent,rootItem.getValue().toString());
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(p)) {
+            for (Path path : directoryStream) {
+                int count= path.getNameCount()-1;
+                TreeItem<Path> newItem = new TreeItem<Path>(path.getName(count));
+                newItem.setExpanded(true);
+
+                rootItem.getChildren().add(newItem);
+
+                if (Files.isDirectory(path)) {
+                    createTree(pathToParent+rootItem.getValue().toString()+"/", newItem);
+                }
+            }
+        }
+    }
+
+    public static MainWindowController get(){
+        return singleton;
     }
 }
