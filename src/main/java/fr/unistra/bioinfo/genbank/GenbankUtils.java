@@ -248,12 +248,14 @@ public class GenbankUtils {
             }
             if(++organismCount % 100 == 0){
                 LOGGER.debug(organismCount+"/"+numberOfOrganisms+" organismes traités");
-                float d = ((float)organismCount / numberOfOrganisms);
-                if(controller != null){
-                    MainWindowController.get().getProgressBar().setProgress(d);
-                    final int j = organismCount;
-                    Platform.runLater(()->MainWindowController.get().getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
-                }
+
+
+            }
+            float d = ((float)organismCount / numberOfOrganisms);
+            if(controller != null){
+                controller.getProgressBar().setProgress(d);
+                final int j = organismCount;
+                Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
             }
             List<RepliconEntity> extractedReplicons = extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h);
             replicons.addAll(extractedReplicons);
@@ -262,8 +264,8 @@ public class GenbankUtils {
             }
         }
         if(controller != null){
-            Platform.runLater(()->MainWindowController.get().getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" fichiers téléchargés"));
-            MainWindowController.get().getProgressBar().setProgress(1.0F);
+            Platform.runLater(()->controller.getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" organismes mis à jour"));
+            controller.getProgressBar().setProgress(1.0F);
         }
         LOGGER.info("Sauvegarde de "+replicons.size()+" replicons");
         repliconService.saveAll(replicons);
