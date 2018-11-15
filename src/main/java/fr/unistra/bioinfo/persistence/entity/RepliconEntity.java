@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.parsing.Phase;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -82,19 +83,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.hierarchyEntity = hierarchyEntity;
     }
 
-    //    public void setHierarchyEntity(HierarchyEntity hierarchyEntity) {
-//        setHirarchyEntity(hierarchyEntity, true);
-//    }
-//
-//    public void setHirarchyEntity(HierarchyEntity hierarchyEntity, boolean add) {
-//        if(this.hierarchyEntity == null || !this.hierarchyEntity.equals(hierarchyEntity)){
-//            this.hierarchyEntity = hierarchyEntity;
-//            if(add && hierarchyEntity != null){
-//                hierarchyEntity.addRepliconEntity(this, false);
-//            }
-//        }
-//    }
-
     public Integer getVersion() {
         return version;
     }
@@ -119,60 +107,62 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         isComputed = computed;
     }
 
-    public Integer getDinucleotideCount(String dinucleotide){
-        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase())){
-            return dinucleotides.get(dinucleotide);
+    public Integer getDinucleotideCount(String dinucleotide, Phase phase){
+        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase()) && phase != null){
+            return dinucleotides.get(dinucleotide.toUpperCase()+"-"+phase.toString());
         }else{
-            throw new IllegalArgumentException("'"+dinucleotide+"' n'est pas un dinucleotide valide");
+            throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
         }
     }
 
-    public void setDinucleotideCount(String dinucleotide, Integer count){
-        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase())){
-            dinucleotides.put(dinucleotide, count == null ? 0 : count);
+    public void setDinucleotideCount(String dinucleotide, Phase phase, Integer count){
+        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase()) && phase != null){
+            dinucleotides.put(dinucleotide.toUpperCase()+"-"+phase.toString(), count == null ? 0 : count);
         }else{
-            throw new IllegalArgumentException("'"+dinucleotide+"' n'est pas un dinucleotide valide");
+            throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
         }
     }
 
-    public Integer getTrinucleotideCount(String trinucleotide){
-        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase())){
-            return trinucleotides.get(trinucleotide);
+    public Integer getTrinucleotideCount(String trinucleotide, Phase phase){
+        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase()) && phase != null){
+            return trinucleotides.get(trinucleotide+"-"+phase.toString());
         }else{
-            throw new IllegalArgumentException("'"+trinucleotide+"' n'est pas un trinucleotide valide");
+            throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
         }
     }
 
-    public void setTrinucleotideCount(String trinucleotide, Integer count){
-        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase())){
-            trinucleotides.put(trinucleotide, count == null ? 0 : count);
+    public void setTrinucleotideCount(String trinucleotide, Phase phase, Integer count){
+        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase()) && phase != null){
+            trinucleotides.put(trinucleotide+"-"+phase.toString(), count == null ? 0 : count);
         }else{
-            throw new IllegalArgumentException("'"+trinucleotide+"' n'est pas un trinucleotide valide");
+            throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
         }
     }
 
-    public void incrementDinucleotideCount(String dinucleotide){
-        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase())){
-            trinucleotides.put(dinucleotide, trinucleotides.get(dinucleotide) + 1);
+    public void incrementDinucleotideCount(String dinucleotide, Phase phase){
+        if(CommonUtils.DINUCLEOTIDES.contains(dinucleotide.toUpperCase()) && phase != null){
+            trinucleotides.put(dinucleotide+"-"+phase.toString(), trinucleotides.get(dinucleotide) + 1);
         }else{
-            throw new IllegalArgumentException("'"+dinucleotide+"' n'est pas un dinucleotide valide");
+            throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
         }
     }
 
-    public void incrementTrinucleotideCount(String trinucleotide){
-        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase())){
-            trinucleotides.put(trinucleotide, trinucleotides.get(trinucleotide) + 1);
+    public void incrementTrinucleotideCount(String trinucleotide, Phase phase){
+        if(CommonUtils.TRINUCLEOTIDES.contains(trinucleotide.toUpperCase()) && phase != null){
+            trinucleotides.put(trinucleotide+"-"+phase.toString(), trinucleotides.get(trinucleotide) + 1);
         }else{
-            throw new IllegalArgumentException("'"+trinucleotide+"' n'est pas un trinucleotide valide");
+            throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
         }
     }
 
     public void resetCounters() {
-        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-            trinucleotides.put(dinucleotide, 0);
-        }
-        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-            trinucleotides.put(trinucleotide, 0);
+        for(Phase phase : Phase.values()){
+            for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+                trinucleotides.put(dinucleotide+"-"+phase.toString(), 0);
+            }
+            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+                trinucleotides.put(trinucleotide+"-"+phase.toString(), 0);
+            }
         }
     }
 
