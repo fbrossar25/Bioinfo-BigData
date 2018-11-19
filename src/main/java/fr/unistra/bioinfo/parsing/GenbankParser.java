@@ -39,15 +39,16 @@ public final class GenbankParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankParser.class);
 
-    public static void parseGenbankFile(@NonNull File repliconFile){
+    public static boolean parseGenbankFile(@NonNull File repliconFile){
         if(!repliconFile.isFile() || !repliconFile.canRead()){
             LOGGER.error("Fichier '"+repliconFile.getAbsolutePath()+"' introuvable ou droits insuffisants");
-            return;
+            return false;
         }
         RepliconEntity repliconEntity;
         try{
             LinkedHashMap<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
             for(DNASequence seq : dnaSequences.values()){
+                StringBuilder cdsAccu = new StringBuilder(512);
                 LOGGER.debug("DNA sequence : "+seq.getSource());
                 LOGGER.debug("DNA header : "+seq.getOriginalHeader());
                 repliconEntity = repliconService.getByName(seq.getAccession().getID());
@@ -58,23 +59,48 @@ public final class GenbankParser {
                     HierarchyEntity h = readHierarchy(repliconFile);
                     if(h == null){
                         LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '"+repliconFile.getAbsolutePath()+"', abandon du parsing");
-                        return;
+                        return false;
                     }
                     hierarchyService.save(h);
                     repliconEntity.setHierarchyEntity(h);
                 }
                 repliconEntity.setVersion(seq.getAccession().getVersion());
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
-                    LOGGER.debug("CDS : "+feature.getSource());
-                    LOGGER.debug("Locations : "+feature.getLocations());
-                    LOGGER.debug("CDS sequence : " + feature.getLocations().getSubSequence(seq).getSequenceAsString());
+                    String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
+                    cdsAccu.append(cdsSeq);
                 }
                 repliconEntity.setComputed(true);
+                countFrequencies(cdsAccu.toString(), repliconEntity);
                 repliconService.save(repliconEntity);
             }
         }catch(Exception e){
-            LOGGER.error("Erreur de lecture du fichier '"+repliconFile.getPath()+"'");
+            LOGGER.error("Erreur de lecture du fichier '"+repliconFile.getPath()+"'", e);
+            return false;
         }
+        return true;
+    }
+
+    private static boolean countFrequencies(String sequence, RepliconEntity repliconEntity) {
+        //TODO vérifier codons START et END
+        if(StringUtils.isBlank(sequence)){
+            LOGGER.warn("La séquence du replicon '"+repliconEntity.getName()+"' est vide");
+            return false;
+        }else if(sequence.length() % 3 != 0){
+            LOGGER.warn("La taille de la séquence du replicon '"+repliconEntity.getName()+"' ("+sequence.length()+") n'est pas multiple de 3");
+            return false;
+        }
+        int iMax = sequence.length() - 3;
+        for(int i=0; i<iMax; i+=3){
+            repliconEntity.incrementTrinucleotideCount(sequence.substring(i, i+3), Phase.PHASE_0);
+            repliconEntity.incrementTrinucleotideCount(sequence.substring(i+1, i+4), Phase.PHASE_1);
+            repliconEntity.incrementTrinucleotideCount(sequence.substring(i+2, i+5), Phase.PHASE_2);
+        }
+        iMax = ((sequence.length() % 2) == 0) ? sequence.length() - 4 : sequence.length() - 3;
+        for(int i=0; i<iMax; i+=3){
+            repliconEntity.incrementDinucleotideCount(sequence.substring(i, i+2), Phase.PHASE_0);
+            repliconEntity.incrementDinucleotideCount(sequence.substring(i+1, i+3), Phase.PHASE_1);
+        }
+        return true;
     }
 
     private static HierarchyEntity readHierarchy(@NonNull File repliconFile) throws IOException{
