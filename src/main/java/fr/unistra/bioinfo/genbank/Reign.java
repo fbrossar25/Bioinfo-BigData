@@ -1,14 +1,15 @@
 package fr.unistra.bioinfo.genbank;
 
 public enum Reign {
-    EUKARYOTES("Eukaryotes","Eukaryota"),
-    PROKARYOTES("Prokaryotes","Prokaryota"),
-    VIRUSES("Viruses","Virus");
+    EUKARYOTES("Eukaryota","\"Eukaryotes\""),
+    PROKARYOTES("Prokaryota","\"Prokaryotes\""),
+    VIRUSES("Viruses","\"Viruses\""),
+    ALL("All", "\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"");
 
     private String searchTable;
     private String label;
 
-    Reign(String searchTable, String label){
+    Reign(String label, String searchTable){
         this.searchTable = searchTable;
         this.label = label;
     }

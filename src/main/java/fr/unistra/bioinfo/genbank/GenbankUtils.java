@@ -8,17 +8,19 @@ import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
+import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.application.Platform;
-import fr.unistra.bioinfo.gui.MainWindowController;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,11 +46,12 @@ public class GenbankUtils {
     private static HierarchyService hierarchyService;
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    public static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
+    private static final String NGRAM_BASE_URL = "https://www.ncbi.nlm.nih.gov/Structure/ngram";
+    private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
-    public static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
-    public static final Integer REQUEST_LIMIT = (StringUtils.isNotBlank(EUTILS_API_KEY) && LocalDateTime.now().isAfter(LocalDateTime.of(2018, Month.DECEMBER, 1, 12, 0))) ?  10 : 3;
-    public static final String EUTILS_EFETCH = "efetch.fcgi";
+    private static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
+    private static final Integer REQUEST_LIMIT = (StringUtils.isNotBlank(EUTILS_API_KEY) && LocalDateTime.now().isAfter(LocalDateTime.of(2018, Month.DECEMBER, 1, 12, 0))) ?  10 : 3;
+    private static final String EUTILS_EFETCH = "efetch.fcgi";
 
     static{
         LOGGER.info("Nombre de requêtes limitées à "+REQUEST_LIMIT+" par secondes");
@@ -125,16 +128,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getOrganismsListRequestURL(Reign reign){
-        String uri = "";
-        try{
-            URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
-            builder.setParameter("limit", "0");
-            builder.setParameter("q","[display(),hist(group,subgroup,level)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"]).sort(replicons,desc)");
-            uri = builder.build().toString();
-        }catch(URISyntaxException e){
-            // ignore
-        }
-        return uri;
+        return buildNgramURL(reign, null, "group", "subgroup", "level");
     }
 
     /**
@@ -143,17 +137,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getFullOrganismsListRequestURL(boolean ncOnly){
-        String uri = "";
-        try{
-            URIBuilder builder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
-            builder.setParameter("limit", "0"); // 0 -> charge tous les résultats
-            //builder.setParameter("limit", "5"); // charge les 5 premiers résultats
-            builder.setParameter("q","[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"]"+(ncOnly ? " and replicons like \"*NC_*\"" : "")+")");
-            uri = builder.build().toString();
-        }catch(URISyntaxException e){
-            // ignore
-        }
-        return uri;
+        return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"NC_\"" : "", "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
     /**
@@ -163,8 +147,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getKingdomCountersURL(Reign reign){
-        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?limit=0&q=[hist(group,subgroup,kingdom)].from(GenomeAssemblies).usingschema(/schema/GenomeAssemblies).matching(tab==[\""
-        + reign.getSearchTable()+"\"]).sort(replicons,desc)";
+        return buildNgramURL(reign, null, true,"group", "subgroup", "kingdom");
     }
 
     /**
@@ -173,7 +156,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getReignTotalEntriesNumberURL(Reign reign){
-        return "https://www.ncbi.nlm.nih.gov/Structure/ngram?&q=[display()].from(GenomeAssemblies).matching(tab==[\""+ reign.getSearchTable()+"\"])&limit=1";
+        return buildNgramURL(reign, null);
     }
 
     /**
@@ -335,11 +318,86 @@ public class GenbankUtils {
         return new BufferedReader(new InputStreamReader(requestURL.openStream()));
     }
 
-    public static void setRepliconService(RepliconService repliconService) {
+    public static void setRepliconService(@NonNull RepliconService repliconService) {
         GenbankUtils.repliconService = repliconService;
     }
 
-    public static void setHierarchyService(HierarchyService hierarchyService) {
+    public static void setHierarchyService(@NonNull HierarchyService hierarchyService) {
         GenbankUtils.hierarchyService = hierarchyService;
+    }
+
+    public static String buildNgramURL(Reign reign, String condition, String... fields){
+        return buildNgramURL(reign, condition, 0, false, fields);
+    }
+
+    public static String buildNgramURL(Reign reign, String condition, boolean useHist, String... fields){
+        return buildNgramURL(reign, condition, 0, useHist, fields);
+    }
+
+    public static String buildNgramURL(Reign reign, String condition, int limit, String... fields){
+        return buildNgramURL(reign, condition, limit, false, fields);
+    }
+
+    private static String buildNgramURL(Reign reign, String condition, int limit, boolean useHist, String... fields){
+        try{
+            URIBuilder builder = new URIBuilder(NGRAM_BASE_URL);
+            builder.setParameter("q",GenbankUtils.buildNgramQueryString(reign, condition, useHist, fields));
+            builder.setParameter("limit", Integer.toString(limit));
+            return builder.build().toString();
+        }catch(URISyntaxException e){
+            // ignore
+        }
+        return null;
+    }
+
+    public static String buildNgramQueryString(Reign reign, String condition, String... fields){
+        return buildNgramQueryString(reign, condition, false, fields);
+    }
+
+    public static String buildNgramQueryString(Reign reign, String condition, boolean useHist, String... fields){
+        StringBuilder builder = new StringBuilder(128);
+        builder.append("[").append(useHist ? "hist(" : "display(");
+        if(ArrayUtils.isNotEmpty(fields)){
+            int lastIdx = fields.length-1;
+            for(int i=0; i<lastIdx; i++){
+                builder.append(fields[i]).append(",");
+            }
+            builder.append(fields[lastIdx]);
+        }
+        builder.append(")].from(GenomeAssemblies).matching(");
+        if(reign != null){
+            builder.append("tab==[");
+            builder.append(reign.getSearchTable());
+            builder.append("]");
+        }
+        if(StringUtils.isNotBlank(condition)){
+            builder.append(" and ").append(condition);
+        }
+        builder.append(")");
+        return builder.toString();
+    }
+
+    public static HierarchyEntity getHierarchyInfoByOrganism(String organism) {
+        HierarchyEntity entity = null;
+        try(BufferedReader reader = readRequest(
+                buildNgramURL(
+                        Reign.ALL,
+                        "organism == \""+organism+"\"",
+                        1,
+                        "organism", "kingdom", "group", "subgroup"))){
+                JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
+                JsonNode content = json.get("ngout").get("data").get("content");
+                if(content.isArray() && content.size() == 1){
+                    JsonNode jsonHierarchy = content.get(0);
+                    entity = new HierarchyEntity();
+                    entity.setKingdom(jsonHierarchy.get("kingdom").textValue());
+                    entity.setGroup(jsonHierarchy.get("group").textValue());
+                    entity.setSubgroup(jsonHierarchy.get("subgroup").textValue());
+                    entity.setOrganism(jsonHierarchy.get("organism").textValue());
+                }
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de la récupération des informations de l'organisme '"+organism+"'", e);
+        }
+        return entity;
     }
 }

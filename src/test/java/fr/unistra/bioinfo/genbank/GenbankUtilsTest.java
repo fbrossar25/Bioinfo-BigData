@@ -7,6 +7,7 @@ import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
@@ -91,5 +93,30 @@ class GenbankUtilsTest {
     @Test
     void createOrganismsTreeStructure(){
         assertTrue(GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results")));
+    }
+
+    @Test
+    void buildNgramString(){
+        try{
+            URIBuilder uriBuilder = new URIBuilder("https://www.ncbi.nlm.nih.gov/Structure/ngram");
+            String queryString = "[display(organism,kingdom,group,subgroup)].from(GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"] and organism == \"Felis catus\")";
+            assertEquals(queryString, GenbankUtils.buildNgramQueryString(Reign.ALL, "organism == \"Felis catus\"","organism","kingdom","group","subgroup"));
+            queryString = "[display()].from(GenomeAssemblies).matching(tab==[\"Eukaryotes\"] and replicons like \"NC_\")";
+            assertEquals(queryString, GenbankUtils.buildNgramQueryString(Reign.EUKARYOTES, "replicons like \"NC_\""));
+            queryString = "[display()].from(GenomeAssemblies).matching(tab==[\"Prokaryotes\"])";
+            uriBuilder.setParameter("q", queryString);
+            uriBuilder.setParameter("limit", "0");
+            assertEquals(uriBuilder.build().toString(), GenbankUtils.getReignTotalEntriesNumberURL(Reign.PROKARYOTES));
+            queryString = "[hist(group,subgroup,kingdom)].from(GenomeAssemblies).matching(tab==[\"Viruses\"])";
+            uriBuilder.setParameter("q", queryString);
+            uriBuilder.setParameter("limit", "0");
+            assertEquals(uriBuilder.build().toString(), GenbankUtils.getKingdomCountersURL(Reign.VIRUSES));
+            queryString = "[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"])";
+            assertEquals(queryString, GenbankUtils.buildNgramQueryString(Reign.ALL, "", "organism", "kingdom", "group", "subgroup", "replicons"));
+            queryString = "[display(organism,kingdom,group,subgroup,replicons)].from(GenomeAssemblies).matching(tab==[\"Eukaryotes\",\"Viruses\",\"Prokaryotes\"] and replicons like \"NC_\")";
+            assertEquals(queryString, GenbankUtils.buildNgramQueryString(Reign.ALL, "replicons like \"NC_\"", "organism", "kingdom", "group", "subgroup", "replicons"));
+        }catch(URISyntaxException e){
+            fail(e);
+        }
     }
 }

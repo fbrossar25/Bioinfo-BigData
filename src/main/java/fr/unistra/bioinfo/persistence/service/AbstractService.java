@@ -13,15 +13,15 @@ import java.util.List;
 
 public interface AbstractService<T extends IEntity<K>, K extends Serializable> {
     List<T> getAll();
-    T getById(K id);
-    boolean existsById(K id);
-    T save(T entity);
-    List<T> saveAll(List<T> entities);
-    void delete(T entity);
-    void deleteAll(List<T> entities);
+    T getById(@NonNull K id);
+    boolean existsById(@NonNull K id);
+    T save(@NonNull T entity);
+    List<T> saveAll(@NonNull List<T> entities);
+    void delete(@NonNull T entity);
+    void deleteAll(@NonNull List<T> entities);
     IManager<T, K> getManager();
     Long count();
-    Page<T> getAll(Pageable p);
+    Page<T> getAll(@NonNull Pageable p);
 
     /**
      * Retourne un resultat paginé
