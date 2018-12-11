@@ -19,8 +19,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,6 +45,12 @@ public final class GenbankParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankParser.class);
 
+    /**
+     * Parse le fichier donné en paramètre et créé ou met à jour le replicon qu'il représente.</br>
+     * Normalement thread-safe.
+     * @param repliconFile le fichier .gb
+     * @return true si le parsing à été correctement effectué, false sinon
+     */
     public static boolean parseGenbankFile(@NonNull File repliconFile){
         if(!repliconFile.isFile() || !repliconFile.canRead()){
             LOGGER.error("Fichier '"+repliconFile.getAbsolutePath()+"' introuvable ou droits insuffisants");
@@ -52,7 +60,7 @@ public final class GenbankParser {
         try{
             LinkedHashMap<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
             for(DNASequence seq : dnaSequences.values()){
-                StringBuilder cdsAccu = new StringBuilder(512);
+                List<String> cdsList = new ArrayList<>();
                 LOGGER.trace("DNA header : "+seq.getOriginalHeader());
                 synchronized(synchronizedObject){
                     repliconEntity = repliconService.getByName(seq.getAccession().getID());
@@ -74,9 +82,9 @@ public final class GenbankParser {
                 repliconEntity.setVersion(seq.getAccession().getVersion());
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
                     String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
-                    cdsAccu.append(cdsSeq);
+                    cdsList.add(cdsSeq);
                 }
-                countFrequencies(cdsAccu.toString(), repliconEntity);
+                countFrequencies(cdsList, repliconEntity);
                 repliconEntity.setComputed(true);
                 synchronized(synchronizedObject){
                     repliconService.save(repliconEntity);
@@ -89,23 +97,49 @@ public final class GenbankParser {
         return true;
     }
 
+    private static final class LambdaBoolean{
+        private boolean value = true;
+
+        void setFalse(){
+            value = false;
+        }
+
+        void setTrue(){
+            value = true;
+        }
+
+        boolean get(){
+            return value;
+        }
+    }
+
+    private static boolean countFrequencies(@NonNull List<String> cdsList, @NonNull final RepliconEntity repliconEntity){
+        final LambdaBoolean result = new LambdaBoolean();
+        cdsList.forEach(cds -> {
+            if(!countFrequencies(cds, repliconEntity)){
+                result.setFalse();
+            }
+        });
+        return result.get();
+    }
+
     /**
      * Compte les fréquences des di/trinucléotides dans la séquence donnée et<br/>
-     * met à jour le Replicon donné
+     * met à jour le Replicon donné.
      * @param sequence La séquence d'ADN au format (ACGT)
-     * @param repliconEntity
-     * @return
+     * @param repliconEntity le replicon qui seras mis à jour si le cds est correct
+     * @return true si le cds est valide et pris en compte, false sinon
      */
-    private static boolean countFrequencies(@NonNull String sequence, @NonNull RepliconEntity repliconEntity) {
+    private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
         //TODO vérifier codons START et END
         if(StringUtils.isBlank(sequence)){
-            LOGGER.warn("La séquence du replicon '"+repliconEntity.getName()+"' est vide");
+            LOGGER.trace("La séquence du replicon '"+repliconEntity.getName()+"' est vide");
             return false;
         }else if(sequence.length() % 3 != 0){
-            LOGGER.warn("La taille de la séquence du replicon '"+repliconEntity.getName()+"' ("+sequence.length()+") n'est pas multiple de 3");
+            LOGGER.trace("La taille de la séquence du replicon '"+repliconEntity.getName()+"' ("+sequence.length()+") n'est pas multiple de 3");
             return false;
         }else if(!checkStartEndCodons(sequence)){
-            LOGGER.warn("La séquence ne commence et/ou ne finis pas par des codons START et END (start : "+sequence.substring(0,3)+", end : "+sequence.substring(sequence.length() - 3)+")");
+            LOGGER.trace("La séquence ne commence et/ou ne finis pas par des codons START et END (start : "+sequence.substring(0,3)+", end : "+sequence.substring(sequence.length() - 3)+")");
             return false;
         }
         int iMax = sequence.length() - 3;
