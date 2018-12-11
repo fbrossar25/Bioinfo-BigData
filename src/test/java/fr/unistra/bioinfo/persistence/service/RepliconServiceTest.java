@@ -4,13 +4,14 @@ import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -25,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @Import({StaticInitializer.class})
-@DataJpaTest
+@SpringBootTest
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class RepliconServiceTest {
-    public static final Logger LOGGER = LoggerFactory.getLogger(RepliconServiceTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RepliconServiceTest.class);
 
     @Autowired
     private RepliconService repliconService;
@@ -37,13 +38,25 @@ class RepliconServiceTest {
     private HierarchyService hierarchyService;
 
     @BeforeEach
-    public void beforeEach(){
-        assertNotNull(repliconService);
+    void beforeEach(){
         assertNotNull(hierarchyService);
+        assertNotNull(repliconService);
+        CommonUtils.disableHibernateLogging();
+        assertEquals(0, hierarchyService.count().longValue());
+        assertEquals(0, repliconService.count().longValue());
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @AfterEach
+    void afterEach(){
+        CommonUtils.disableHibernateLogging();
+        hierarchyService.deleteAll();
+        repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
     }
 
     @Test
-    public void removeTest(){
+    void removeTest(){
         CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", 1, h);
@@ -52,17 +65,17 @@ class RepliconServiceTest {
         repliconService.delete(r);
 
         assertNull(repliconService.getById(rId));
-        assertNull(r.getId());
+        assertFalse(repliconService.existsById(rId));
+
         assertNotNull(h.getId());
         assertTrue(hierarchyService.existsById(h.getId()));
-        assertFalse(repliconService.existsById(rId));
         List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
         assertNotNull(replicons);
         assertTrue(replicons.isEmpty());
     }
 
     @Test
-    public void saveTest(){
+    void saveTest(){
         CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", 1, h);
@@ -84,7 +97,7 @@ class RepliconServiceTest {
     }
 
     @Test
-    public void batchSaveTest(){
+    void batchSaveTest(){
         CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1","G1","S1","O1");
         int N = 10000;

@@ -12,7 +12,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManagerFactory;
 import java.util.List;
 
 @Service
@@ -23,8 +22,8 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     private final HierarchyManager hierarchyManager;
 
     @Autowired
-    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager, EntityManagerFactory entityManagerFactory) {
-        super(entityManagerFactory, RepliconEntity.class);
+    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager) {
+        super();
         this.repliconManager = repliconManager;
         this.hierarchyManager = hierarchyManager;
     }

@@ -27,10 +27,6 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
     @Column(nullable = false)
     private String organism;
 
-//    @OneToMany(mappedBy = "hierarchyEntity", orphanRemoval = true, cascade = CascadeType.REMOVE)
-//    @OnDelete(action = OnDeleteAction.CASCADE)
-//    private List<RepliconEntity> repliconEntities = new ArrayList<>();
-
     public HierarchyEntity(){}
 
     public HierarchyEntity(String kingdom, String group, String subgroup, String organism) {
@@ -80,37 +76,6 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
     public void setOrganism(String organism) {
         this.organism = organism;
     }
-
-//    /**
-//     * @return une copie défensive de la liste des repliconEntities de l'auteur
-//     */
-//    public List<RepliconEntity> getRepliconEntities() {
-//        return new ArrayList<>(repliconEntities);
-//    }
-//
-//    public void addRepliconEntity(RepliconEntity repliconEntity){
-//        addRepliconEntity(repliconEntity, true);
-//    }
-//
-//    public void addRepliconEntity(RepliconEntity repliconEntity, boolean set){
-//        if(repliconEntity != null){
-//            if(repliconEntities.contains(repliconEntity)){
-//                repliconEntities.set(repliconEntities.indexOf(repliconEntity), repliconEntity);
-//            }else{
-//                repliconEntities.add(repliconEntity);
-//            }
-//            if(set){
-//                repliconEntity.setHirarchyEntity(this, false);
-//            }
-//        }
-//    }
-//
-//    public void removeRepliconEntity(RepliconEntity repliconEntity){
-//        if(repliconEntity != null && repliconEntities.contains(repliconEntity)){
-//            repliconEntities.remove(repliconEntity);
-//            repliconEntity.setHierarchyEntity(null);
-//        }
-//    }
 
     @Override
     public boolean equals(Object object) {

@@ -2,9 +2,11 @@ package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.parsing.Phase;
+import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.hibernate.annotations.NaturalId;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
@@ -17,6 +19,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @GeneratedValue
     private Long id;
 
+    @NaturalId
     @Column(nullable = false)
     private String name;
 
@@ -27,16 +30,18 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 
-    @ElementCollection
-    @Column(nullable = false)
-    @CollectionTable
-    @MapKeyColumn
+    //@ElementCollection
+    @Column(nullable = false, columnDefinition = "text")
+    //@CollectionTable
+    //@MapKeyColumn
+    @Convert(converter = MapStringIntConverter.class)
     private Map<String, Integer> dinucleotides = new HashMap<>();
 
-    @ElementCollection
-    @Column(nullable = false)
-    @CollectionTable
-    @MapKeyColumn
+    //@ElementCollection
+    @Column(nullable = false, columnDefinition = "text")
+    //@CollectionTable
+    //@MapKeyColumn
+    @Convert(converter = MapStringIntConverter.class)
     private Map<String, Integer> trinucleotides = new HashMap<>();
 
     @Column(nullable = false)

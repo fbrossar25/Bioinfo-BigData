@@ -85,6 +85,12 @@ public class GenbankUtils {
         }
     }
 
+    /**
+     * Télécharge tous les replicons présent en BDD, un update est nécessaire avant d'appeler cette fonction
+     * @param callback la callback contenant les données une fois les téléchargements tous terminés
+     * @throws IOException En cas d'erreurs pendant le téléchargement
+     * @see GenbankUtils#updateNCDatabase
+     */
     public static void downloadAllReplicons(CompletableFuture<List<File>> callback) throws IOException{
         downloadReplicons(repliconService.getAll(), callback);
     }
@@ -137,7 +143,17 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getFullOrganismsListRequestURL(boolean ncOnly){
-        return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"NC_\"" : "", "organism", "kingdom", "group", "subgroup", "replicons");
+        return GenbankUtils.getFullOrganismsListRequestURL(ncOnly, 0);
+    }
+
+    /**
+     * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
+     * @param ncOnly Ne récupère que les organismes ayant au moins 1 replicons de type NC_*
+     * @param pageNumber Nombre de page à charger (0 pour tout charger)
+     * @return l'URL de la requête
+     */
+    public static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
+        return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"NC_\"" : "", pageNumber, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
     /**
@@ -156,7 +172,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     public static String getReignTotalEntriesNumberURL(Reign reign){
-        return buildNgramURL(reign, null);
+        return buildNgramURL(reign, null, 1);
     }
 
     /**
@@ -175,14 +191,22 @@ public class GenbankUtils {
      * @param group groupe de l'organisme
      * @param subgroup sous-groupe de l'organisme
      * @param organism nom de l'organism
-     * @return Le chemin à l'intérieur de l'arborescence des organismes
+     * @return Le chemin de l'organisme
+     * @see CommonUtils#RESULTS_PATH
      */
     public static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
-    public static Path getPathOfOrganism(HierarchyEntity h){
-        return Paths.get(h.getKingdom(), h.getGroup(), h.getSubgroup(), h.getOrganism());
+    /**
+     * Retourne le chemin de l'organisme à l'intérieur de l'arborescence des organismes.</br>
+     * Tous les paramètres sont normalisés et ne doivent pas être null.
+     * @param hierarchy hierarchy du dossier
+     * @return Le chemin du dossier de l'organisme
+     * @see CommonUtils#RESULTS_PATH
+     */
+    public static Path getPathOfOrganism(HierarchyEntity hierarchy){
+        return CommonUtils.RESULTS_PATH.resolve(Paths.get(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
     }
 
     /**
@@ -195,12 +219,22 @@ public class GenbankUtils {
         return getPathOfOrganism(r.getHierarchyEntity()).resolve(r.getName()+".gb");
     }
 
+
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.</br>
      * Les logs d'hibernante sont désactivés pour cette méthode
      * @throws IOException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws IOException {
+        GenbankUtils.updateNCDatabase(0);
+    }
+
+    /**
+     *
+     * @param limit limite d'entité à charger (pour les tests principalement)
+     * @throws IOException si un problème interviens lors de la requête à genbank
+     */
+    public static void updateNCDatabase(int limit) throws IOException {
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode genbankJSON;
@@ -208,7 +242,7 @@ public class GenbankUtils {
         SimpleModule genBankModule = new SimpleModule();
         genBankModule.addDeserializer(HierarchyEntity.class, new JSONUtils.HierarchyFromGenbankDeserializer());
         mapper.registerModule(genBankModule);
-        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true))) {
+        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true, limit))) {
             LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
@@ -216,7 +250,8 @@ public class GenbankUtils {
         }
         JsonNode dataNode = genbankJSON.get("ngout").get("data");
         JsonNode contentNode = dataNode.get("content");
-        int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
+        //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
+        int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
         LOGGER.info("Traitement de "+numberOfOrganisms+" organismes");
         List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
         for(JsonNode entry : contentNode) {
@@ -251,7 +286,15 @@ public class GenbankUtils {
             controller.getProgressBar().setProgress(1.0F);
         }
         LOGGER.info("Sauvegarde de "+replicons.size()+" replicons");
-        repliconService.saveAll(replicons);
+        Map<String, RepliconEntity> noDuplicates = new HashMap<>(replicons.size());
+        for(RepliconEntity r : replicons){
+            if(!noDuplicates.containsKey(r.getName())){
+                noDuplicates.put(r.getName(), r);
+            }else{
+                LOGGER.warn("Doublon encore présent : "+r+" -> "+noDuplicates.get(r.getName()));
+            }
+        }
+        repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
         CommonUtils.enableHibernateLogging(false);
     }
 

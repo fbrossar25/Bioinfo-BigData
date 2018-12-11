@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManagerFactory;
 import javax.transaction.Transactional;
 import java.util.List;
 
@@ -22,8 +21,8 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
     private final RepliconManager repliconManager;
 
     @Autowired
-    public HierarchyServiceImpl(HierarchyManager hierarchyManager, RepliconManager repliconManager, EntityManagerFactory entityManagerFactory) {
-        super(entityManagerFactory, HierarchyEntity.class);
+    public HierarchyServiceImpl(HierarchyManager hierarchyManager, RepliconManager repliconManager) {
+        super();
         this.hierarchyManager = hierarchyManager;
         this.repliconManager = repliconManager;
     }
@@ -62,5 +61,11 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
             }
         }
         return entity;
+    }
+
+    @Override
+    public void deleteAll() {
+        repliconManager.deleteAll();
+        hierarchyManager.deleteAll();
     }
 }

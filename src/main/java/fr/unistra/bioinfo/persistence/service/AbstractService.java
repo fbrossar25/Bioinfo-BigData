@@ -19,6 +19,8 @@ public interface AbstractService<T extends IEntity<K>, K extends Serializable> {
     List<T> saveAll(@NonNull List<T> entities);
     void delete(@NonNull T entity);
     void deleteAll(@NonNull List<T> entities);
+    /** Supprime toutes les entités */
+    void deleteAll();
     IManager<T, K> getManager();
     Long count();
     Page<T> getAll(@NonNull Pageable p);

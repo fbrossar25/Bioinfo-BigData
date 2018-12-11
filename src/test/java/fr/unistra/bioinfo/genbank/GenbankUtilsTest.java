@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.genbank;
 
 import fr.unistra.bioinfo.Main;
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
@@ -8,8 +9,8 @@ import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -45,9 +46,21 @@ class GenbankUtilsTest {
     private RepliconService repliconService;
 
     @BeforeEach
-    public void beforeEach(){
+    void beforeEach(){
         assertNotNull(hierarchyService);
         assertNotNull(repliconService);
+        CommonUtils.disableHibernateLogging();
+        assertEquals(0, hierarchyService.count().longValue());
+        assertEquals(0, repliconService.count().longValue());
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @AfterEach
+    void afterEach(){
+        CommonUtils.disableHibernateLogging();
+        hierarchyService.deleteAll();
+        repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
     }
 
     @Test
@@ -70,9 +83,9 @@ class GenbankUtilsTest {
 
     @Test
     void downloadReplicons(){
-        int PAGE_SIZE = 64;
+        int PAGE_SIZE = 16;
         try {
-            GenbankUtils.updateNCDatabase();
+            GenbankUtils.updateNCDatabase(1);
             List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, PAGE_SIZE)).getContent();
             assertEquals(PAGE_SIZE, replicons.size());
             CompletableFuture<List<File>> future = new CompletableFuture<>();
@@ -89,10 +102,20 @@ class GenbankUtilsTest {
     }
 
 
-    @Disabled("Test long à l'éxecution")
     @Test
     void createOrganismsTreeStructure(){
+        try {
+            GenbankUtils.updateNCDatabase(10);
+        } catch (IOException e) {
+            fail("Erreur lors de l'update", e);
+        }
         assertTrue(GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results")));
+        File dir;
+        for(RepliconEntity r : repliconService.getAll()){
+            dir = GenbankUtils.getPathOfOrganism(r.getHierarchyEntity()).toFile();
+            assertTrue(dir.exists(), dir.getPath()+" n'existe pas");
+            assertTrue(dir.isDirectory(), dir.getPath()+" n'est pas un dossier");
+        }
     }
 
     @Test
@@ -105,7 +128,7 @@ class GenbankUtilsTest {
             assertEquals(queryString, GenbankUtils.buildNgramQueryString(Reign.EUKARYOTES, "replicons like \"NC_\""));
             queryString = "[display()].from(GenomeAssemblies).matching(tab==[\"Prokaryotes\"])";
             uriBuilder.setParameter("q", queryString);
-            uriBuilder.setParameter("limit", "0");
+            uriBuilder.setParameter("limit", "1");
             assertEquals(uriBuilder.build().toString(), GenbankUtils.getReignTotalEntriesNumberURL(Reign.PROKARYOTES));
             queryString = "[hist(group,subgroup,kingdom)].from(GenomeAssemblies).matching(tab==[\"Viruses\"])";
             uriBuilder.setParameter("q", queryString);
