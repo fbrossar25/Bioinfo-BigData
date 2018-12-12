@@ -12,10 +12,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public final class CommonUtils {
     private CommonUtils(){}
@@ -26,6 +23,8 @@ public final class CommonUtils {
 
     public static final Set<String> DINUCLEOTIDES;
     public static final Set<String> TRINUCLEOTIDES;
+    public static final Set<String> TRINUCLEOTIDES_INIT = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("ATG", "CTG", "TTG", "GTG", "ATA", "ATC", "ATT", "TTA")));
+    public static final Set<String> TRINUCLEOTIDES_STOP = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("TAA", "TAG", "TGA", "TTA")));
     static{
         Set<String> diset = new TreeSet<>();
         Set<String> triset = new TreeSet<>();

@@ -52,6 +52,10 @@ dependencies {
 
     implementation group: 'com.google.guava', name: 'guava', version: '26.0-jre'
     implementation "com.github.rholder:guava-retrying:2.0.0"
+    implementation("org.biojava:biojava-core:5.1.1"){
+        exclude group: 'org.apache.logging.log4j'
+    }
+
 }
 
 //println "${rootProject.projectDir}"
