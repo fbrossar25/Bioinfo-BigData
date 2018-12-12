@@ -7,6 +7,12 @@ import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
+import org.biojava.nbio.core.sequence.features.FeatureInterface;
+import org.biojava.nbio.core.sequence.features.Qualifier;
+import org.biojava.nbio.core.sequence.io.GenbankReaderHelper;
+import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -24,7 +30,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,6 +80,7 @@ class GenbankParserTest {
         assertEquals("Animals", h.getGroup());
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
+        assertEquals(RepliconType.MITOCHONDRION, r.getType());
         assertTrue(r.isComputed());
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
@@ -110,6 +119,7 @@ class GenbankParserTest {
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
         assertTrue(r.isComputed());
+        assertEquals(RepliconType.MITOCHONDRION, r.getType());
     }
 
     //Entre 50 secondes et 1min 30, core i5, 2 coeurs physiques, 4 logiques, 2.8Ghz
@@ -138,5 +148,32 @@ class GenbankParserTest {
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
         assertTrue(r.isComputed());
+        assertEquals(RepliconType.MITOCHONDRION, r.getType());
+    }
+
+    @Test
+    @Disabled("Tests pour comprendre le fonctionnement de BioJava")
+    void biojavaTest(){
+        final File repliconFile = genbankTestFilePath.toFile();
+        LinkedHashMap<String, DNASequence> dnaSequences = null;
+        try {
+            dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
+        } catch (Exception e) {
+            fail("Erreur lecture fichier genbank",e);
+        }
+        for(DNASequence seq : dnaSequences.values()) {
+            for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeatures()) {
+                LOGGER.info(feature.getDescription());
+            }
+            LOGGER.info("-----------------Source features---------------");
+            for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> source : seq.getFeaturesByType("source")) {
+                for (Map.Entry<String, List<Qualifier>> entry : source.getQualifiers().entrySet()) {
+                    LOGGER.info(entry.getKey() + " -> " + entry.getValue().get(0));
+                }
+                for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> childrenFeature : source.getChildrenFeatures()) {
+                    LOGGER.info(childrenFeature.getDescription());
+                }
+            }
+        }
     }
 }

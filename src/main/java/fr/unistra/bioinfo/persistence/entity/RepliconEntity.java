@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.parsing.Phase;
+import fr.unistra.bioinfo.parsing.RepliconType;
 import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -26,21 +27,18 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private Integer version = 1;
 
+    @Column(nullable = false)
+    private RepliconType type = RepliconType.DNA;
+
     @ManyToOne
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 
-    //@ElementCollection
     @Column(nullable = false, columnDefinition = "text")
-    //@CollectionTable
-    //@MapKeyColumn
     @Convert(converter = MapStringIntConverter.class)
     private Map<String, Integer> dinucleotides = new HashMap<>();
 
-    //@ElementCollection
     @Column(nullable = false, columnDefinition = "text")
-    //@CollectionTable
-    //@MapKeyColumn
     @Convert(converter = MapStringIntConverter.class)
     private Map<String, Integer> trinucleotides = new HashMap<>();
 
@@ -197,5 +195,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
                 .append(isComputed, o.isComputed)
                 .append(isDownloaded, o.isDownloaded)
                 .build();
+    }
+
+    public RepliconType getType() {
+        return type;
+    }
+
+    public void setType(RepliconType type) {
+        this.type = type;
     }
 }

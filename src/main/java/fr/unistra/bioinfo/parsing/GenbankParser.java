@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 import org.biojava.nbio.core.sequence.features.FeatureInterface;
+import org.biojava.nbio.core.sequence.features.Qualifier;
 import org.biojava.nbio.core.sequence.io.GenbankReaderHelper;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.slf4j.Logger;
@@ -19,10 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,6 +82,23 @@ public final class GenbankParser {
                     String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
                     cdsList.add(cdsSeq);
                 }
+                FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> source = seq.getFeaturesByType("source").get(0);
+                for (Map.Entry<String, List<Qualifier>> entry : source.getQualifiers().entrySet()) {
+                    switch(entry.getKey()){
+                        case "organelle":
+                            List<Qualifier> qualifiers = entry.getValue();
+                            if(!qualifiers.isEmpty() && "plastid".equals(entry.getValue().get(0).getValue())){
+                                repliconEntity.setType(RepliconType.PLAST);
+                            } else {
+                                repliconEntity.setType(RepliconType.MITOCHONDRION);
+                            }
+                            break;
+                        case "chromosome": repliconEntity.setType(RepliconType.CHROMOSOME); break;
+                        case "linkage_group": repliconEntity.setType(RepliconType.LINKAGE); break;
+                        case "plasmid": repliconEntity.setType(RepliconType.PLASMID); break;
+                        default:
+                    }
+                }
                 countFrequencies(cdsList, repliconEntity);
                 repliconEntity.setComputed(true);
                 synchronized(synchronizedObject){
@@ -131,7 +146,6 @@ public final class GenbankParser {
      * @return true si le cds est valide et pris en compte, false sinon
      */
     private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
-        //TODO vérifier codons START et END
         if(StringUtils.isBlank(sequence)){
             LOGGER.trace("La séquence du replicon '"+repliconEntity.getName()+"' est vide");
             return false;
