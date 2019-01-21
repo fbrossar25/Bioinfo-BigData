@@ -142,4 +142,14 @@ class GenbankUtilsTest {
             fail(e);
         }
     }
+
+    @Test
+    public void testDownloadThenUpdateReplicons(){
+        try {
+            GenbankUtils.updateNCDatabase(1);
+            GenbankUtils.updateNCDatabase(1);
+        } catch (IOException e) {
+            fail(e);
+        }
+    }
 }
