@@ -125,25 +125,6 @@ public class GenbankUtils {
             LOGGER.error("Syntaxe URI incorrecte", e);
         }
         return uri;
-        //return "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gb&id="+fileName;
-    }
-
-    /**
-     * Retourne l'URL permettant d'obtenir au format JSON la liste entière des organismes d'un royaume
-     * @param reign règne
-     * @return l'URL de la requête
-     */
-    public static String getOrganismsListRequestURL(Reign reign){
-        return buildNgramURL(reign, null, "group", "subgroup", "level");
-    }
-
-    /**
-     * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
-     * @param ncOnly Ne récupère que les organismes ayant au moins 1 replicons de type NC_*
-     * @return l'URL de la requête
-     */
-    public static String getFullOrganismsListRequestURL(boolean ncOnly){
-        return GenbankUtils.getFullOrganismsListRequestURL(ncOnly, 0);
     }
 
     /**
@@ -152,7 +133,7 @@ public class GenbankUtils {
      * @param pageNumber Nombre de page à charger (0 pour tout charger)
      * @return l'URL de la requête
      */
-    public static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
+    static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
         return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"NC_\"" : "", pageNumber, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
@@ -162,8 +143,8 @@ public class GenbankUtils {
      * @param reign règne
      * @return l'URL de la requête
      */
-    public static String getKingdomCountersURL(Reign reign){
-        return buildNgramURL(reign, null, true,"group", "subgroup", "kingdom");
+    static String getKingdomCountersURL(Reign reign){
+        return buildNgramURL(reign, null, "group", "subgroup", "kingdom");
     }
 
     /**
@@ -171,7 +152,7 @@ public class GenbankUtils {
      * @param reign règne
      * @return l'URL de la requête
      */
-    public static String getReignTotalEntriesNumberURL(Reign reign){
+    static String getReignTotalEntriesNumberURL(Reign reign){
         return buildNgramURL(reign, null, 1);
     }
 
@@ -180,7 +161,7 @@ public class GenbankUtils {
      * @param s la chaîne à normaliser
      * @return la chaîne normalisée
      */
-    public static String normalizeString(String s){
+    private static String normalizeString(String s){
         return StringUtils.isBlank(s) ? "" : s.replaceAll("[/\\\\:*<>?|]+","").trim();
     }
 
@@ -194,7 +175,7 @@ public class GenbankUtils {
      * @return Le chemin de l'organisme
      * @see CommonUtils#RESULTS_PATH
      */
-    public static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
+    private static Path getPathOfOrganism(String kingdom, String group, String subgroup, String organism){
         return Paths.get(normalizeString(kingdom), normalizeString(group), normalizeString(subgroup), normalizeString(organism));
     }
 
@@ -205,7 +186,7 @@ public class GenbankUtils {
      * @return Le chemin du dossier de l'organisme
      * @see CommonUtils#RESULTS_PATH
      */
-    public static Path getPathOfOrganism(HierarchyEntity hierarchy){
+    static Path getPathOfOrganism(HierarchyEntity hierarchy){
         return CommonUtils.RESULTS_PATH.resolve(Paths.get(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
     }
 
@@ -215,7 +196,7 @@ public class GenbankUtils {
      * @param r le replicon
      * @return le chemin du fichier *.gb
      */
-    public static Path getPathOfReplicon(RepliconEntity r){
+    static Path getPathOfReplicon(RepliconEntity r){
         return getPathOfOrganism(r.getHierarchyEntity()).resolve(r.getName()+".gb");
     }
 
@@ -234,7 +215,7 @@ public class GenbankUtils {
      * @param limit limite d'entité à charger (pour les tests principalement)
      * @throws IOException si un problème interviens lors de la requête à genbank
      */
-    public static void updateNCDatabase(int limit) throws IOException {
+    static void updateNCDatabase(int limit) throws IOException {
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode genbankJSON;
@@ -252,7 +233,7 @@ public class GenbankUtils {
         JsonNode contentNode = dataNode.get("content");
         //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
         int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
-        LOGGER.info("Traitement de "+numberOfOrganisms+" organismes");
+        LOGGER.info("Traitement de {} organismes", numberOfOrganisms);
         List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
         for(JsonNode entry : contentNode) {
             String organism = entry.get("organism").textValue();
@@ -265,7 +246,7 @@ public class GenbankUtils {
                 hierarchyService.save(h);
             }
             if(++organismCount % 100 == 0){
-                LOGGER.debug(organismCount+"/"+numberOfOrganisms+" organismes traités");
+                LOGGER.debug("{}/{} organismes traités", organismCount, numberOfOrganisms);
 
 
             }
@@ -285,13 +266,13 @@ public class GenbankUtils {
             Platform.runLater(()->controller.getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" organismes mis à jour"));
             controller.getProgressBar().setProgress(1.0F);
         }
-        LOGGER.info("Sauvegarde de "+replicons.size()+" replicons");
+        LOGGER.info("Sauvegarde de {} replicons", replicons.size());
         Map<String, RepliconEntity> noDuplicates = new HashMap<>(replicons.size());
         for(RepliconEntity r : replicons){
             if(!noDuplicates.containsKey(r.getName())){
                 noDuplicates.put(r.getName(), r);
             }else{
-                LOGGER.warn("Doublon encore présent : "+r+" -> "+noDuplicates.get(r.getName()));
+                LOGGER.warn("Doublon encore présent : {} -> {}", r, noDuplicates.get(r.getName()));
             }
         }
         repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
@@ -306,7 +287,7 @@ public class GenbankUtils {
                 FileUtils.forceMkdir(entryPath.toFile());
             }
         } catch (IOException e) {
-            LOGGER.error("Erreur lors de la création de l'arborescence des organismes dans '"+rootDirectory+"'", e);
+            LOGGER.error("Erreur lors de la création de l'arborescence des organismes dans '{}'", rootDirectory, e);
             return false;
         }
         return true;
@@ -330,13 +311,13 @@ public class GenbankUtils {
      * @param reign règne
      * @return nombre d'entrées du royaumes
      */
-    public static int getNumberOfEntries(Reign reign){
+    static int getNumberOfEntries(Reign reign){
         int numerOfEntries = -1;
         try(BufferedReader reader = readRequest(getReignTotalEntriesNumberURL(reign))){
             JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
             numerOfEntries = json.get("ngout").get("data").get("totalCount").intValue();
         }catch(IOException | NullPointerException e){
-            LOGGER.error("Erreur de récupération du nombre total d'entrées du règne '"+ reign.getSearchTable()+"'",e);
+            LOGGER.error("Erreur de récupération du nombre total d'entrées du règne '{}'", reign.getSearchTable(),e);
         }
         return numerOfEntries;
     }
@@ -347,7 +328,7 @@ public class GenbankUtils {
      * @return le BufferedReader
      * @throws IOException Exception lancée si un problème survient à l'instanciation (URL malformée, ...)
      */
-    public static BufferedReader readRequest(String requestURL) throws IOException {
+    private static BufferedReader readRequest(String requestURL) throws IOException {
         return new BufferedReader(new InputStreamReader(new URL(requestURL).openStream()));
     }
 
@@ -369,22 +350,22 @@ public class GenbankUtils {
         GenbankUtils.hierarchyService = hierarchyService;
     }
 
-    public static String buildNgramURL(Reign reign, String condition, String... fields){
-        return buildNgramURL(reign, condition, 0, false, fields);
+    private static String buildNgramURL(Reign reign, String condition,  String... fields){
+        return buildNgramURL(reign, condition, 0, fields);
     }
 
-    public static String buildNgramURL(Reign reign, String condition, boolean useHist, String... fields){
-        return buildNgramURL(reign, condition, 0, useHist, fields);
-    }
-
-    public static String buildNgramURL(Reign reign, String condition, int limit, String... fields){
-        return buildNgramURL(reign, condition, limit, false, fields);
-    }
-
-    private static String buildNgramURL(Reign reign, String condition, int limit, boolean useHist, String... fields){
+    /**
+     * Retourne l'URL permettant d'avoir les meta-données de Genbank sur les replicons
+     * @param reign Le reigne souhaité
+     * @param condition La condition permettant de filtrer les résultat
+     * @param limit Le nombre de résultat max à retourner
+     * @param fields Les champs souhaités dans les données
+     * @return L'URL à appeler pour obtenir les données au format JSON
+     */
+    private static String buildNgramURL(Reign reign, String condition, int limit, String... fields){
         try{
             URIBuilder builder = new URIBuilder(NGRAM_BASE_URL);
-            builder.setParameter("q",GenbankUtils.buildNgramQueryString(reign, condition, useHist, fields));
+            builder.setParameter("q",GenbankUtils.buildNgramQueryString(reign, condition, fields));
             builder.setParameter("limit", Integer.toString(limit));
             return builder.build().toString();
         }catch(URISyntaxException e){
@@ -393,13 +374,9 @@ public class GenbankUtils {
         return null;
     }
 
-    public static String buildNgramQueryString(Reign reign, String condition, String... fields){
-        return buildNgramQueryString(reign, condition, false, fields);
-    }
-
-    public static String buildNgramQueryString(Reign reign, String condition, boolean useHist, String... fields){
+    static String buildNgramQueryString(Reign reign, String condition, String... fields){
         StringBuilder builder = new StringBuilder(128);
-        builder.append("[").append(useHist ? "hist(" : "display(");
+        builder.append("[").append("display(");
         if(ArrayUtils.isNotEmpty(fields)){
             int lastIdx = fields.length-1;
             for(int i=0; i<lastIdx; i++){
@@ -439,7 +416,7 @@ public class GenbankUtils {
                     entity.setOrganism(jsonHierarchy.get("organism").textValue());
                 }
         }catch(IOException e){
-            LOGGER.error("Erreur lors de la récupération des informations de l'organisme '"+organism+"'", e);
+            LOGGER.error("Erreur lors de la récupération des informations de l'organisme '{}'", organism, e);
         }
         return entity;
     }
