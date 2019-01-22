@@ -8,10 +8,10 @@ import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManagerFactory;
 import java.util.List;
 
 @Service
@@ -22,14 +22,14 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     private final HierarchyManager hierarchyManager;
 
     @Autowired
-    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager, EntityManagerFactory entityManagerFactory) {
-        super(entityManagerFactory, RepliconEntity.class);
+    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager) {
+        super();
         this.repliconManager = repliconManager;
         this.hierarchyManager = hierarchyManager;
     }
 
     @Override
-    public RepliconEntity save(RepliconEntity entity) {
+    public RepliconEntity save(@NonNull RepliconEntity entity) {
         HierarchyEntity h = entity.getHierarchyEntity();
         if(h != null && h.getId() == null){
             hierarchyManager.save(h);
@@ -38,7 +38,7 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     }
 
     @Override
-    public List<RepliconEntity> saveAll(List<RepliconEntity> entities) {
+    public List<RepliconEntity> saveAll(@NonNull List<RepliconEntity> entities) {
         for(RepliconEntity entity : entities){
             HierarchyEntity h = entity.getHierarchyEntity();
             if(h != null && h.getId() == null){
@@ -53,10 +53,15 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     }
 
     @Override
-    public List<RepliconEntity> getByHierarchy(HierarchyEntity hierarchy) {
+    public List<RepliconEntity> getByHierarchy(@NonNull HierarchyEntity hierarchy) {
         LOGGER.debug("Calling with '"+hierarchy.getOrganism()+"'");
         List<RepliconEntity> entities = repliconManager.getAllByHierarchyEntity(hierarchy);
         LOGGER.debug("Matched '"+entities.size()+"' replicons");
         return entities;
+    }
+
+    @Override
+    public RepliconEntity getByName(@NonNull String name) {
+        return repliconManager.getByName(name);
     }
 }

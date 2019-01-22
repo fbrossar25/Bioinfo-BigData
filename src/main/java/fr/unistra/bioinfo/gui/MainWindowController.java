@@ -69,12 +69,12 @@ public class MainWindowController {
             }else{
                 logsAppender = null;
                 logs.setText("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
-                LOGGER.warn("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+                LOGGER.warn("L'appender '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
             }
         }else{
             logsAppender = null;
             logs.setText("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
-            LOGGER.warn("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+            LOGGER.warn("Le logger '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
         }
     }
 
