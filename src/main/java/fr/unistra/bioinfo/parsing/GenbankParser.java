@@ -67,7 +67,7 @@ public final class GenbankParser {
                         repliconEntity.setName(seq.getAccession().getID());
                         HierarchyEntity h = readHierarchy(repliconFile);
                         if(h == null){
-                            LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '"+repliconFile.getAbsolutePath()+"', abandon du parsing");
+                            LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '{}', abandon du parsing",repliconFile.getAbsolutePath());
                             return false;
                         }
                         hierarchyService.save(h);
@@ -106,7 +106,7 @@ public final class GenbankParser {
                 }
             }
         }catch(Exception e){
-            LOGGER.error("Erreur de lecture du fichier '"+repliconFile.getPath()+"'", e);
+            LOGGER.error("Erreur de lecture du fichier '{}'", repliconFile.getPath(), e);
             return false;
         }
         return true;
@@ -147,13 +147,13 @@ public final class GenbankParser {
      */
     private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
         if(StringUtils.isBlank(sequence)){
-            LOGGER.trace("La séquence du replicon '"+repliconEntity.getName()+"' est vide");
+            LOGGER.trace("La séquence du replicon '{}' est vide", repliconEntity.getName());
             return false;
         }else if(sequence.length() % 3 != 0){
-            LOGGER.trace("La taille de la séquence du replicon '"+repliconEntity.getName()+"' ("+sequence.length()+") n'est pas multiple de 3");
+            LOGGER.trace("La taille de la séquence du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
             return false;
         }else if(!checkStartEndCodons(sequence)){
-            LOGGER.trace("La séquence ne commence et/ou ne finis pas par des codons START et END (start : "+sequence.substring(0,3)+", end : "+sequence.substring(sequence.length() - 3)+")");
+            LOGGER.trace("La séquence ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", sequence.substring(0,3), sequence.substring(sequence.length() - 3));
             return false;
         }
         int iMax = sequence.length() - 3;
@@ -200,7 +200,7 @@ public final class GenbankParser {
     private static HierarchyEntity readHierarchy(@NonNull File repliconFile) throws IOException{
         String organism = readOrganism(repliconFile);
         if(StringUtils.isBlank(organism)){
-            LOGGER.warn("le fichier '"+repliconFile.getName()+"' ne contient pas de section ORGANISM");
+            LOGGER.warn("le fichier '{}' ne contient pas de section ORGANISM", repliconFile.getName());
             return null;
         }
         return hierarchyService.getByOrganism(organism, true);
