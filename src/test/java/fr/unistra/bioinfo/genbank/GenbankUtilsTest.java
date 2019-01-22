@@ -144,10 +144,21 @@ class GenbankUtilsTest {
     }
 
     @Test
-    public void testDownloadThenUpdateReplicons(){
+    void testDownloadThenUpdateReplicons(){
         try {
-            GenbankUtils.updateNCDatabase(1);
-            GenbankUtils.updateNCDatabase(1);
+            GenbankUtils.updateNCDatabase(10);
+            assertTrue(repliconService.count() > 0);
+            RepliconEntity replicon = repliconService.getAll().get(0);
+            assertNotNull(replicon);
+            replicon.setVersion(0);
+            replicon.setComputed(true);
+            replicon.setDownloaded(true);
+            repliconService.save(replicon);
+            GenbankUtils.updateNCDatabase(10);
+            replicon = repliconService.getByName(replicon.getName());
+            assertTrue(replicon.getVersion() > 0);
+            assertFalse(replicon.isComputed());
+            assertFalse(replicon.isDownloaded());
         } catch (IOException e) {
             fail(e);
         }

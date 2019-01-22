@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.lang.NonNull;
 
 import java.io.BufferedReader;
@@ -31,8 +32,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,12 +49,8 @@ public class GenbankUtils {
     private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
     private static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
-    private static final Integer REQUEST_LIMIT = (StringUtils.isNotBlank(EUTILS_API_KEY) && LocalDateTime.now().isAfter(LocalDateTime.of(2018, Month.DECEMBER, 1, 12, 0))) ?  10 : 3;
+    private static final Integer REQUEST_LIMIT = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
-
-    static{
-        LOGGER.info("Nombre de requêtes limitées à "+REQUEST_LIMIT+" par secondes");
-    }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
@@ -133,7 +128,7 @@ public class GenbankUtils {
      * @param pageNumber Nombre de page à charger (0 pour tout charger)
      * @return l'URL de la requête
      */
-    static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
+    private static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
         return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"NC_\"" : "", pageNumber, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
@@ -211,13 +206,11 @@ public class GenbankUtils {
     }
 
     /**
-     *
-     * @param limit limite d'entité à charger (pour les tests principalement)
-     * @throws IOException si un problème interviens lors de la requête à genbank
+     * Retourne les données de genbank pour une limite donnée
+     * @return les données en JSON
+     * @throws IOException si une erreur suirviens lors du téléchargement
      */
-    static void updateNCDatabase(int limit) throws IOException {
-        MainWindowController controller = MainWindowController.get();
-        CommonUtils.disableHibernateLogging();
+    private static JsonNode getGenbankDatas(int limit) throws IOException, JSONException{
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule genBankModule = new SimpleModule();
@@ -229,37 +222,55 @@ public class GenbankUtils {
         }catch (IOException e){
             throw new IOException("Erreur lors du téléchargement de la liste des entrées", e);
         }
-        JsonNode dataNode = genbankJSON.get("ngout").get("data");
+        if(!genbankJSON.has("ngout") || !genbankJSON.get("ngout").has("data")){
+            throw new JSONException("Pas de noeud data dans le JSON");
+        }
+        return genbankJSON.get("ngout").get("data");
+    }
+
+    private static List<RepliconEntity> jsonEntryToReplicon(JsonNode organismJson){
+        String organism = organismJson.get("organism").textValue();
+        HierarchyEntity h = hierarchyService.getByOrganism(organism);
+        if(h == null){
+            String kingdom = organismJson.get("kingdom").textValue();
+            String group = organismJson.get("group").textValue();
+            String subgroup = organismJson.get("subgroup").textValue();
+            h = new HierarchyEntity(kingdom, group, subgroup, organism);
+            hierarchyService.save(h);
+        }
+        return extractRepliconsFromJSONEntry(organismJson.get("replicons").textValue(), h);
+    }
+
+    /**
+     *
+     * @param limit limite d'entité à charger (pour les tests principalement)
+     * @throws IOException si un problème interviens lors de la requête à genbank
+     */
+    static void updateNCDatabase(int limit) throws IOException {
+        MainWindowController controller = MainWindowController.get();
+        CommonUtils.disableHibernateLogging();
+        JsonNode dataNode;
+        try{
+            dataNode = getGenbankDatas(limit);
+        }catch(IOException | JSONException e){
+            LOGGER.error("Erreur lors de la récupération des données de GenBank", e);
+            return;
+        }
         JsonNode contentNode = dataNode.get("content");
         //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
         int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
         LOGGER.info("Traitement de {} organismes", numberOfOrganisms);
         List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
-        for(JsonNode entry : contentNode) {
-            String organism = entry.get("organism").textValue();
-            HierarchyEntity h = hierarchyService.getByOrganism(organism);
-            if(h == null){
-                String kingdom = entry.get("kingdom").textValue();
-                String group = entry.get("group").textValue();
-                String subgroup = entry.get("subgroup").textValue();
-                h = new HierarchyEntity(kingdom, group, subgroup, organism);
-                hierarchyService.save(h);
-            }
+        for(JsonNode organismJson : contentNode) {
+            replicons.addAll(jsonEntryToReplicon(organismJson));
             if(++organismCount % 100 == 0){
-                LOGGER.debug("{}/{} organismes traités", organismCount, numberOfOrganisms);
-
-
+                LOGGER.info("{}/{} organismes traités", organismCount, numberOfOrganisms);
             }
             float d = ((float)organismCount / numberOfOrganisms);
             if(controller != null){
                 controller.getProgressBar().setProgress(d);
                 final int j = organismCount;
                 Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
-            }
-            List<RepliconEntity> extractedReplicons = extractRepliconsFromJSONEntry(entry.get("replicons").textValue(), h);
-            replicons.addAll(extractedReplicons);
-            for(RepliconEntity r : extractedReplicons){
-                r.setHierarchyEntity(h);
             }
         }
         if(controller != null){
@@ -293,6 +304,14 @@ public class GenbankUtils {
         return true;
     }
 
+    /**
+     * Retourne La liste des replicons d'un json.Les replicons déjà existants en base sont retourés</br>
+     * et mis à jour si la version en base est inférieure à la version indiquée dans le JSON.
+     * </br> Les replicons, nouveaux comme existants ne sont pas sauvegardés.
+     * @param repliconsList La liste des replicon en chaîne de caractère
+     * @param hierarchy Le hierarchy des replicons
+     * @return La liste des replicons, les nouveaux instanciés, et les existants récupérés dans la base et mis à jour.
+     */
     private static List<RepliconEntity> extractRepliconsFromJSONEntry(String repliconsList, HierarchyEntity hierarchy) {
         List<RepliconEntity> replicons = new ArrayList<>();
         String[] repliconsJSONValues = repliconsList.split(";");
@@ -300,7 +319,22 @@ public class GenbankUtils {
         for(String value : repliconsJSONValues){
             m = RegexUtils.REPLICON_PATTERN.matcher(value);
             if(m.matches()){
-                replicons.add(new RepliconEntity(m.group(1), Integer.parseInt(m.group(2)), hierarchy));
+                String name = m.group(1);
+                Integer version = Integer.parseInt(m.group(2));
+                RepliconEntity replicon = repliconService.getByName(name);
+                if(replicon == null) {
+                    replicon = new RepliconEntity(name, version, hierarchy);
+                    LOGGER.trace("Replicon '{}' ajouté en base", replicon);
+                }else{
+                    //Mise à jour du replicon
+                    if(replicon.getVersion() < version){
+                        replicon.setDownloaded(false);
+                        replicon.setComputed(false);
+                        replicon.setVersion(version);
+                    }
+                    LOGGER.trace("Replicon '{}' mis à jour", replicon);
+                }
+                replicons.add(replicon);
             }
         }
         return replicons;
