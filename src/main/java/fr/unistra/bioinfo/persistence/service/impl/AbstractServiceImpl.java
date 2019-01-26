@@ -5,7 +5,6 @@ import fr.unistra.bioinfo.persistence.entity.members.EntityMembers;
 import fr.unistra.bioinfo.persistence.manager.IManager;
 import fr.unistra.bioinfo.persistence.service.AbstractService;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hibernate.SessionFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,21 +12,13 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManagerFactory;
 import java.io.Serializable;
 import java.util.List;
 
 public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serializable> implements AbstractService<T, K> {
-    protected EntityManagerFactory entityManagerFactory;
-    private Class<T> clazz;
-    protected SessionFactory sessionFactory;
-    public static final Integer PAGE_SIZE = 50;
+    private static final Integer PAGE_SIZE = 50;
 
-    public AbstractServiceImpl(EntityManagerFactory entityManagerFactory, Class<T> clazz){
-        this.entityManagerFactory = entityManagerFactory;
-        this.clazz = clazz;
-        this.sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-    }
+    AbstractServiceImpl(){ }
 
     @Override
     @Transactional
@@ -37,44 +28,38 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
 
     @Override
     @Transactional
-    public T getById(K id) {
-        if(id == null){
-            return null;
-        }
+    public T getById(@NonNull K id) {
         return getManager().findById(id).orElse(null);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsById(K id) {
-        if(id == null){
-            return false;
-        }
+    public boolean existsById(@NonNull K id) {
         return getManager().existsById(id);
     }
 
     @Override
     @Transactional
-    public T save(T entity) {
+    public T save(@NonNull T entity) {
         return getManager().save(entity);
     }
 
     @Override
     @Transactional
-    public List<T> saveAll(List<T> entities) {
+    public List<T> saveAll(@NonNull List<T> entities) {
         return getManager().saveAll(entities);
     }
 
     @Override
     @Transactional
-    public void delete(T entity) {
+    public void delete(@NonNull T entity) {
         getManager().delete(entity);
         entity.setId(null);
     }
 
     @Override
     @Transactional
-    public void deleteAll(List<T> entities) {
+    public void deleteAll(@NonNull List<T> entities) {
         getManager().deleteInBatch(entities);
         if(CollectionUtils.isNotEmpty(entities)){
             entities.forEach(e -> e.setId(null));
@@ -88,7 +73,7 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
     }
 
     @Override
-    public Page<T> getAll(Pageable p) {
+    public Page<T> getAll(@NonNull Pageable p) {
         return getManager().findAll(p);
     }
 
@@ -99,6 +84,11 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
             propertiesNames[i] = properties[i].getName();
         }
         return getManager().findAll(PageRequest.of(pageNumber, PAGE_SIZE, sortDirection, propertiesNames));
+    }
+
+    @Override
+    public void deleteAll() {
+        getManager().deleteAll();
     }
 
     public abstract IManager<T, K> getManager();

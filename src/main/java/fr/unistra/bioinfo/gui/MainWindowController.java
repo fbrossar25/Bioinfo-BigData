@@ -9,6 +9,8 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,12 +71,12 @@ public class MainWindowController {
             }else{
                 logsAppender = null;
                 logs.setText("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
-                LOGGER.warn("L'appender '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+                LOGGER.warn("L'appender '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
             }
         }else{
             logsAppender = null;
             logs.setText("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
-            LOGGER.warn("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
+            LOGGER.warn("Le logger '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
         }
     }
 
@@ -127,6 +129,7 @@ public class MainWindowController {
         Platform.runLater(() -> treeView.setRoot(treeItem));
     }
     //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
+    //TODO: Enlever cette méthode et crée des méthodes qui permettront d'avoir kingdom, group, subgroup, organism...
     public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
         Path p = Paths.get(pathToParent,rootItem.getValue().toString());
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(p)) {
@@ -134,7 +137,10 @@ public class MainWindowController {
                 int count= path.getNameCount()-1;
                 TreeItem<Path> newItem = new TreeItem<Path>(path.getName(count));
                 newItem.setExpanded(true);
-
+                Image i1 = new Image("../resources/images/rouge.png");
+                ImageView iv1 = new ImageView();
+                iv1.setImage(i1);
+                newItem.setGraphic(iv1);
                 rootItem.getChildren().add(newItem);
 
                 if (Files.isDirectory(path)) {

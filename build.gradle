@@ -1,8 +1,8 @@
 buildscript {
     ext {
-        springBootVersion = '2.0.5.RELEASE'
+        springBootVersion = '2.1.2.RELEASE'
         h2DBVersion = '1.4.197'
-        hibernateVersion = '5.3.7.Final'
+        hibernateVersion = '5.4.1.Final'
         junitJupiterVersion = '5.3.1'
         jacksonVersion = '2.9.7'
         defaultEncoding = 'UTF-8'
@@ -24,7 +24,7 @@ apply plugin: 'application'
 group 'fr.unistra'
 version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
-mainClassName = 'fr.fbrossar25.jsg.Main'
+mainClassName = 'fr.unistra.bioinfo.Main'
 compileJava.options.encoding = "${defaultEncoding}"
 compileTestJava.options.encoding = "${defaultEncoding}"
 applicationDefaultJvmArgs = ["-Dfile.encoding=${defaultEncoding}"]
@@ -52,6 +52,10 @@ dependencies {
 
     implementation group: 'com.google.guava', name: 'guava', version: '26.0-jre'
     implementation "com.github.rholder:guava-retrying:2.0.0"
+    implementation("org.biojava:biojava-core:5.1.1"){
+        exclude group: 'org.apache.logging.log4j'
+    }
+
 }
 
 //println "${rootProject.projectDir}"

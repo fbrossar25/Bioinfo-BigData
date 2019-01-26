@@ -20,7 +20,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.util.Optional;
 
 @SpringBootApplication
-//@ComponentScan({"fr.unistra.bioinfo.persistence.service", "fr.unistra.bioinfo.gui"})
 public class Main extends Application {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static Main mainInstance;
