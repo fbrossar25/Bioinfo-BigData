@@ -128,7 +128,7 @@ public class MainWindowController {
 
         Platform.runLater(() -> treeView.setRoot(treeItem));
     }
-    //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
+
     //TODO: Enlever cette méthode et crée des méthodes qui permettront d'avoir kingdom, group, subgroup, organism...
     public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
         Path p = Paths.get(pathToParent,rootItem.getValue().toString());

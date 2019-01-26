@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.gui.MainWindowController;
@@ -51,12 +52,20 @@ public class GenbankUtils {
     private static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
     private static final Integer REQUEST_LIMIT = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
+    private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_END && event.getReplicon() != null){
+            repliconService.save(event.getReplicon());
+        }
+    };
+
+    static{
+        EventUtils.subscribe(DOWNLOAD_END_LISTENER);
+    }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
         final RateLimiter rateLimiter = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
-
         replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, rateLimiter)));
         try {
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
@@ -287,6 +296,7 @@ public class GenbankUtils {
             }
         }
         repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
+        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
         CommonUtils.enableHibernateLogging(false);
     }
 

@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.genbank;
 import com.github.rholder.retry.*;
 import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import javafx.concurrent.Task;
 import org.apache.commons.io.FileUtils;
@@ -36,11 +37,14 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private File download() throws IOException{
         File f = CommonUtils.RESULTS_PATH.resolve(GenbankUtils.getPathOfReplicon(replicon)).toFile();
         LOGGER.trace("Téléchargement replicon '"+replicon.getName()+"' -> '"+f.getPath()+"'");
+        EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, replicon);
         try(InputStream in = GenbankUtils.getGBDownloadURL(replicon).toURL().openStream()) {
             FileUtils.copyToFile(in, f);
         }catch (IOException e){
             throw new IOException("Erreur lors du téléchargement du replicon '"+replicon.getName()+"'", e);
         }
+        replicon.setDownloaded(true);
+        EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_END, replicon);
         return f;
     }
 
