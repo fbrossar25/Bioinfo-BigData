@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -64,6 +65,15 @@ class GenbankUtilsTest {
     }
 
     @Test
+    void testRateLimiter(){
+        try{
+            IntStream.range(0, 100000).parallel().forEach((i) -> GenbankUtils.GENBANK_REQUEST_LIMITER.tryAcquire());
+        }catch(Exception e){
+            fail("Problème avec le limiteur d'appel", e);
+        }
+    }
+
+    @Test
     void getNumberOfEntries() {
         for(Reign k : Reign.values()){
             LOGGER.info("Number of "+k.getSearchTable()+" entries : "+GenbankUtils.getNumberOfEntries(k));
@@ -85,7 +95,7 @@ class GenbankUtilsTest {
     void downloadReplicons(){
         int PAGE_SIZE = 16;
         try {
-            GenbankUtils.updateNCDatabase(1);
+            GenbankUtils.updateNCDatabase(PAGE_SIZE);
             List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, PAGE_SIZE)).getContent();
             assertEquals(PAGE_SIZE, replicons.size());
             CompletableFuture<List<File>> future = new CompletableFuture<>();
@@ -130,7 +140,7 @@ class GenbankUtilsTest {
             uriBuilder.setParameter("q", queryString);
             uriBuilder.setParameter("limit", "1");
             assertEquals(uriBuilder.build().toString(), GenbankUtils.getReignTotalEntriesNumberURL(Reign.PROKARYOTES));
-            queryString = "[hist(group,subgroup,kingdom)].from(GenomeAssemblies).matching(tab==[\"Viruses\"])";
+            queryString = "[display(group,subgroup,kingdom)].from(GenomeAssemblies).matching(tab==[\"Viruses\"])";
             uriBuilder.setParameter("q", queryString);
             uriBuilder.setParameter("limit", "0");
             assertEquals(uriBuilder.build().toString(), GenbankUtils.getKingdomCountersURL(Reign.VIRUSES));
@@ -151,12 +161,14 @@ class GenbankUtilsTest {
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);
             replicon.setVersion(0);
+            replicon.setParsed(true);
             replicon.setComputed(true);
             replicon.setDownloaded(true);
             repliconService.save(replicon);
             GenbankUtils.updateNCDatabase(10);
             replicon = repliconService.getByName(replicon.getName());
             assertTrue(replicon.getVersion() > 0);
+            assertFalse(replicon.isParsed());
             assertFalse(replicon.isComputed());
             assertFalse(replicon.isDownloaded());
         } catch (IOException e) {
