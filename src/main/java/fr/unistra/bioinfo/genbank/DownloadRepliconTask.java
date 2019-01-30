@@ -9,12 +9,14 @@ import javafx.concurrent.Task;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.lang.NonNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private static Logger LOGGER = LogManager.getLogger();
@@ -23,7 +25,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private RateLimiter rateLimiter;
     private Retryer<File> retryer;
 
-    public DownloadRepliconTask(RepliconEntity replicon, RateLimiter rateLimiter) {
+    public DownloadRepliconTask(@NonNull RepliconEntity replicon, @NonNull RateLimiter rateLimiter) {
         this.replicon = replicon;
         this.rateLimiter = rateLimiter;
         this.retryer = RetryerBuilder.<File>newBuilder()
@@ -49,9 +51,9 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     }
 
     @Override
-    public File call() {
-        if(rateLimiter != null){
-            rateLimiter.tryAcquire();
+    public File call() throws TooMuchGenbankRequestsException{
+        if(!rateLimiter.tryAcquire(30, TimeUnit.SECONDS)){
+            throw new TooMuchGenbankRequestsException();
         }
         try {
             return this.retryer.call(this::download);

@@ -50,8 +50,10 @@ public class GenbankUtils {
     private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
     private static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
-    private static final Integer REQUEST_LIMIT = 10;
+    /** 10 requête max avec un clé API genbank, mais on met une marge d'une requête "au cas où"*/
+    private static final Integer REQUEST_LIMIT = 9;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
+    public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
     private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_END && event.getReplicon() != null){
             repliconService.save(event.getReplicon());
@@ -65,8 +67,8 @@ public class GenbankUtils {
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
-        final RateLimiter rateLimiter = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
-        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, rateLimiter)));
+
+        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, GENBANK_REQUEST_LIMITER)));
         try {
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
@@ -218,13 +220,19 @@ public class GenbankUtils {
      * Retourne les données de genbank pour une limite donnée
      * @return les données en JSON
      * @throws IOException si une erreur suirviens lors du téléchargement
+     * @throws JSONException si le json n'as pas de données
+     * @throws TooMuchGenbankRequestsException si le nombre de requêtes Genbank</br>
+     * est dépassées et qu'aucune requêtes ne peut être lancées dans les 15 secondes
      */
-    private static JsonNode getGenbankDatas(int limit) throws IOException, JSONException{
+    private static JsonNode getGenbankDatas(int limit) throws IOException, JSONException, TooMuchGenbankRequestsException{
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule genBankModule = new SimpleModule();
         genBankModule.addDeserializer(HierarchyEntity.class, new JSONUtils.HierarchyFromGenbankDeserializer());
         mapper.registerModule(genBankModule);
+        if(!GENBANK_REQUEST_LIMITER.tryAcquire(15, TimeUnit.SECONDS)){
+            throw new TooMuchGenbankRequestsException();
+        }
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true, limit))) {
             LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
@@ -263,6 +271,9 @@ public class GenbankUtils {
             dataNode = getGenbankDatas(limit);
         }catch(IOException | JSONException e){
             LOGGER.error("Erreur lors de la récupération des données de GenBank", e);
+            return;
+        }catch(TooMuchGenbankRequestsException e){
+            LOGGER.error("Nombre de requêtes Genbank par seconde dépassées, veuillez ré-essayer plus tard", e);
             return;
         }
         JsonNode contentNode = dataNode.get("content");
@@ -340,6 +351,7 @@ public class GenbankUtils {
                     if(replicon.getVersion() < version){
                         replicon.setDownloaded(false);
                         replicon.setComputed(false);
+                        replicon.setParsed(false);
                         replicon.setVersion(version);
                     }
                     LOGGER.trace("Replicon '{}' mis à jour", replicon);

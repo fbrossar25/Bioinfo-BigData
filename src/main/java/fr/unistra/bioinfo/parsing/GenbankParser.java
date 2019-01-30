@@ -78,6 +78,7 @@ public final class GenbankParser {
                 }
                 repliconEntity.setDownloaded(true);
                 repliconEntity.setComputed(false);
+                repliconEntity.setParsed(false);
                 repliconEntity.setVersion(seq.getAccession().getVersion());
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
                     String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
@@ -101,7 +102,7 @@ public final class GenbankParser {
                     }
                 }
                 countFrequencies(cdsList, repliconEntity);
-                repliconEntity.setComputed(true);
+                repliconEntity.setParsed(true);
                 synchronized(synchronizedObject){
                     repliconService.save(repliconEntity);
                 }
