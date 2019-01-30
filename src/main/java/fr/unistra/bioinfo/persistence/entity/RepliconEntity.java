@@ -48,6 +48,9 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private boolean isComputed = false;
 
+    @Column(nullable = false)
+    private boolean isParsed = false;
+
     public RepliconEntity() {
         resetCounters();
     }
@@ -71,6 +74,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.id = id;
     }
 
+    /**
+     * Nom du replicon, sans la version
+     * @return Le nom du replicon sans sa version
+     */
     public String getName() {
         return name;
     }
@@ -87,6 +94,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.hierarchyEntity = hierarchyEntity;
     }
 
+    /**
+     * Version du replicon sur genbank
+     * @return la version
+     */
     public Integer getVersion() {
         return version;
     }
@@ -95,6 +106,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.version = version;
     }
 
+    /**
+     * Indique si le fichier du replicon à été téléchargé
+     * @return true si le fichier à été téléchargé, false sinon
+     */
     public boolean isDownloaded() {
         return isDownloaded;
     }
@@ -103,10 +118,25 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         isDownloaded = downloaded;
     }
 
+    /**
+     * Indique si le fichier à été parsé, et le comptage effectué.
+     * @return true si le parsing et le comptage sont faits, false sinon
+     */
+    public boolean isParsed() {
+        return isParsed;
+    }
+
+    public void setParsed(boolean parsed) {
+        isParsed = parsed;
+    }
+
+    /**
+     * Indique si les statistiques ont été générées pour ce replicon.
+     * @return true si les statistiques ont été générées, false sinon
+     */
     public boolean isComputed() {
         return isComputed;
     }
-
     public void setComputed(boolean computed) {
         isComputed = computed;
     }

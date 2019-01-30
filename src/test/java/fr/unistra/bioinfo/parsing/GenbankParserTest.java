@@ -72,7 +72,8 @@ class GenbankParserTest {
         assertTrue(GenbankParser.parseGenbankFile(genbankTestFilePath.toFile()));
         RepliconEntity r = repliconService.getByName("NC_001700");
         assertNotNull(r);
-        assertTrue(r.isComputed());
+        assertTrue(r.isParsed());
+        assertFalse(r.isComputed());
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
         assertNotNull(h);
@@ -81,7 +82,6 @@ class GenbankParserTest {
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
-        assertTrue(r.isComputed());
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
         for(Phase phase : Phase.values()){
@@ -118,7 +118,8 @@ class GenbankParserTest {
         assertNotNull(replicons);
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
-        assertTrue(r.isComputed());
+        assertTrue(r.isParsed());
+        assertFalse(r.isComputed());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
     }
 
@@ -147,7 +148,8 @@ class GenbankParserTest {
         assertNotNull(replicons);
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
-        assertTrue(r.isComputed());
+        assertTrue(r.isParsed());
+        assertFalse(r.isComputed());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
     }
 
