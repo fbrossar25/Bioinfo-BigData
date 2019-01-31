@@ -101,6 +101,7 @@ public final class GenbankParser {
                     }
                 }
                 countFrequencies(cdsList, repliconEntity);
+                countPrefPhases(repliconEntity);
                 repliconEntity.setParsed(true);
                 synchronized(synchronizedObject){
                     repliconService.save(repliconEntity);
@@ -126,6 +127,50 @@ public final class GenbankParser {
 
         boolean get(){
             return value;
+        }
+    }
+
+    private static void countPrefPhases(RepliconEntity replicon){
+        for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+            int p0 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
+            int p1 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
+            if(p0 > p1){
+                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0);
+            }else if(p1 > p0) {
+                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_1);
+            }else if(p0 != 0){
+                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0, Phase.PHASE_1);
+            }else{
+                replicon.setPhasesPrefsDinucleotide(dinucleotide);
+            }
+        }
+        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+            int p0 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_0);
+            int p1 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_1);
+            int p2 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_2);
+            if(p0 > p1){
+                if(p0 > p2){
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0);
+                }else if(p2 > p0){
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
+                }else{
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_2);
+                }
+            }else if(p1 > p0 || p2 > p0) {
+                if (p1 > p2) {
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1);
+                } else if (p2 > p1) {
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
+                } else {
+                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1, Phase.PHASE_2);
+                }
+            }else if(p0 != 0){
+                // Toutes les phase pref
+                replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_1, Phase.PHASE_2);
+            }else{
+                // Aucun trinucleotide -> pas de phase pref
+                replicon.setPhasesPrefsTrinucleotide(trinucleotide);
+            }
         }
     }
 
