@@ -177,7 +177,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
     }
 
-    public void resetCounters() {
+    private void resetCounters() {
         for(Phase phase : Phase.values()){
             if(phase != Phase.PHASE_2) {
                 for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
@@ -190,6 +190,11 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
     }
 
+    /**
+     * Retourne le nom du réplicon concaténé à sa version.</br>
+     * Example : NC_123456.1
+     * @return Le nom genbank de ce replicon
+     */
     public String getGenbankName(){
         return ""+name+"."+version;
     }
