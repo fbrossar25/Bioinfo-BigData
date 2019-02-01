@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.gui.tree;
 
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import javafx.application.Platform;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import org.slf4j.Logger;
@@ -24,12 +25,27 @@ public class RepliconView extends TreeView<RepliconViewNode> {
     private Map<String, TreeItem<RepliconViewNode>> organisms = new HashMap<>();
     private Map<String, TreeItem<RepliconViewNode>> replicons = new HashMap<>();
 
+    private class NonBlockingAddNode implements Runnable{
+        private final TreeItem<RepliconViewNode> son;
+        private final TreeItem<RepliconViewNode> father;
+        NonBlockingAddNode(TreeItem<RepliconViewNode> son, TreeItem<RepliconViewNode> father){
+            this.son = son;
+            this.father = father;
+        }
+
+        @Override
+        public void run() {
+            father.getChildren().add(son);
+        }
+    }
+
     /**
      * Créer un arbre de visualisation des replicons, avec un noeud racine.
      */
     public RepliconView(){
         super();
         setRoot(new TreeItem<>(RepliconViewNodeFactory.createRootNode()));
+        getRoot().setExpanded(true);
     }
 
     /**
@@ -44,7 +60,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         }
         RepliconViewNode kingdomView = RepliconViewNodeFactory.createKingdomNode(kingdom);
         node = new TreeItem<>(kingdomView);
-        getRoot().getChildren().add(node);
+        Platform.runLater(new NonBlockingAddNode(node, getRoot()));
         kingdoms.put(kingdom, node);
         return node;
     }
@@ -63,7 +79,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         TreeItem<RepliconViewNode> kingdomItem = addKingdomNode(kingdom);
         RepliconViewNode groupView = RepliconViewNodeFactory.createGroupNode(group);
         node = new TreeItem<>(groupView);
-        kingdomItem.getChildren().add(node);
+        Platform.runLater(new NonBlockingAddNode(node, kingdomItem));
         groups.put(group, node);
         return node;
     }
@@ -83,7 +99,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         TreeItem<RepliconViewNode> groupItem = addGroupNode(kingdom, group);
         RepliconViewNode subgroupView = RepliconViewNodeFactory.createSubgroupNode(subgroup);
         node = new TreeItem<>(subgroupView);
-        groupItem.getChildren().add(node);
+        Platform.runLater(new NonBlockingAddNode(node, groupItem));
         subgroups.put(subgroup, node);
         return node;
     }
@@ -104,7 +120,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         TreeItem<RepliconViewNode> subgroupItem = addSubgroupNode(kingdom, group, subgroup);
         RepliconViewNode organismView = RepliconViewNodeFactory.createOrganismNode(organism);
         node = new TreeItem<>(organismView);
-        subgroupItem.getChildren().add(node);
+        Platform.runLater(new NonBlockingAddNode(node, subgroupItem));
         organisms.put(organism, node);
         return node;
     }
@@ -128,7 +144,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         TreeItem<RepliconViewNode> organismItem = addOrganismNode(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism());
         RepliconViewNode repliconView = RepliconViewNodeFactory.createRepliconNode(replicon);
         node = new TreeItem<>(repliconView);
-        organismItem.getChildren().add(node);
+        Platform.runLater(new NonBlockingAddNode(node, organismItem));
         replicons.put(replicon.getName(), node);
         return node;
     }

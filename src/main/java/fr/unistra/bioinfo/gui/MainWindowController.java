@@ -8,7 +8,6 @@ import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -126,16 +125,18 @@ public class MainWindowController {
      * Met à jour l'arbre des replicon avec les données en base.</br>
      * Le bouton 'démarrer' est désactiver pendant cette opération
      */
-    public void updateFullTreeView(){
+    private void updateFullTreeView(){
         //TODO afficher une petite popup pour indiquer la progression du chargement
-        Platform.runLater(() ->{
+        btnDemarrer.setDisable(true);
+        treeView.setDisable(true);
+        new Thread(() -> {
             CommonUtils.disableHibernateLogging();
-            LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées)", repliconService.count());
-            btnDemarrer.setDisable(true);
+            LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
-            btnDemarrer.setDisable(false);
             CommonUtils.enableHibernateLogging(true);
-        });
+            btnDemarrer.setDisable(false);
+            treeView.setDisable(false);
+        }).start();
     }
 
     public ProgressBar getProgressBar(){
