@@ -7,6 +7,8 @@ import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 import org.biojava.nbio.core.sequence.features.FeatureInterface;
@@ -74,6 +76,28 @@ class GenbankParserTest {
         assertNotNull(r);
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
+        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
+            if(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty()){
+                assertEquals(0, r.getDinucleotideCount(dinucleotide, Phase.PHASE_0).intValue());
+                assertEquals(0, r.getDinucleotideCount(dinucleotide, Phase.PHASE_1).intValue());
+            }else{
+                assertTrue(r.getDinucleotideCount(dinucleotide, Phase.PHASE_0) > 0 ||
+                        r.getDinucleotideCount(dinucleotide, Phase.PHASE_1) > 0);
+            }
+        }
+        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
+            if(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty()){
+                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0).intValue());
+                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1).intValue());
+                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2).intValue());
+            }else{
+                assertTrue(r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0) > 0 ||
+                        r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1) > 0 ||
+                        r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2) > 0);
+            }
+        }
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
         assertNotNull(h);
@@ -84,16 +108,7 @@ class GenbankParserTest {
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
-        for(Phase phase : Phase.values()){
-            if(phase != Phase.PHASE_2){
-                for(String di : CommonUtils.DINUCLEOTIDES){
-                    LOGGER.info(di+" "+phase+" = "+r.getDinucleotideCount(di, phase));
-                }
-            }
-            for(String tri : CommonUtils.TRINUCLEOTIDES){
-                LOGGER.info(tri+" "+phase+" = "+r.getTrinucleotideCount(tri, phase));
-            }
-        }
+        LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
     }
 
     //Entre 1min 30 et 4min, core i5, 2 coeurs physiques, 4 logiques, 2.8Ghz
@@ -118,6 +133,14 @@ class GenbankParserTest {
         assertNotNull(replicons);
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
+        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
+            assertFalse(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty());
+        }
+        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
+            assertFalse(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty());
+        }
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
@@ -148,6 +171,14 @@ class GenbankParserTest {
         assertNotNull(replicons);
         assertEquals(1, replicons.size());
         RepliconEntity r = replicons.get(0);
+        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
+            assertFalse(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty());
+        }
+        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
+            assertFalse(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty());
+        }
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
