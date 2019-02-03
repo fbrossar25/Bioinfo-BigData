@@ -4,6 +4,7 @@ import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.parsing.Phase;
 import fr.unistra.bioinfo.parsing.RepliconType;
 import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
+import fr.unistra.bioinfo.persistence.entity.converters.MapStringPhaseListConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -11,7 +12,9 @@ import org.hibernate.annotations.NaturalId;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -41,6 +44,14 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false, columnDefinition = "text")
     @Convert(converter = MapStringIntConverter.class)
     private Map<String, Integer> trinucleotides = new HashMap<>();
+
+    @Column(nullable = false, columnDefinition = "text")
+    @Convert(converter = MapStringPhaseListConverter.class)
+    private Map<String, List<Phase>> dinucleotides_pref = new HashMap<>();
+
+    @Column(nullable = false, columnDefinition = "text")
+    @Convert(converter = MapStringPhaseListConverter.class)
+    private Map<String, List<Phase>> trinucleotides_pref = new HashMap<>();
 
     @Column(nullable = false)
     private boolean isDownloaded = false;
@@ -188,10 +199,58 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
                 trinucleotides.put(trinucleotide+"-"+phase.toString(), 0);
             }
         }
+        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+            dinucleotides_pref.put(dinucleotide, new ArrayList<>());
+        }
+        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            trinucleotides_pref.put(trinucleotide, new ArrayList<>());
+        }
     }
 
     public String getGenbankName(){
         return ""+name+"."+version;
+    }
+
+    public List<Phase> getPhasesPrefsDinucleotide(@NonNull String dinucleotide){
+        if(dinucleotides_pref.containsKey(dinucleotide)){
+            return dinucleotides_pref.get(dinucleotide);
+        }else{
+            throw new IllegalArgumentException("'"+dinucleotide+"' n'est pas un dinucleotide valide");
+        }
+    }
+
+    public List<Phase> getPhasesPrefsTrinucleotide(@NonNull String trinucleotide){
+        if(trinucleotides_pref.containsKey(trinucleotide)){
+            return trinucleotides_pref.get(trinucleotide);
+        }else{
+            throw new IllegalArgumentException("'"+trinucleotide+"' n'est pas un trinucleotide valide");
+        }
+    }
+
+    public void setPhasesPrefsDinucleotide(@NonNull String dinucleotide, Phase... phases){
+        if(dinucleotides_pref.containsKey(dinucleotide)){
+            dinucleotides_pref.get(dinucleotide).clear();
+            if(phases != null && phases.length > 0){
+                for(Phase p : phases){
+                    dinucleotides_pref.get(dinucleotide).add(p);
+                }
+            }
+        }else{
+            throw new IllegalArgumentException("'"+dinucleotide+"' n'est pas un dinucleotide valide");
+        }
+    }
+
+    public void setPhasesPrefsTrinucleotide(@NonNull String trinucleotide, Phase... phases){
+        if(trinucleotides_pref.containsKey(trinucleotide)){
+            trinucleotides_pref.get(trinucleotide).clear();
+            if(phases != null && phases.length > 0){
+                for(Phase p : phases){
+                    trinucleotides_pref.get(trinucleotide).add(p);
+                }
+            }
+        }else{
+            throw new IllegalArgumentException("'"+trinucleotide+"' n'est pas un trinucleotide valide");
+        }
     }
 
     @Override

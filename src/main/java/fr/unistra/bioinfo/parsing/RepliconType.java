@@ -6,5 +6,5 @@ public enum RepliconType {
     DNA,
     PLASMID,
     PLAST,
-    LINKAGE;
+    LINKAGE
 }
