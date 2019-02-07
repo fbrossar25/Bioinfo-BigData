@@ -34,7 +34,7 @@ public class GeneralInformationSheet {
 
 
     private static final List<String> SECOND_COLNAMES = Arrays.asList(
-            "",
+            "Last update",
             "",
             "",
             "",
