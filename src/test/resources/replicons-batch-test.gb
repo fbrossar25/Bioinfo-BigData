@@ -623,8 +623,8 @@ ORIGIN
 
 LOCUS       NC_001701              17009 bp    DNA     circular MAM 21-APR-2009
 DEFINITION  Felis catus mitochondrion, complete genome.
-ACCESSION   NC_001700
-VERSION     NC_001700.1
+ACCESSION   NC_001701
+VERSION     NC_001701.1
 DBLINK      Project: 10762
             BioProject: PRJNA10762
 KEYWORDS    RefSeq.
@@ -1246,8 +1246,8 @@ ORIGIN
 
 LOCUS       NC_001702              17009 bp    DNA     circular MAM 21-APR-2009
 DEFINITION  Felis catus mitochondrion, complete genome.
-ACCESSION   NC_001700
-VERSION     NC_001700.1
+ACCESSION   NC_001702
+VERSION     NC_001702.1
 DBLINK      Project: 10762
             BioProject: PRJNA10762
 KEYWORDS    RefSeq.
@@ -1869,8 +1869,8 @@ ORIGIN
 
 LOCUS       NC_001703              17009 bp    DNA     circular MAM 21-APR-2009
 DEFINITION  Felis catus mitochondrion, complete genome.
-ACCESSION   NC_001700
-VERSION     NC_001700.1
+ACCESSION   NC_001703
+VERSION     NC_001703.1
 DBLINK      Project: 10762
             BioProject: PRJNA10762
 KEYWORDS    RefSeq.
@@ -2492,8 +2492,8 @@ ORIGIN
 
 LOCUS       NC_001704              17009 bp    DNA     circular MAM 21-APR-2009
 DEFINITION  Felis catus mitochondrion, complete genome.
-ACCESSION   NC_001700
-VERSION     NC_001700.1
+ACCESSION   NC_001704
+VERSION     NC_001704.1
 DBLINK      Project: 10762
             BioProject: PRJNA10762
 KEYWORDS    RefSeq.

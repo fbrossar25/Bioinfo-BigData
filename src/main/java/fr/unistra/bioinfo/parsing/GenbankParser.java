@@ -60,6 +60,7 @@ public final class GenbankParser {
         RepliconEntity repliconEntity;
         try{
             LinkedHashMap<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
+            LOGGER.debug("{} replicons dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
             for(DNASequence seq : dnaSequences.values()){
                 List<String> cdsList = new ArrayList<>();
                 LOGGER.trace("DNA header : "+seq.getOriginalHeader());
