@@ -14,6 +14,7 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.application.Platform;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,10 +33,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -51,21 +49,25 @@ public class GenbankUtils {
     private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
+    private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
+        List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
 
-        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, GENBANK_REQUEST_LIMITER, repliconService)));
+        splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
         try {
+            LOGGER.debug("Débuts des téléchargements");
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
                     try {
                         ses.shutdown();
                         ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                        LOGGER.debug("Fin des téléchargements");
                         List<File> files = new ArrayList<>(replicons.size());
                         for(Future<File> future : futuresFiles){
                             files.add(future.get());
@@ -110,11 +112,30 @@ public class GenbankUtils {
      * @return l'url
      */
     public static URI getGBDownloadURL(RepliconEntity replicon){
+        return getGBDownloadURL(replicon.getGenbankName());
+    }
+
+    /**
+     * Retourne l'URL permettant de télécharger un fichier contenant les replicons donnés
+     * @param replicons liste des replicons à télécharger
+     * @return l'url
+     */
+    public static URI getGBDownloadURL(List<RepliconEntity> replicons){
+        return getGBDownloadURL(getRepliconsIdsString(replicons));
+    }
+
+    /**
+     * Retourne l'URL permettant de télécharger un fichier contenant les replicons dont les ids sont donnés</br>
+     * Les ids doivent être séparé par une virgule.
+     * @param ids liste des ids des replicons à télécharger. Ex: "NC_1.1,NC_2.1,NC_3.1"
+     * @return l'url
+     */
+    public static URI getGBDownloadURL(String ids){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nucleotide");
         params.put("rettype", "gb");
-        params.put("id", replicon.getGenbankName());
+        params.put("id", ids);
         try{
             uri = getEUtilsLink(EUTILS_EFETCH, params);
         }catch(URISyntaxException e){
@@ -457,5 +478,15 @@ public class GenbankUtils {
             LOGGER.error("Erreur lors de la récupération des informations de l'organisme '{}'", organism, e);
         }
         return entity;
+    }
+
+    public static String getRepliconsIdsString(List<RepliconEntity> replicons) {
+        int numberOfReplicons = replicons.size();
+        StringBuilder builder = new StringBuilder(numberOfReplicons * 10);
+        for(int i=0; i<numberOfReplicons-1; i++){
+            builder.append(replicons.get(i).getGenbankName()).append(",");
+        }
+        builder.append(replicons.get(numberOfReplicons-1).getGenbankName());
+        return builder.toString();
     }
 }
