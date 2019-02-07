@@ -15,10 +15,7 @@ import org.biojava.nbio.core.sequence.features.FeatureInterface;
 import org.biojava.nbio.core.sequence.features.Qualifier;
 import org.biojava.nbio.core.sequence.io.GenbankReaderHelper;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +73,7 @@ class GenbankParserTest {
         assertNotNull(r);
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
+        boolean checkAtLeastOnePref = false;
         for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
             assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
             if(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty()){
@@ -84,8 +82,11 @@ class GenbankParserTest {
             }else{
                 assertTrue(r.getDinucleotideCount(dinucleotide, Phase.PHASE_0) > 0 ||
                         r.getDinucleotideCount(dinucleotide, Phase.PHASE_1) > 0);
+                checkAtLeastOnePref = true;
             }
         }
+        assertTrue(checkAtLeastOnePref, "Phases préferentielles dinucléotides KO");
+        checkAtLeastOnePref = false;
         for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
             assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
             if(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty()){
@@ -96,8 +97,10 @@ class GenbankParserTest {
                 assertTrue(r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0) > 0 ||
                         r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1) > 0 ||
                         r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2) > 0);
+                checkAtLeastOnePref = true;
             }
         }
+        assertTrue(checkAtLeastOnePref, "Phases préferentielles trinucléotides KO");
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
         assertNotNull(h);
