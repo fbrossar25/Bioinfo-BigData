@@ -1,4 +1,4 @@
-package fr.unistra.bioinfo.parsing;
+package fr.unistra.bioinfo.persistence.entity;
 
 public enum RepliconType {
     CHROMOSOME,

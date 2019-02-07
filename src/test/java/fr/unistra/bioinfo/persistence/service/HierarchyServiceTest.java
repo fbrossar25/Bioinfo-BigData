@@ -2,7 +2,7 @@ package fr.unistra.bioinfo.persistence.service;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
-import fr.unistra.bioinfo.parsing.Phase;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.members.HierarchyMembers;

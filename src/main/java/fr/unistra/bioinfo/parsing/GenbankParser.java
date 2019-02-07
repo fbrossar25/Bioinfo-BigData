@@ -2,7 +2,9 @@ package fr.unistra.bioinfo.parsing;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +81,9 @@ public final class GenbankParser {
                 repliconEntity.setComputed(false);
                 repliconEntity.setParsed(false);
                 repliconEntity.setVersion(seq.getAccession().getVersion());
+                synchronized(synchronizedObject){
+                    repliconService.save(repliconEntity);
+                }
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
                     String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
                     cdsList.add(cdsSeq);
@@ -227,6 +232,7 @@ public final class GenbankParser {
         if(!check){
             return false;
         }
+        check = false;
         for(String end : CommonUtils.TRINUCLEOTIDES_STOP){
             if(sequence.endsWith(end)){
                 check = true;
