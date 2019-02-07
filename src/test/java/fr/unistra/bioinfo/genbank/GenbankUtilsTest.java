@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -150,9 +151,10 @@ class GenbankUtilsTest {
             GenbankUtils.downloadReplicons(replicons, future);
             assertFalse(future.get().isEmpty());
             for(File f : future.get()){
-                assertTrue(f.exists());
+                assertTrue(f.exists(), "Les fichier '"+f.getAbsolutePath()+"' n'existe pas");
                 assertTrue(f.canRead());
                 assertTrue(CollectionUtils.isNotEmpty(FileUtils.readLines(f, StandardCharsets.UTF_8)));
+                FileUtils.deleteQuietly(f);
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             fail(e);
@@ -222,5 +224,15 @@ class GenbankUtilsTest {
         } catch (GenbankException e) {
             fail(e);
         }
+    }
+
+    @Test
+    void testRepliconsIdsString(){
+        RepliconEntity testReplicon = new RepliconEntity();
+        testReplicon.setName("NC_0123");
+        testReplicon.setVersion(0);
+        List<RepliconEntity> replicons = new ArrayList<>(5);
+        IntStream.range(0,5).forEach(i -> replicons.add(testReplicon));
+        assertEquals("NC_0123.0,NC_0123.0,NC_0123.0,NC_0123.0,NC_0123.0", GenbankUtils.getRepliconsIdsString(replicons));
     }
 }
