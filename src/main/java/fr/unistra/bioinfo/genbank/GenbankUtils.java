@@ -14,6 +14,7 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.application.Platform;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,10 +33,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -48,24 +46,28 @@ public class GenbankUtils {
     private static final String NGRAM_BASE_URL = "https://www.ncbi.nlm.nih.gov/Structure/ngram";
     private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
-    private static final String EUTILS_API_KEY = "13aa4cb817db472b3fdd1dc0ca1655940809";
-    /** 10 requête max avec un clé API genbank, mais on met une marge d'une requête "au cas où"*/
-    private static final Integer REQUEST_LIMIT = 9;
+    private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
+    /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
+    private static final Integer REQUEST_LIMIT = 3;
+    private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
+        List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
 
-        replicons.forEach(r -> tasks.add(new DownloadRepliconTask(r, GENBANK_REQUEST_LIMITER)));
+        splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
         try {
+            LOGGER.debug("Débuts des téléchargements");
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
                     try {
                         ses.shutdown();
                         ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                        LOGGER.debug("Fin des téléchargements");
                         List<File> files = new ArrayList<>(replicons.size());
                         for(Future<File> future : futuresFiles){
                             files.add(future.get());
@@ -110,11 +112,30 @@ public class GenbankUtils {
      * @return l'url
      */
     public static URI getGBDownloadURL(RepliconEntity replicon){
+        return getGBDownloadURL(replicon.getGenbankName());
+    }
+
+    /**
+     * Retourne l'URL permettant de télécharger un fichier contenant les replicons donnés
+     * @param replicons liste des replicons à télécharger
+     * @return l'url
+     */
+    public static URI getGBDownloadURL(List<RepliconEntity> replicons){
+        return getGBDownloadURL(getRepliconsIdsString(replicons));
+    }
+
+    /**
+     * Retourne l'URL permettant de télécharger un fichier contenant les replicons dont les ids sont donnés</br>
+     * Les ids doivent être séparé par une virgule.
+     * @param ids liste des ids des replicons à télécharger. Ex: "NC_1.1,NC_2.1,NC_3.1"
+     * @return l'url
+     */
+    public static URI getGBDownloadURL(String ids){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nucleotide");
         params.put("rettype", "gb");
-        params.put("id", replicon.getName()+"."+replicon.getVersion());
+        params.put("id", ids);
         try{
             uri = getEUtilsLink(EUTILS_EFETCH, params);
         }catch(URISyntaxException e){
@@ -200,9 +221,9 @@ public class GenbankUtils {
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.</br>
      * Les logs d'hibernante sont désactivés pour cette méthode
-     * @throws IOException si un problème interviens lors de la requête à genbank
+     * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
-    public static void updateNCDatabase() throws IOException {
+    public static void updateNCDatabase() throws GenbankException {
         GenbankUtils.updateNCDatabase(0);
     }
 
@@ -211,18 +232,14 @@ public class GenbankUtils {
      * @return les données en JSON
      * @throws IOException si une erreur suirviens lors du téléchargement
      * @throws JSONException si le json n'as pas de données
-     * @throws TooMuchGenbankRequestsException si le nombre de requêtes Genbank</br>
-     * est dépassées et qu'aucune requêtes ne peut être lancées dans les 15 secondes
      */
-    private static JsonNode getGenbankDatas(int limit) throws IOException, JSONException, TooMuchGenbankRequestsException{
+    private static JsonNode getGenbankDatas(int limit) throws IOException, JSONException{
         JsonNode genbankJSON;
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule genBankModule = new SimpleModule();
         genBankModule.addDeserializer(HierarchyEntity.class, new JSONUtils.HierarchyFromGenbankDeserializer());
         mapper.registerModule(genBankModule);
-        if(!GENBANK_REQUEST_LIMITER.tryAcquire(15, TimeUnit.SECONDS)){
-            throw new TooMuchGenbankRequestsException();
-        }
+        GENBANK_REQUEST_LIMITER.acquire();
         try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true, limit))) {
             LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
@@ -249,11 +266,11 @@ public class GenbankUtils {
     }
 
     /**
-     *
+     * Charge et met à jours les metadonnées des replicons
      * @param limit limite d'entité à charger (pour les tests principalement)
-     * @throws IOException si un problème interviens lors de la requête à genbank
+     * @throws GenbankException Si une erreur empêche la mise à jours des métadonnées
      */
-    static void updateNCDatabase(int limit) throws IOException {
+    static void updateNCDatabase(int limit) throws GenbankException  {
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode dataNode;
@@ -261,10 +278,7 @@ public class GenbankUtils {
             dataNode = getGenbankDatas(limit);
         }catch(IOException | JSONException e){
             LOGGER.error("Erreur lors de la récupération des données de GenBank", e);
-            return;
-        }catch(TooMuchGenbankRequestsException e){
-            LOGGER.error("Nombre de requêtes Genbank par seconde dépassées, veuillez ré-essayer plus tard", e);
-            return;
+            throw new GenbankException("Erreur lors de la récupération des données de GenBank", e);
         }
         JsonNode contentNode = dataNode.get("content");
         //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
@@ -464,5 +478,15 @@ public class GenbankUtils {
             LOGGER.error("Erreur lors de la récupération des informations de l'organisme '{}'", organism, e);
         }
         return entity;
+    }
+
+    public static String getRepliconsIdsString(List<RepliconEntity> replicons) {
+        int numberOfReplicons = replicons.size();
+        StringBuilder builder = new StringBuilder(numberOfReplicons * 10);
+        for(int i=0; i<numberOfReplicons-1; i++){
+            builder.append(replicons.get(i).getGenbankName()).append(",");
+        }
+        builder.append(replicons.get(numberOfReplicons-1).getGenbankName());
+        return builder.toString();
     }
 }

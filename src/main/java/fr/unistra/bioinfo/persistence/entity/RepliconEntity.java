@@ -1,8 +1,6 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.parsing.Phase;
-import fr.unistra.bioinfo.parsing.RepliconType;
 import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
 import fr.unistra.bioinfo.persistence.entity.converters.MapStringPhaseListConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
@@ -292,5 +290,9 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public void setType(RepliconType type) {
         this.type = type;
+    }
+
+    public String getFileName() {
+        return getGenbankName()+".gb";
     }
 }

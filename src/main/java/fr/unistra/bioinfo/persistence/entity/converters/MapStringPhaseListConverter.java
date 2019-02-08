@@ -3,7 +3,7 @@ package fr.unistra.bioinfo.persistence.entity.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.unistra.bioinfo.parsing.Phase;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

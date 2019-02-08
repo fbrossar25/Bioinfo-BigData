@@ -4,7 +4,9 @@ import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -45,7 +47,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private final Path genbankTestFilePath = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
+    private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
+    private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-batch-test.gb");
     @Autowired
     private RepliconService repliconService;
     @Autowired
@@ -69,13 +72,11 @@ class GenbankParserTest {
         CommonUtils.enableHibernateLogging(true);
     }
 
-    @Test
-    void parseGenbankFile() {
-        assertTrue(GenbankParser.parseGenbankFile(genbankTestFilePath.toFile()));
-        RepliconEntity r = repliconService.getByName("NC_001700");
+    void checkReplicon(RepliconEntity r){
         assertNotNull(r);
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
+        boolean checkAtLeastOnePref = false;
         for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
             assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
             if(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty()){
@@ -84,8 +85,11 @@ class GenbankParserTest {
             }else{
                 assertTrue(r.getDinucleotideCount(dinucleotide, Phase.PHASE_0) > 0 ||
                         r.getDinucleotideCount(dinucleotide, Phase.PHASE_1) > 0);
+                checkAtLeastOnePref = true;
             }
         }
+        assertTrue(checkAtLeastOnePref, "Phases préferentielles dinucléotides KO");
+        checkAtLeastOnePref = false;
         for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
             assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
             if(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty()){
@@ -96,8 +100,10 @@ class GenbankParserTest {
                 assertTrue(r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0) > 0 ||
                         r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1) > 0 ||
                         r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2) > 0);
+                checkAtLeastOnePref = true;
             }
         }
+        assertTrue(checkAtLeastOnePref, "Phases préferentielles trinucléotides KO");
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
         assertNotNull(h);
@@ -108,6 +114,24 @@ class GenbankParserTest {
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
+    }
+
+    @Test
+    void parseGenbankBatchFile() {
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_BACTH_TEST_FILE_PATH.toFile()));
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        assertEquals(5, repliconService.count().intValue());
+        List<RepliconEntity> replicons = repliconService.getAll();
+        for(RepliconEntity r : replicons){
+            checkReplicon(r);
+        }
+    }
+
+    @Test
+    void parseGenbankFile() {
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        RepliconEntity r = repliconService.getByName("NC_001700");
+        checkReplicon(r);
         LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
     }
 
@@ -117,7 +141,7 @@ class GenbankParserTest {
     void parse10kGenbankFileBenchmark(){
         CommonUtils.disableHibernateLogging();
         Iterator<Integer> it = IntStream.range(0, 10000).iterator();
-        File f = genbankTestFilePath.toFile();
+        File f = GENBANK_TEST_FILE_PATH.toFile();
         long begin = System.currentTimeMillis();
         while(it.hasNext()){
             GenbankParser.parseGenbankFile(f);
@@ -151,7 +175,7 @@ class GenbankParserTest {
     @Disabled("Ce test est un benchmark à lancer manuellement.")
     void parse10kGenbankFileBenchmarkParallel(){
         CommonUtils.disableHibernateLogging();
-        final File f = genbankTestFilePath.toFile();
+        final File f = GENBANK_TEST_FILE_PATH.toFile();
         long begin = System.currentTimeMillis();
         IntStream.range(0, 10000).parallel().forEach(i -> {
             try{
@@ -187,7 +211,7 @@ class GenbankParserTest {
     @Test
     @Disabled("Tests pour comprendre le fonctionnement de BioJava")
     void biojavaTest(){
-        final File repliconFile = genbankTestFilePath.toFile();
+        final File repliconFile = GENBANK_TEST_FILE_PATH.toFile();
         LinkedHashMap<String, DNASequence> dnaSequences = null;
         try {
             dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
