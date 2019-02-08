@@ -62,8 +62,17 @@ public class ExcelTest {
 
         LOGGER.info(ORGA.getOrganism());
 
-        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, repliconService.getByHierarchy(ORGA) , GeneralInformationSheet.LEVEL.ORGANISM);
+        List<RepliconEntity> rr = repliconService.getByHierarchy(ORGA);
+
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, rr, GeneralInformationSheet.LEVEL.ORGANISM);
         info.write_lines();
+
+        for ( RepliconEntity r : rr )
+        {
+            RepliconSheet a = new RepliconSheet(wb, r);
+            a.write_sheet();
+        }
+
 
         FileOutputStream fos = null;
         File f = new File(RESULT_FILENAME);
