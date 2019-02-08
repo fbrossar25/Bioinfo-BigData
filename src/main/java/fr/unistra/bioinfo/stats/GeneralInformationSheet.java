@@ -2,13 +2,18 @@ package fr.unistra.bioinfo.stats;
 
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.logging.Level;
 
 public class GeneralInformationSheet {
     public static enum LEVEL
@@ -57,5 +62,88 @@ public class GeneralInformationSheet {
         this.organisms = organisms;
         this.sheet = this.wb.createSheet( SHEET_NAME );
         this.level = level;
+    }
+
+    public GeneralInformationSheet (XSSFWorkbook wb, HierarchyEntity organism, List<RepliconEntity> replicons, GeneralInformationSheet.LEVEL level)
+    {
+        this.wb = wb;
+        this.replicons = replicons;
+        this.organisms = Arrays.asList( organism );
+        this.sheet = this.wb.createSheet( SHEET_NAME );
+        this.level = level;
+    }
+
+    public void write_lines ()
+    {
+        Row row = null;
+        Cell cell = null;
+//        CellStyle basic_style = this.wb.createCellStyle();
+//
+//        basic_style.setBorderTop(BorderStyle.THICK);
+//        basic_style.setBorderRight(BorderStyle.THIN);
+//        basic_style.setBorderBottom(BorderStyle.THIN);
+//        basic_style.setBorderLeft(BorderStyle.THIN);
+
+        for ( int i = 0 ; i < FIRST_COLNAMES.size() ; i++ )
+        {
+            row = this.sheet.createRow(i);
+            cell = row.createCell(0);
+            cell.setCellValue(FIRST_COLNAMES.get(i));
+
+            cell = row.createCell(3);
+            cell.setCellValue(SECOND_COLNAMES.get(i));
+        }
+
+        // Write organism and Date
+        // TODO: gestion des levels
+
+        switch ( this.level )
+        {
+            case ORGANISM:
+                row = this.sheet.getRow(0);
+                cell = row.createCell(1);
+                cell.setCellValue(this.organisms.get(0).getOrganism());
+            case SUB_GROUP:
+                row = this.sheet.getRow(1);
+                cell = row.createCell(1);
+                cell.setCellValue(this.organisms.get(0).getSubgroup());
+            case GROUP:
+                row = this.sheet.getRow(2);
+                cell = row.createCell(1);
+                cell.setCellValue(this.organisms.get(0).getGroup());
+            case KINGDOM:
+                row = this.sheet.getRow(3);
+                cell = row.createCell(1);
+                cell.setCellValue(this.organisms.get(0).getKingdom());
+                break;
+        }
+
+        row = this.sheet.getRow(5);
+        cell = row.createCell(1);
+        cell.setCellValue("NC");
+
+        row = this.sheet.getRow(6);
+        cell =row.createCell(1);
+        cell.setCellValue("NC");
+
+        row = this.sheet.getRow(7);
+        cell = row.createCell(1);
+        cell.setCellValue(this.organisms.size());
+
+        row = this.sheet.getRow(0);
+        cell = row.createCell(4);
+        cell.setCellValue(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()) );
+
+        // reshape cells
+        this.sheet.autoSizeColumn(0);
+        this.sheet.autoSizeColumn(1);
+        this.sheet.autoSizeColumn(3);
+        this.sheet.autoSizeColumn(4);
+    }
+
+    public HashMap<LEVEL, Integer> calculate_CDS_type_count ()
+    {
+
+        return null;
     }
 }
