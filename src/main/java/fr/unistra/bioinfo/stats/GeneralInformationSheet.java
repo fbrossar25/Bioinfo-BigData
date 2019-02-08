@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.stats;
 
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -134,6 +135,26 @@ public class GeneralInformationSheet {
         cell = row.createCell(4);
         cell.setCellValue(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date()) );
 
+        // TYPE
+        HashMap<RepliconType, Integer> types_count = this.CDS_types_count();
+
+        row = this.sheet.getRow(4);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.MITOCHONDRION));
+
+        row = this.sheet.getRow(5);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.PLAST));
+
+        row = this.sheet.getRow(6);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.PLASMID));
+
+        row = this.sheet.getRow(7);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.DNA));
+
+
         // reshape cells
         this.sheet.autoSizeColumn(0);
         this.sheet.autoSizeColumn(1);
@@ -141,9 +162,29 @@ public class GeneralInformationSheet {
         this.sheet.autoSizeColumn(4);
     }
 
-    public HashMap<LEVEL, Integer> calculate_CDS_type_count ()
+    public HashMap<RepliconType, Integer> CDS_types_count ()
     {
+        HashMap<RepliconType, Integer> h = new HashMap<>();
 
-        return null;
+        for ( RepliconType t : RepliconType.values() )
+        {
+            h.put(t, this.CDS_type_count(t));
+        }
+
+        return h;
     }
+
+    public Integer CDS_type_count (RepliconType t)
+    {
+        int n = 0;
+        for ( RepliconEntity replicon : this.replicons ) {
+            if ( replicon.getType() == t )
+            {
+                n++;
+            }
+        }
+
+        return n;
+    }
+
 }

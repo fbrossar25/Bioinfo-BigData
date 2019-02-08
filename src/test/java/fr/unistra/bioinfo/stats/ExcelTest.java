@@ -62,7 +62,7 @@ public class ExcelTest {
 
         LOGGER.info(ORGA.getOrganism());
 
-        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, null , GeneralInformationSheet.LEVEL.ORGANISM);
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, repliconService.getByHierarchy(ORGA) , GeneralInformationSheet.LEVEL.ORGANISM);
         info.write_lines();
 
         FileOutputStream fos = null;
