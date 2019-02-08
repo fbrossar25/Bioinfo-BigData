@@ -75,6 +75,11 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         resetCounters();
     }
 
+    public void setDinucleotideCount( String din, Phase ph, Integer value )
+    {
+
+    }
+
     public Long getId() {
         return id;
     }
@@ -294,5 +299,39 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public String getFileName() {
         return getGenbankName()+".gb";
+    }
+
+
+    public static RepliconEntity add ( RepliconEntity e, RepliconEntity ee )
+    {
+        if ( e.getType() != ee.getType() )
+        {
+            return null;
+        }
+
+        RepliconEntity result = new RepliconEntity();
+        String din = null;
+        String tri = null;
+
+        result.setType(e.getType());
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                din = "" + c + cc;
+
+                for ( Phase ph : Phase.values() )
+                {
+                }
+
+                for ( char ccc : "ACGT".toCharArray() )
+                {
+                    tri = din + ccc;
+                }
+            }
+        }
+
+        return result;
     }
 }

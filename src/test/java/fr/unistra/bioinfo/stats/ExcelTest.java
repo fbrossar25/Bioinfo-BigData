@@ -38,7 +38,6 @@ public class ExcelTest {
     private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static final String ORGA_NAME = "Felis catus";
-    public static final String RESULT_FILENAME = "Results/hello.xlsx";
 
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
 
@@ -67,15 +66,8 @@ public class ExcelTest {
         GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, rr, GeneralInformationSheet.LEVEL.ORGANISM);
         info.write_lines();
 
-        for ( RepliconEntity r : rr )
-        {
-            RepliconSheet a = new RepliconSheet(wb, r);
-            a.write_sheet();
-        }
-
-
         FileOutputStream fos = null;
-        File f = new File(RESULT_FILENAME);
+        File f = new File("Results/general.xlsx");
         try {
             fos = new FileOutputStream(f);
             wb.write(fos);
@@ -84,16 +76,38 @@ public class ExcelTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-        /*assertTrue(GenbankParser.parseGenbankFile(GENBANK_BACTH_TEST_FILE_PATH.toFile()));
-        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
-        assertEquals(5, repliconService.count().intValue());
-        List<RepliconEntity> replicons = repliconService.getAll();
-        for(RepliconEntity r : replicons){
-            checkReplicon(r);
-        }*/
     }
+
+
+
+    @Test
+    void generate_CDS_sheet() {
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        List<RepliconEntity> rr = repliconService.getByHierarchy(ORGA);
+
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, rr, GeneralInformationSheet.LEVEL.ORGANISM);
+        info.write_lines();
+
+        for ( RepliconEntity r : rr )
+        {
+            RepliconSheet a = new RepliconSheet(wb, r);
+            a.write_sheet();
+        }
+
+
+        FileOutputStream fos = null;
+        File f = new File("Results/cds_sheet.xlsx");
+        try {
+            fos = new FileOutputStream(f);
+            wb.write(fos);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
 }
