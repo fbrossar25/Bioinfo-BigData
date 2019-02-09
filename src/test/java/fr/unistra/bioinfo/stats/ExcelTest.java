@@ -95,6 +95,10 @@ public class ExcelTest {
             a.write_sheet();
         }
 
+        RepliconEntity.add(rr.get(0), rr.get(0));
+        rr.get(0).add(rr.get(0));
+        RepliconEntity.add(rr);
+
 
         FileOutputStream fos = null;
         File f = new File("Results/cds_sheet.xlsx");

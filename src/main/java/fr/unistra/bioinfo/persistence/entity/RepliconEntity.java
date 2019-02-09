@@ -77,7 +77,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public void setDinucleotideCount( String din, Phase ph, Integer value )
     {
-
+        String key = din.toUpperCase() + "-" + ph.toString();
+        this.dinucleotides.put(key, value);
+    }
+    public void setTrinucleotidesCount( String tri, Phase ph, Integer value )
+    {
+        String key = tri.toUpperCase() + "-" + ph.toString();
+        this.trinucleotides.put(key, value);
     }
 
     public Long getId() {
@@ -321,17 +327,86 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
             {
                 din = "" + c + cc;
 
-                for ( Phase ph : Phase.values() )
-                {
-                }
+                result.setDinucleotideCount(
+                        din,
+                        Phase.PHASE_0,
+                        e.getDinucleotideCount(din, Phase.PHASE_0) + ee.getDinucleotideCount(din, Phase.PHASE_0)
+                );
+                result.setDinucleotideCount(
+                        din,
+                        Phase.PHASE_1,
+                        e.getDinucleotideCount(din, Phase.PHASE_1) + ee.getDinucleotideCount(din, Phase.PHASE_1)
+                );
 
                 for ( char ccc : "ACGT".toCharArray() )
                 {
                     tri = din + ccc;
+                    for ( Phase ph : Phase.values() )
+                    {
+                        result.setTrinucleotidesCount(
+                                tri,
+                                ph,
+                                e.getTrinucleotideCount(tri, ph) + ee.getTrinucleotideCount(tri, ph)
+                        );
+                    }
                 }
             }
         }
 
         return result;
+    }
+
+    public RepliconEntity add( RepliconEntity r )
+    {
+        return RepliconEntity.add(this, r);
+    }
+
+    public static RepliconEntity add ( List<RepliconEntity> replicons )
+    {
+        if ( replicons.size() == 1 ) { return replicons.get(0); }
+
+        RepliconEntity pre_result = replicons.get(0).add(replicons.get(1));
+
+        for ( int i = 2 ; i < replicons.size() ; i++ )
+        {
+            pre_result = pre_result.add(replicons.get(i));
+        }
+
+        return pre_result;
+    }
+
+    public Integer getTotalTrinucleotides( Phase ph )
+    {
+        Integer r = 0;
+        String tri = null;
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                for ( char ccc : "ACGT".toCharArray() )
+                {
+                    tri = "" + c + cc + ccc;
+                    r += this.getTrinucleotideCount(tri.toUpperCase(), ph);
+                }
+            }
+        }
+        return r;
+    }
+
+    public Integer getTotalDinucleotides( Phase ph )
+    {
+        Integer r = 0;
+        String din = null;
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                din = "" + c + cc;
+                r += this.getDinucleotideCount(din.toUpperCase(), ph);
+            }
+        }
+        return r;
     }
 }
