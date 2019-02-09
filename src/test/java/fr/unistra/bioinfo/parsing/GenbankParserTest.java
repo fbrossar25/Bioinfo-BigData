@@ -76,34 +76,30 @@ class GenbankParserTest {
         assertNotNull(r);
         assertTrue(r.isParsed());
         assertFalse(r.isComputed());
-        boolean checkAtLeastOnePref = false;
-        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
-            if(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty()){
-                assertEquals(0, r.getDinucleotideCount(dinucleotide, Phase.PHASE_0).intValue());
-                assertEquals(0, r.getDinucleotideCount(dinucleotide, Phase.PHASE_1).intValue());
-            }else{
-                assertTrue(r.getDinucleotideCount(dinucleotide, Phase.PHASE_0) > 0 ||
-                        r.getDinucleotideCount(dinucleotide, Phase.PHASE_1) > 0);
-                checkAtLeastOnePref = true;
+        boolean phasePrefChceck = false;
+        for(Phase p : Phase.values()){
+            if(p == Phase.PHASE_2)
+                continue;
+            for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+                Integer pref = r.getPhasePrefDinucleotide(dinucleotide, p);
+                assertTrue(pref == 0 || pref == 1);
+                if(pref == 1){
+                    phasePrefChceck = true;
+                }
             }
         }
-        assertTrue(checkAtLeastOnePref, "Phases préferentielles dinucléotides KO");
-        checkAtLeastOnePref = false;
-        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
-            if(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty()){
-                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0).intValue());
-                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1).intValue());
-                assertEquals(0, r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2).intValue());
-            }else{
-                assertTrue(r.getTrinucleotideCount(trinucleotide, Phase.PHASE_0) > 0 ||
-                        r.getTrinucleotideCount(trinucleotide, Phase.PHASE_1) > 0 ||
-                        r.getTrinucleotideCount(trinucleotide, Phase.PHASE_2) > 0);
-                checkAtLeastOnePref = true;
+        assertTrue(phasePrefChceck);
+        phasePrefChceck = false;
+        for(Phase p : Phase.values()){
+            for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+                Integer pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
+                assertTrue(pref == 0 || pref == 1);
+                if(pref == 1){
+                    phasePrefChceck = true;
+                }
             }
         }
-        assertTrue(checkAtLeastOnePref, "Phases préferentielles trinucléotides KO");
+        assertTrue(phasePrefChceck);
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
         assertNotNull(h);
@@ -112,9 +108,9 @@ class GenbankParserTest {
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
-        assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(6, r.getInvalidsCDS().intValue());
         assertEquals(7, r.getValidsCDS().intValue());
+        assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
     }
 
@@ -136,6 +132,34 @@ class GenbankParserTest {
         LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
     }
 
+    private void checkRepliconBenchmark(){
+        assertEquals(1, hierarchyService.count().longValue());
+        HierarchyEntity h = hierarchyService.getByOrganism("Felis catus");
+        assertNotNull(h);
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
+        CommonUtils.enableHibernateLogging(true);
+        assertNotNull(replicons);
+        assertEquals(1, replicons.size());
+        RepliconEntity r = replicons.get(0);
+        for(Phase p : Phase.values()){
+            if(p != Phase.PHASE_2){
+                for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+                    Integer count = r.getPhasePrefDinucleotide(dinucleotide, p);
+                    assertNotNull(count);
+                    assertTrue(count == 0 || count == 1);
+                }
+            }
+            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+                Integer count = r.getPhasePrefTrinucleotide(trinucleotide, p);
+                assertNotNull(count);
+                assertTrue(count == 0 || count == 1);
+            }
+        }
+        assertTrue(r.isParsed());
+        assertFalse(r.isComputed());
+        assertEquals(RepliconType.MITOCHONDRION, r.getType());
+    }
+
     //Entre 1min 30 et 4min, core i5, 2 coeurs physiques, 4 logiques, 2.8Ghz
     @Test
     @Disabled("Ce test est un benchmark à lancer manuellement.")
@@ -150,25 +174,7 @@ class GenbankParserTest {
         }
         long end = System.currentTimeMillis();
         LOGGER.info("Le parsing de 10000 fichier à pris "+(end - begin)+"ms");
-        assertEquals(1, hierarchyService.count().longValue());
-        HierarchyEntity h = hierarchyService.getByOrganism("Felis catus");
-        assertNotNull(h);
-        List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
-        CommonUtils.enableHibernateLogging(true);
-        assertNotNull(replicons);
-        assertEquals(1, replicons.size());
-        RepliconEntity r = replicons.get(0);
-        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
-            assertFalse(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty());
-        }
-        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
-            assertFalse(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty());
-        }
-        assertTrue(r.isParsed());
-        assertFalse(r.isComputed());
-        assertEquals(RepliconType.MITOCHONDRION, r.getType());
+        checkRepliconBenchmark();
     }
 
     //Entre 50 secondes et 1min 30, core i5, 2 coeurs physiques, 4 logiques, 2.8Ghz
@@ -188,25 +194,7 @@ class GenbankParserTest {
         });
         long end = System.currentTimeMillis();
         LOGGER.info("Le parsing de 10000 fichier à pris "+(end - begin)+"ms");
-        assertEquals(1, hierarchyService.count().longValue());
-        HierarchyEntity h = hierarchyService.getByOrganism("Felis catus");
-        assertNotNull(h);
-        List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
-        CommonUtils.enableHibernateLogging(true);
-        assertNotNull(replicons);
-        assertEquals(1, replicons.size());
-        RepliconEntity r = replicons.get(0);
-        for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsDinucleotide(dinucleotide));
-            assertFalse(r.getPhasesPrefsDinucleotide(dinucleotide).isEmpty());
-        }
-        for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-            assertNotNull(r.getPhasesPrefsTrinucleotide(trinucleotide));
-            assertFalse(r.getPhasesPrefsTrinucleotide(trinucleotide).isEmpty());
-        }
-        assertTrue(r.isParsed());
-        assertFalse(r.isComputed());
-        assertEquals(RepliconType.MITOCHONDRION, r.getType());
+        checkRepliconBenchmark();
     }
 
     @Test
