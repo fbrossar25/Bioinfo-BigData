@@ -60,6 +60,12 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private boolean isParsed = false;
 
+    @Column(nullable = false)
+    private Integer validsCDS = 0;
+
+    @Column(nullable = false)
+    private Integer invalidsCDS = 0;
+
     public RepliconEntity() {
         resetCounters();
     }
@@ -251,6 +257,22 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
     }
 
+    public Integer getValidsCDS() {
+        return validsCDS;
+    }
+
+    public void setValidsCDS(Integer validsCDS) {
+        this.validsCDS = validsCDS;
+    }
+
+    public Integer getInvalidsCDS() {
+        return invalidsCDS;
+    }
+
+    public void setInvalidsCDS(Integer invalidsCDS) {
+        this.invalidsCDS = invalidsCDS;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object == this)
@@ -294,5 +316,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public String getFileName() {
         return getGenbankName()+".gb";
+    }
+
+    public void incrementInvalidsCDS() {
+        invalidsCDS++;
+    }
+
+    public void incrementValidsCDS() {
+        validsCDS++;
     }
 }

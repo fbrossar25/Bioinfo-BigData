@@ -113,13 +113,14 @@ class GenbankParserTest {
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
+        assertEquals(6, r.getInvalidsCDS().intValue());
+        assertEquals(7, r.getValidsCDS().intValue());
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
     }
 
     @Test
     void parseGenbankBatchFile() {
         assertTrue(GenbankParser.parseGenbankFile(GENBANK_BACTH_TEST_FILE_PATH.toFile()));
-        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
         assertEquals(5, repliconService.count().intValue());
         List<RepliconEntity> replicons = repliconService.getAll();
         for(RepliconEntity r : replicons){
