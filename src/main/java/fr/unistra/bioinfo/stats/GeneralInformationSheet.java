@@ -180,14 +180,22 @@ public class GeneralInformationSheet {
                 break;
         }
 
+        Integer nb_valid_cds = 0;
+        Integer nb_invalid_cds = 0;
+        for ( RepliconEntity r : this.replicons )
+        {
+            nb_invalid_cds += r.getInvalidsCDS();
+            nb_valid_cds += r.getValidsCDS();
+        }
+
         row = this.sheet.getRow(5);
         cell = row.createCell(1);
-        cell.setCellValue("NC");
+        cell.setCellValue(nb_valid_cds);
         cell.setCellStyle(this.styles.get("value"));
 
         row = this.sheet.getRow(6);
         cell =row.createCell(1);
-        cell.setCellValue("NC");
+        cell.setCellValue(nb_invalid_cds);
         cell.setCellStyle(this.styles.get("value"));
 
         row = this.sheet.getRow(7);
