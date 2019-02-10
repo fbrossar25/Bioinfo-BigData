@@ -24,6 +24,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,12 +74,12 @@ public class ExcelTest {
 
 
     @Test
-    void generate_general_informations() {
+    void generate_general_informations_ORGANISM() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
         LOGGER.info(orga.getOrganism());
 
-        GeneralInformationSheet info = new GeneralInformationSheet(wb, orga, this.repls, GeneralInformationSheet.LEVEL.ORGANISM);
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, orga, this.repls);
         info.write_lines();
 
         FileOutputStream fos = null;
@@ -93,6 +94,80 @@ public class ExcelTest {
         }
     }
 
+    @Test
+    void generate_general_informations_SUB_GROUP() {
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        this.repls.add(this.repls.get(0));
+
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, Arrays.asList(orga), this.repls, GeneralInformationSheet.LEVEL.SUB_GROUP);
+        info.write_lines();
+
+        FileOutputStream fos = null;
+        File f = new File( TEST_PATH + "/general.SUB_GROUP.xlsx");
+        try {
+            fos = new FileOutputStream(f);
+            wb.write(fos);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void generate_general_informations_GROUP() {
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, Arrays.asList(orga), this.repls, GeneralInformationSheet.LEVEL.GROUP);
+        info.write_lines();
+
+        FileOutputStream fos = null;
+        File f = new File( TEST_PATH + "/general.GROUP.xlsx");
+        try {
+            fos = new FileOutputStream(f);
+            wb.write(fos);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void generate_general_informations_KINDOM() {
+        long t = System.currentTimeMillis();
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+        this.repls.add(this.repls.get(0));
+
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, Arrays.asList(orga), this.repls, GeneralInformationSheet.LEVEL.KINGDOM);
+        info.write_lines();
+
+        FileOutputStream fos = null;
+        File f = new File( TEST_PATH + "/general.KINGDOM.xlsx");
+        try {
+            fos = new FileOutputStream(f);
+            wb.write(fos);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        long tt = System.currentTimeMillis();
+
+        LOGGER.info("TIME -> " + (tt - t) + "s");
+    }
 
     @Test
     void generate_CDS_sheet() {
@@ -116,6 +191,24 @@ public class ExcelTest {
         }
     }
 
+    @Test
+    void generate_CDS_sheet_SUB_GROUP() {
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        RepliconSheet a = new RepliconSheet(wb, this.repls, GeneralInformationSheet.LEVEL.SUB_GROUP);
+        a.write_sheet();
+
+        FileOutputStream fos = null;
+        File f = new File(TEST_PATH + "/cds_sheet_SUB_GROUP.xlsx");
+        try {
+            fos = new FileOutputStream(f);
+            wb.write(fos);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }
