@@ -8,7 +8,9 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,12 +24,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
@@ -36,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 public class ExcelTest {
     private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static String TEST_PATH = "test_results";
 
     public static final String ORGA_NAME = "Felis catus";
 
@@ -46,11 +45,29 @@ public class ExcelTest {
     @Autowired
     private RepliconService repliconService;
 
-    public HierarchyEntity ORGA = null;
+    private HierarchyEntity orga = null;
+    private List<RepliconEntity> repls = null;
+
     @BeforeEach
     void beforeEach(){
         GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile());
-        this.ORGA = hierarchyService.getByOrganism(ORGA_NAME);
+        this.orga = hierarchyService.getByOrganism(ORGA_NAME);
+        this.repls = repliconService.getByHierarchy(this.orga);
+
+        try {
+            FileUtils.forceMkdir(new File(TEST_PATH));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @AfterEach
+    void afterEach()
+    {
+        CommonUtils.disableHibernateLogging();
+        hierarchyService.deleteAll();
+        repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
     }
 
 
@@ -59,15 +76,13 @@ public class ExcelTest {
     void generate_general_informations() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
-        LOGGER.info(ORGA.getOrganism());
+        LOGGER.info(orga.getOrganism());
 
-        List<RepliconEntity> rr = repliconService.getByHierarchy(ORGA);
-
-        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, rr, GeneralInformationSheet.LEVEL.ORGANISM);
+        GeneralInformationSheet info = new GeneralInformationSheet(wb, orga, this.repls, GeneralInformationSheet.LEVEL.ORGANISM);
         info.write_lines();
 
         FileOutputStream fos = null;
-        File f = new File("Results/general.xlsx");
+        File f = new File( TEST_PATH + "/general.xlsx");
         try {
             fos = new FileOutputStream(f);
             wb.write(fos);
@@ -79,29 +94,18 @@ public class ExcelTest {
     }
 
 
-
     @Test
     void generate_CDS_sheet() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
-        List<RepliconEntity> rr = repliconService.getByHierarchy(ORGA);
-
-        GeneralInformationSheet info = new GeneralInformationSheet(wb, ORGA, rr, GeneralInformationSheet.LEVEL.ORGANISM);
-        info.write_lines();
-
-        for ( RepliconEntity r : rr )
+        for ( RepliconEntity r : this.repls )
         {
             RepliconSheet a = new RepliconSheet(wb, r);
             a.write_sheet();
         }
 
-        RepliconEntity.add(rr.get(0), rr.get(0));
-        rr.get(0).add(rr.get(0));
-        RepliconEntity.add(rr);
-
-
         FileOutputStream fos = null;
-        File f = new File("Results/cds_sheet.xlsx");
+        File f = new File(TEST_PATH + "/cds_sheet.xlsx");
         try {
             fos = new FileOutputStream(f);
             wb.write(fos);
