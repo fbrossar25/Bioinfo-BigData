@@ -522,12 +522,62 @@ public class RepliconSheet {
 
     private void write_pref_trin( RepliconEntity r, Phase ph )
     {
-        // TODO: phase préférencielle pour les trinucléotides
+        String tri = null;
+        Row row = null;
+        Cell cell = null;
+        Integer col_num = 7 + ph.ordinal();
+        Integer row_number = 1;
+
+        for ( char c : "ACGT".toCharArray() ) {
+            for (char cc : "ACGT".toCharArray()) {
+                for (char ccc : "ACGT".toCharArray()) {
+                    tri = ("" + c + cc + ccc).toUpperCase();
+                    row = this.sheet.getRow(row_number);
+                    cell = row.createCell(col_num);
+                    cell.setCellValue(r.getPhasePrefTrinucleotide(tri, ph));
+
+                    if ( row_number % 2 == 0 )
+                    {
+                        cell.setCellStyle(this.styles.get("even num"));
+                    }
+                    else
+                    {
+                        cell.setCellStyle(this.styles.get("odd num"));
+                    }
+
+                    row_number++;
+                }
+            }
+        }
     }
 
     private void write_pref_din( RepliconEntity r, Phase ph )
     {
-        // TODO: phase préférencielle pour les dinucléotides
+        String din = null;
+        Row row = null;
+        Cell cell = null;
+        Integer col_num = 16 + ph.ordinal();
+        Integer row_number = 1;
+
+        for ( char c : "ACGT".toCharArray() ) {
+            for (char cc : "ACGT".toCharArray()) {
+                din = ("" + c + cc ).toUpperCase();
+                row = this.sheet.getRow(row_number);
+                cell = row.createCell(col_num);
+                cell.setCellValue(r.getPhasePrefDinucleotide(din, ph));
+
+                if ( row_number % 2 == 0 )
+                {
+                    cell.setCellStyle(this.styles.get("even num"));
+                }
+                else
+                {
+                    cell.setCellStyle(this.styles.get("odd num"));
+                }
+
+                row_number++;
+            }
+        }
     }
 
     public void write_sheet()
