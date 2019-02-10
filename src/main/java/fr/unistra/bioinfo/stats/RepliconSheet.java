@@ -204,14 +204,16 @@ public class RepliconSheet {
 
     private String determine_sheet_name()
     {
+        RepliconEntity r = this.replicons.get(0);
+        String s = r.getType().toString().toLowerCase();
         if ( this.level == GeneralInformationSheet.LEVEL.ORGANISM )
         {
-            RepliconEntity r = this.replicons.get(0);
-            return "" + r.getType().toString().toLowerCase() + "_" + r.getName() + "." + r.getVersion();
+            return "" + s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase() + "_" + r.getName() + "." + r.getVersion();
         }
         else
         {
-            return "Sum_" + this.level.toString().toLowerCase();
+
+            return "Sum_" + s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
         }
     }
 
@@ -520,12 +522,12 @@ public class RepliconSheet {
 
     private void write_pref_trin( RepliconEntity r, Phase ph )
     {
-
+        // TODO: phase préférencielle pour les trinucléotides
     }
 
     private void write_pref_din( RepliconEntity r, Phase ph )
     {
-
+        // TODO: phase préférencielle pour les dinucléotides
     }
 
     public void write_sheet()
