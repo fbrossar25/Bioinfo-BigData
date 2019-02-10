@@ -234,4 +234,11 @@ public class ExcelTest {
         );
     }
 
+    @Test
+    void test_excel_organism_write()
+    {
+        OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH);
+        o.generate_excel_organism();
+    }
+
 }

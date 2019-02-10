@@ -73,6 +73,7 @@ public class OrganismExcelGenerator {
     {
         Workbook wb = new XSSFWorkbook();
 
+        write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.ORGANISM));
         return true;
     }
 
