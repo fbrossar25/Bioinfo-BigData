@@ -1,7 +1,9 @@
 package fr.unistra.bioinfo.stats;
 
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import org.apache.poi.ss.usermodel.Header;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.jdbc.Work;
 
 import java.io.File;
@@ -38,11 +40,39 @@ public class OrganismExcelGenerator {
         }
     }
 
+    public static String generate_path(HierarchyEntity o, String base_path,  GeneralInformationSheet.LEVEL level)
+    {
+        String path = base_path + "/";
 
+        switch ( level )
+        {
+            case KINGDOM:
+                path += o.getKingdom() + ".xlsx";
+                break;
+            case GROUP:
+                path += o.getKingdom();
+                path += "/" + o.getGroup() + ".xlsx";
+                break;
+            case SUB_GROUP:
+                path += o.getKingdom();
+                path += "/" + o.getGroup();
+                path += "/" + o.getSubgroup() + ".xlsx";
+                break;
+            case ORGANISM:
+                path += o.getKingdom();
+                path += "/" + o.getGroup();
+                path += "/" + o.getSubgroup();
+                path += "/" + o.getOrganism() + ".xlsx";
+                break;
+        }
 
+        return path;
+    }
 
     public Boolean generate_excel_organism()
     {
+        Workbook wb = new XSSFWorkbook();
+
         return true;
     }
 
