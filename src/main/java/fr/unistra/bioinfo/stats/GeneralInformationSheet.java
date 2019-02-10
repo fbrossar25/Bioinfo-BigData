@@ -112,13 +112,13 @@ public class GeneralInformationSheet {
         this.generate_styles();
     }
 
-    public GeneralInformationSheet (XSSFWorkbook wb, HierarchyEntity organism, List<RepliconEntity> replicons, GeneralInformationSheet.LEVEL level)
+    public GeneralInformationSheet (XSSFWorkbook wb, HierarchyEntity organism, List<RepliconEntity> replicons)
     {
         this.wb = wb;
         this.replicons = replicons;
         this.organisms = Arrays.asList( organism );
         this.sheet = this.wb.createSheet( SHEET_NAME );
-        this.level = level;
+        this.level = LEVEL.ORGANISM;
         this.generate_styles();
     }
 
