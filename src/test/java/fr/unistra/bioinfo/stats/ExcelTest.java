@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
@@ -208,7 +209,29 @@ public class ExcelTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        LOGGER.warn(TEST_PATH + "/" + this.orga.getKingdom() + "/" + this.orga.getGroup() + "/" + this.orga.getSubgroup() + "/" + this.orga.getOrganism() + ".xlsx");
     }
 
+    @Test
+    void test_path_generator()
+    {
+        assertEquals(
+                OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.ORGANISM),
+                "test_results/Eukaryota/Animals/Mammals/Felis catus.xlsx"
+        );
+        assertEquals(
+                OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.SUB_GROUP),
+                "test_results/Eukaryota/Animals/Mammals.xlsx"
+        );
+        assertEquals(
+                OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.GROUP),
+                "test_results/Eukaryota/Animals.xlsx"
+        );
+        assertEquals(
+                OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.KINGDOM),
+                "test_results/Eukaryota.xlsx"
+        );
+    }
 
 }
