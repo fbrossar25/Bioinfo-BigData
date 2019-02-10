@@ -19,4 +19,7 @@ hsqldb
 db
 logs
 Results
-database
+databas
+
+test_results/
+
