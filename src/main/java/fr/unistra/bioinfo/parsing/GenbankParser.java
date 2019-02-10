@@ -170,6 +170,9 @@ public final class GenbankParser {
         cdsList.forEach(cds -> {
             if(!countFrequencies(cds, repliconEntity)){
                 result.set(false);
+                repliconEntity.incrementInvalidsCDS();
+            }else{
+                repliconEntity.incrementValidsCDS();
             }
         });
         return result.get();
