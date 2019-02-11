@@ -17,8 +17,21 @@ public class RepliconViewNode {
     /**
      * Enumeration des états d'un item
      */
+
     enum RepliconViewNodeState{
-        OK, NOK, INTERMEDIARY
+        OK("../resources/images/vert.png"),
+        NOK("../resources/images/rouge.png"),
+        INTERMEDIARY("../resources/images/jaune.png");
+
+        private String value;
+        private RepliconViewNodeState(String value){
+            this.value = value;
+        }
+
+        public String getValue(){
+            return value;
+        }
+
     }
 
     /** Élément affiché par ce noeud */
