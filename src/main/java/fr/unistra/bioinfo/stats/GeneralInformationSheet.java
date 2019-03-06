@@ -39,7 +39,7 @@ public class GeneralInformationSheet {
             "",
             "",
             "",
-            "# Mitochondion",
+            "# Mitochondrion",
             "# Plast",
             "# Plasmid",
             "# DNA"
