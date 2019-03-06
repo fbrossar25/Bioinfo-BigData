@@ -97,8 +97,10 @@ public class OrganismExcelGenerator
     public static Boolean generate_herarchy_dir ( HierarchyEntity o, String base_path )
     {
         StringBuilder path = new StringBuilder(base_path);
-        try
+
+        /*try
         {
+
             FileUtils.forceMkdir(new File(path.toString()));
 
             path.append(File.separator + o.getKingdom());
@@ -115,6 +117,7 @@ public class OrganismExcelGenerator
             e.printStackTrace();
             return false;
         }
+        */
 
         return true;
     }
@@ -128,6 +131,7 @@ public class OrganismExcelGenerator
 
         XSSFWorkbook wb = new XSSFWorkbook();
         List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+
 
         new GeneralInformationSheet(wb, this.organism, replicons).write_lines();
 

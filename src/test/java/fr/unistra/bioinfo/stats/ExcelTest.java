@@ -41,6 +41,8 @@ public class ExcelTest {
     public static final String ORGA_NAME = "Felis catus";
 
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
+    private static final Path GENBANK_TEST_FILE_PATH_2 = Paths.get(".","src", "test", "resources", "NC_001701.1.gb");
+    private static final Path GENBANK_TEST_FILE_PATH_3 = Paths.get(".","src", "test", "resources", "NC_001702.1.gb");
 
     @Autowired
     private HierarchyService hierarchyService;
@@ -53,6 +55,9 @@ public class ExcelTest {
     @BeforeEach
     void beforeEach(){
         GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile());
+        GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH_2.toFile());
+        GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH_3.toFile());
+
         this.orga = hierarchyService.getByOrganism(ORGA_NAME);
         this.repls = repliconService.getByHierarchy(this.orga);
 
@@ -246,5 +251,10 @@ public class ExcelTest {
     {
         OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
         o.generateExcel();
+
+
+
+        OrganismExcelGenerator oo = new OrganismExcelGenerator( hierarchyService.getByOrganism("Bos taurus"), TEST_PATH, this.hierarchyService, this.repliconService);
+        oo.generateExcel();
     }
 }
