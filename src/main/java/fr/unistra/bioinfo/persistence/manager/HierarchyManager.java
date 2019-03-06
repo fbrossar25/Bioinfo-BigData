@@ -10,4 +10,5 @@ public interface HierarchyManager extends IManager<HierarchyEntity, Long> {
     List<HierarchyEntity> getAll();
 
     HierarchyEntity getByOrganism(String organism);
+    List<HierarchyEntity> getHierarchyEntitiesBySubgroup(String subgroup);
 }

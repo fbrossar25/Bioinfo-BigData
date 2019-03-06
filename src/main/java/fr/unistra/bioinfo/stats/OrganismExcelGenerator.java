@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.stats;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.io.FileUtils;
@@ -17,7 +18,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class OrganismExcelGenerator
 {
@@ -145,9 +149,46 @@ public class OrganismExcelGenerator
     }
 
 
+    private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, RepliconType t )
+    {
+        List<RepliconEntity> results = new ArrayList<>();
+
+        for ( RepliconEntity r : repls )
+        {
+            if ( r.getType().equals(t) )
+            {
+                results.add(r);
+            }
+        }
+
+        return results;
+    }
+
     public Boolean genetate_excel_sub_group ()
     {
         XSSFWorkbook wb = new XSSFWorkbook();
+
+        List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getSubgroup());
+        List<RepliconEntity> repls = new ArrayList<RepliconEntity>();
+        for ( HierarchyEntity o : orgas )
+        {
+            List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
+            repls.addAll(tmp_repls);
+        }
+
+        new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_lines();
+
+        for ( RepliconType t : RepliconType.values() )
+        {
+            List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
+            if ( !typedRepls.isEmpty() )
+            {
+                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_sheet();
+                LOGGER.info("NEW Sheet for " + t);
+            }
+            LOGGER.info("" + t);
+        }
+
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.SUB_GROUP));
         return true;

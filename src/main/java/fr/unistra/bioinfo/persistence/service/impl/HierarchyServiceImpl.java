@@ -64,6 +64,11 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
     }
 
     @Override
+    public List<HierarchyEntity> getBySubgroup(String subgroup) {
+        return hierarchyManager.getHierarchyEntitiesBySubgroup(subgroup);
+    }
+
+    @Override
     public void deleteAll() {
         repliconManager.deleteAll();
         hierarchyManager.deleteAll();
