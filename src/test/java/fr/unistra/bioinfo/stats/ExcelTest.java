@@ -237,8 +237,14 @@ public class ExcelTest {
     @Test
     void test_excel_organism_write()
     {
-        OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH);
+        OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
         o.generate_excel_organism();
     }
 
+    @Test
+    void test_generateExcel()
+    {
+        OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
+        o.generateExcel();
+    }
 }
