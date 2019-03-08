@@ -9,4 +9,6 @@ public interface HierarchyService extends AbstractService<HierarchyEntity, Long>
     HierarchyEntity getByOrganism(@NonNull String organism);
     HierarchyEntity getByOrganism(@NonNull String organism, boolean createIfNotExists);
     List<HierarchyEntity> getBySubgroup(@NonNull String subgroup);
+    List<HierarchyEntity> getByGroup(@NonNull String group);
+    List<HierarchyEntity> getByKingdom(@NonNull String kingdom);
 }

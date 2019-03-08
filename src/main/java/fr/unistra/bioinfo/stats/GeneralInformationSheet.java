@@ -26,7 +26,7 @@ public class GeneralInformationSheet {
             "Organism",
             "Sub-group",
             "Group",
-            "Kindom",
+            "Kingdom",
             "",
             "# of valid CDS",
             "# of invalid CDS",
@@ -153,7 +153,6 @@ public class GeneralInformationSheet {
         }
 
         // Write organism and Date
-        // TODO: gestion des levels
 
         switch ( this.level )
         {

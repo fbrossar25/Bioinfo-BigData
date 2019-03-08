@@ -102,26 +102,10 @@ public class OrganismExcelGenerator
     {
         StringBuilder path = new StringBuilder(base_path);
 
-        /*try
-        {
-
-            FileUtils.forceMkdir(new File(path.toString()));
-
-            path.append(File.separator + o.getKingdom());
-            FileUtils.forceMkdir(new File(path.toString()));
-
-            path.append(File.separator + o.getGroup());
-            FileUtils.forceMkdir(new File(path.toString()));
-
-            path.append(File.separator + o.getSubgroup());
-            FileUtils.forceMkdir(new File(path.toString()));
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-        */
+        path.append(File.separator + o.getKingdom());
+        path.append(File.separator + o.getGroup());
+        path.append(File.separator + o.getSubgroup());
+        new File(path.toString()).mkdirs();
 
         return true;
     }
@@ -169,7 +153,14 @@ public class OrganismExcelGenerator
         XSSFWorkbook wb = new XSSFWorkbook();
 
         List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getSubgroup());
-        List<RepliconEntity> repls = new ArrayList<RepliconEntity>();
+        if ( orgas.isEmpty() )
+        {
+            LOGGER.info("SUB GROUP ORGA EMPTY");
+            return false;
+        }
+
+
+        List<RepliconEntity> repls = new ArrayList<>();
         for ( HierarchyEntity o : orgas )
         {
             List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
@@ -198,6 +189,33 @@ public class OrganismExcelGenerator
     {
         XSSFWorkbook wb = new XSSFWorkbook();
 
+        List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
+        if ( orgas.isEmpty() )
+        {
+            LOGGER.info("GROUP ORGA EMPTY");
+            return false;
+        }
+
+        List<RepliconEntity> repls = new ArrayList<>();
+        for ( HierarchyEntity o : orgas )
+        {
+            List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
+            repls.addAll(tmp_repls);
+        }
+
+        new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.GROUP).write_lines();
+
+        for ( RepliconType t : RepliconType.values() )
+        {
+            List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
+            if ( !typedRepls.isEmpty() )
+            {
+                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.GROUP).write_sheet();
+                LOGGER.info("NEW Sheet for " + t);
+            }
+            LOGGER.info("" + t);
+        }
+
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
         return true;
     }
@@ -205,6 +223,33 @@ public class OrganismExcelGenerator
     public Boolean generate_excel_kingdom ()
     {
         XSSFWorkbook wb = new XSSFWorkbook();
+
+        List<HierarchyEntity> orgas = this.hierarchyService.getByKingdom(this.organism.getKingdom());
+        if ( orgas.isEmpty() )
+        {
+            LOGGER.info("KINDOM ORGA EMPTY");
+            return false;
+        }
+
+        List<RepliconEntity> repls = new ArrayList<>();
+        for ( HierarchyEntity o : orgas )
+        {
+            List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
+            repls.addAll(tmp_repls);
+        }
+
+        new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.KINGDOM).write_lines();
+
+        for ( RepliconType t : RepliconType.values() )
+        {
+            List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
+            if ( !typedRepls.isEmpty() )
+            {
+                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.KINGDOM).write_sheet();
+                LOGGER.info("NEW Sheet for " + t);
+            }
+            LOGGER.info("" + t);
+        }
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
         return true;

@@ -252,8 +252,6 @@ public class ExcelTest {
         OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
         o.generateExcel();
 
-
-
         OrganismExcelGenerator oo = new OrganismExcelGenerator( hierarchyService.getByOrganism("Bos taurus"), TEST_PATH, this.hierarchyService, this.repliconService);
         oo.generateExcel();
     }
