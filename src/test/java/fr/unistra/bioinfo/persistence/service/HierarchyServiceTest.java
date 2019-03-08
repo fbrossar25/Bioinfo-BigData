@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.Duration.ofSeconds;
@@ -129,6 +130,7 @@ class HierarchyServiceTest {
 
 
         assertEquals(Long.valueOf(0), repliconService.count());
+        CommonUtils.enableHibernateLogging(true);
     }
 
     @Test
@@ -153,6 +155,7 @@ class HierarchyServiceTest {
 
         assertTrue(repliconService.existsById(r.getId()));
         assertTrue(hierarchyService.existsById(h.getId()));
+        CommonUtils.enableHibernateLogging(true);
     }
 
     @Test
@@ -178,6 +181,7 @@ class HierarchyServiceTest {
         Collections.sort(allHierarchies);
         assertEquals(hierarchies.size(), allHierarchies.size());
         IntStream.range(0, N).parallel().forEach(i -> assertEquals(hierarchies.get(i), allHierarchies.get(i)));
+        CommonUtils.enableHibernateLogging(true);
     }
 
     @Test
@@ -204,5 +208,56 @@ class HierarchyServiceTest {
         }
         assertEquals(count, hierarchyService.count().longValue());
         assertEquals(count, total);
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void getById(){
+        CommonUtils.disableHibernateLogging();
+        HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
+        hierarchyService.save(h);
+        assertEquals(h, hierarchyService.getById(h.getId()));
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void getByIdInList(){
+        CommonUtils.disableHibernateLogging();
+        List<Long> ids = new ArrayList<>(100);
+        for(int i=0; i<100; i++){
+            HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O"+i);
+            hierarchyService.save(h);
+            assertNotNull(h.getId());
+            ids.add(h.getId());
+        }
+        List<HierarchyEntity> entities = hierarchyService.getByIds(ids);
+        assertEquals(100, entities.size());
+        for(HierarchyEntity entity : entities){
+            ids.remove(entity.getId());
+        }
+        assertTrue(ids.isEmpty());
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void organismToUpdateTest(){
+        CommonUtils.disableHibernateLogging();
+
+        HierarchyEntity h1 = new HierarchyEntity("K1", "G1", "S1", "O1");
+        HierarchyEntity h2 = new HierarchyEntity("K2", "G2", "S2", "O2");
+
+        RepliconEntity r1 = new RepliconEntity("R1", 1, h1);
+        repliconService.save(r1);
+
+        RepliconEntity r2 = new RepliconEntity("R2", 1, h2);
+        r2.setComputed(true);
+        repliconService.save(r2);
+        LOGGER.debug("Liste des hierarchy : {}",hierarchyService.getAll().stream().map(HierarchyEntity::getId).distinct().collect(Collectors.toList()));
+
+        List<HierarchyEntity> organismsToUpdate = hierarchyService.getOrganismToUpdateExcel();
+        assertNotNull(organismsToUpdate);
+        assertEquals(1, organismsToUpdate.size());
+        assertTrue(organismsToUpdate.contains(h1));
+        CommonUtils.enableHibernateLogging(true);
     }
 }

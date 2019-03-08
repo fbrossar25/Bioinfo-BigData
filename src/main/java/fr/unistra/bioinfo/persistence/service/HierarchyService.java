@@ -11,4 +11,11 @@ public interface HierarchyService extends AbstractService<HierarchyEntity, Long>
     List<HierarchyEntity> getBySubgroup(@NonNull String subgroup);
     List<HierarchyEntity> getByGroup(@NonNull String group);
     List<HierarchyEntity> getByKingdom(@NonNull String kingdom);
+
+    /**
+     * Liste les organismes contenants au moins un replicon dont le fichier l'excel n'as pas été généré
+     * @return Liste des organismes
+     */
+    List<HierarchyEntity> getOrganismToUpdateExcel();
+    List<HierarchyEntity> getByIds(List<Long> ids);
 }

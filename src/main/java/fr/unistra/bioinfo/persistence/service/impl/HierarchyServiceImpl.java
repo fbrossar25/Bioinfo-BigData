@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, Long> implements HierarchyService {
@@ -63,7 +64,7 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
         return entity;
     }
 
-    public List<HierarchyEntity> getBySubgroup(String subgroup)
+    public List<HierarchyEntity> getBySubgroup(@NonNull String subgroup)
     {
         return hierarchyManager.getHierarchyEntitiesBySubgroup(subgroup);
     }
@@ -82,5 +83,22 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
     public void deleteAll() {
         repliconManager.deleteAll();
         hierarchyManager.deleteAll();
+    }
+
+    @Override
+    public List<HierarchyEntity> getOrganismToUpdateExcel() {
+        List<Long> ids = repliconManager
+                        .getAllByComputed(false)
+                        .stream()
+                        .map(replicon -> replicon.getHierarchyEntity().getId())
+                        .distinct()
+                        .collect(Collectors.toList());
+        LOGGER.debug("Liste des ids des organismes à mettre à jour : {}", ids);
+        return getByIds(ids);
+    }
+
+    @Override
+    public List<HierarchyEntity> getByIds(List<Long> ids) {
+        return hierarchyManager.findByIdIn(ids);
     }
 }

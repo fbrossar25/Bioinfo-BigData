@@ -50,13 +50,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     private Map<String, Integer> trinucleotides_pref = new HashMap<>();
 
     @Column(nullable = false)
-    private boolean isDownloaded = false;
+    private boolean downloaded = false;
 
     @Column(nullable = false)
-    private boolean isComputed = false;
+    private boolean computed = false;
 
     @Column(nullable = false)
-    private boolean isParsed = false;
+    private boolean parsed = false;
 
     @Column(nullable = false)
     private Integer validsCDS = 0;
@@ -135,11 +135,11 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
      * @return true si le fichier à été téléchargé, false sinon
      */
     public boolean isDownloaded() {
-        return isDownloaded;
+        return downloaded;
     }
 
     public void setDownloaded(boolean downloaded) {
-        isDownloaded = downloaded;
+        this.downloaded = downloaded;
     }
 
     /**
@@ -147,11 +147,11 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
      * @return true si le parsing et le comptage sont faits, false sinon
      */
     public boolean isParsed() {
-        return isParsed;
+        return parsed;
     }
 
     public void setParsed(boolean parsed) {
-        isParsed = parsed;
+        this.parsed = parsed;
     }
 
     /**
@@ -159,10 +159,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
      * @return true si les statistiques ont été générées, false sinon
      */
     public boolean isComputed() {
-        return isComputed;
+        return computed;
     }
     public void setComputed(boolean computed) {
-        isComputed = computed;
+        this.computed = computed;
     }
 
     private String getNucleotidePhaseKey(@NonNull String nucleotide, @NonNull Phase phase){
@@ -355,8 +355,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     public int compareTo(RepliconEntity o) {
         return new CompareToBuilder()
                 .append(getGenbankName(), o.getGenbankName())
-                .append(isComputed, o.isComputed)
-                .append(isDownloaded, o.isDownloaded)
+                .append(computed, o.computed)
+                .append(downloaded, o.downloaded)
                 .build();
     }
 

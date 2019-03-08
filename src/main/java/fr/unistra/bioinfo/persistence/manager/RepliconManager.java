@@ -17,4 +17,10 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
     void deleteAllByHierarchyEntityIn(List<HierarchyEntity> hierarchyEntities);
 
     RepliconEntity getByName(String name);
+
+    List<RepliconEntity> getAllByComputed(boolean computed);
+
+    List<RepliconEntity> getAllByParsed(boolean parsed);
+
+    List<RepliconEntity> getAllByDownloaded(boolean downloaded);
 }

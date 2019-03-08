@@ -6,86 +6,54 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
-import org.apache.commons.io.FileUtils;
-import org.apache.poi.ss.usermodel.Header;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.hibernate.jdbc.Work;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-/*
-
-Il faut faire comme ça :
-
-
-    OrganismExcelGenerator o = new OrganismExcelGenerator(this.hierarchy_entity, path_to_results_dir, this.hierarchyService, this.repliconService);
-    o.generateExcel();
-
-*/
-
-
-public class OrganismExcelGenerator
-{
+public class OrganismExcelGenerator {
     private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private HierarchyEntity organism = null;
     private String base_path = null;
 
-    @Autowired
     private HierarchyService hierarchyService;
-    @Autowired
     private RepliconService repliconService;
 
-    public OrganismExcelGenerator (HierarchyEntity organism, String base_path, HierarchyService hierarchyService, RepliconService repliconService)
-    {
+    @Autowired
+    public OrganismExcelGenerator(HierarchyEntity organism, String base_path, HierarchyService hierarchyService, RepliconService repliconService) {
         this.organism = organism;
         this.base_path = base_path;
         this.hierarchyService = hierarchyService;
         this.repliconService = repliconService;
     }
-    public OrganismExcelGenerator (HierarchyEntity organism, HierarchyService hierarchyService, RepliconService repliconService)
-    {
+
+    public OrganismExcelGenerator(HierarchyEntity organism, HierarchyService hierarchyService, RepliconService repliconService) {
         this(organism, "Results", hierarchyService, repliconService);
     }
 
-    public static Boolean write_workbook (Workbook wb, String path)
-    {
+    public static boolean write_workbook(Workbook wb, String path) {
         File f = new File(path);
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(f);
+        try (FileOutputStream fos = new FileOutputStream(f)) {
             wb.write(fos);
             wb.close();
-        }
-        catch (FileNotFoundException e)
-        {
-            e.printStackTrace();
-            return false;
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
+        } catch (IOException e) {
+            LOGGER.error("Erreur lors de l'écriture du fichier '{}'", path, e);
             return false;
         }
 
         return true;
     }
 
-    public static String generate_path(HierarchyEntity o, String base_path,  GeneralInformationSheet.LEVEL level)
-    {
+    public static String generate_path(HierarchyEntity o, String base_path, GeneralInformationSheet.LEVEL level) {
         String path = base_path + "/";
 
-        switch ( level )
-        {
+        switch (level) {
             case KINGDOM:
                 path += o.getKingdom() + ".xlsx";
                 break;
@@ -109,22 +77,16 @@ public class OrganismExcelGenerator
         return path;
     }
 
-    public static Boolean generate_herarchy_dir ( HierarchyEntity o, String base_path )
-    {
-        StringBuilder path = new StringBuilder(base_path);
-
-        path.append(File.separator + o.getKingdom());
-        path.append(File.separator + o.getGroup());
-        path.append(File.separator + o.getSubgroup());
-        new File(path.toString()).mkdirs();
-
-        return true;
+    public static boolean generate_herarchy_dir(HierarchyEntity o, String base_path) {
+        String path = base_path;
+        path += File.separator + o.getKingdom();
+        path += File.separator + o.getGroup();
+        path += File.separator + o.getSubgroup();
+        return new File(path).mkdirs();
     }
 
-    public Boolean generate_excel_organism()
-    {
-        if ( ! OrganismExcelGenerator.generate_herarchy_dir(this.organism, this.base_path) )
-        {
+    public boolean generate_excel_organism() {
+        if (!OrganismExcelGenerator.generate_herarchy_dir(this.organism, this.base_path)) {
             return false;
         }
 
@@ -134,8 +96,7 @@ public class OrganismExcelGenerator
 
         new GeneralInformationSheet(wb, this.organism, replicons).write_lines();
 
-        for ( RepliconEntity r : replicons )
-        {
+        for (RepliconEntity r : replicons) {
             new RepliconSheet(wb, r).write_sheet();
         }
 
@@ -144,14 +105,11 @@ public class OrganismExcelGenerator
     }
 
 
-    private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, RepliconType t )
-    {
+    private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, RepliconType t) {
         List<RepliconEntity> results = new ArrayList<>();
 
-        for ( RepliconEntity r : repls )
-        {
-            if ( r.getType().equals(t) )
-            {
+        for (RepliconEntity r : repls) {
+            if (r.getType().equals(t)) {
                 results.add(r);
             }
         }
@@ -159,32 +117,27 @@ public class OrganismExcelGenerator
         return results;
     }
 
-    public Boolean genetate_excel_sub_group ()
-    {
+    public boolean genetate_excel_sub_group() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
         List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getSubgroup());
-        if ( orgas.isEmpty() )
-        {
+        if (orgas.isEmpty()) {
             LOGGER.info("SUB GROUP ORGA EMPTY");
             return false;
         }
 
 
         List<RepliconEntity> repls = new ArrayList<>();
-        for ( HierarchyEntity o : orgas )
-        {
+        for (HierarchyEntity o : orgas) {
             List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
             repls.addAll(tmp_repls);
         }
 
         new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_lines();
 
-        for ( RepliconType t : RepliconType.values() )
-        {
+        for (RepliconType t : RepliconType.values()) {
             List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
-            if ( !typedRepls.isEmpty() )
-            {
+            if (!typedRepls.isEmpty()) {
                 new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_sheet();
                 LOGGER.info("NEW Sheet for " + t);
             }
@@ -196,31 +149,26 @@ public class OrganismExcelGenerator
         return true;
     }
 
-    public  Boolean genetate_excel_group ()
-    {
+    public boolean genetate_excel_group() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
         List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
-        if ( orgas.isEmpty() )
-        {
+        if (orgas.isEmpty()) {
             LOGGER.info("GROUP ORGA EMPTY");
             return false;
         }
 
         List<RepliconEntity> repls = new ArrayList<>();
-        for ( HierarchyEntity o : orgas )
-        {
+        for (HierarchyEntity o : orgas) {
             List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
             repls.addAll(tmp_repls);
         }
 
         new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.GROUP).write_lines();
 
-        for ( RepliconType t : RepliconType.values() )
-        {
+        for (RepliconType t : RepliconType.values()) {
             List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
-            if ( !typedRepls.isEmpty() )
-            {
+            if (!typedRepls.isEmpty()) {
                 new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.GROUP).write_sheet();
                 LOGGER.info("NEW Sheet for " + t);
             }
@@ -231,31 +179,26 @@ public class OrganismExcelGenerator
         return true;
     }
 
-    public Boolean generate_excel_kingdom ()
-    {
+    public boolean generate_excel_kingdom() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
         List<HierarchyEntity> orgas = this.hierarchyService.getByKingdom(this.organism.getKingdom());
-        if ( orgas.isEmpty() )
-        {
+        if (orgas.isEmpty()) {
             LOGGER.info("KINDOM ORGA EMPTY");
             return false;
         }
 
         List<RepliconEntity> repls = new ArrayList<>();
-        for ( HierarchyEntity o : orgas )
-        {
+        for (HierarchyEntity o : orgas) {
             List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
             repls.addAll(tmp_repls);
         }
 
         new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.KINGDOM).write_lines();
 
-        for ( RepliconType t : RepliconType.values() )
-        {
+        for (RepliconType t : RepliconType.values()) {
             List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
-            if ( !typedRepls.isEmpty() )
-            {
+            if (!typedRepls.isEmpty()) {
                 new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.KINGDOM).write_sheet();
                 LOGGER.info("NEW Sheet for " + t);
             }
@@ -266,53 +209,39 @@ public class OrganismExcelGenerator
         return true;
     }
 
-    public Boolean generateExcel()
-    {
-        if ( this.generate_excel_organism() )
-        {
+    public boolean generateExcel() {
+        if (this.generate_excel_organism()) {
             LOGGER.info("OK ORGA");
-        }
-        else
-        {
+        } else {
             LOGGER.info("FAIL ORGA");
             return false;
         }
 
 
-        if ( this.genetate_excel_sub_group() )
-        {
+        if (this.genetate_excel_sub_group()) {
             LOGGER.info("OK SS GR");
-        }
-        else
-        {
+        } else {
             LOGGER.info("FAIL SS GR");
             return false;
         }
 
 
-        if ( this.genetate_excel_group() )
-        {
+        if (this.genetate_excel_group()) {
             LOGGER.info("OK GROUP");
-        }
-        else
-        {
+        } else {
             LOGGER.info("FAIL SS GROUP");
             return false;
         }
 
 
-        if ( this.generate_excel_kingdom() )
-        {
+        if (this.generate_excel_kingdom()) {
             LOGGER.info("OK KINGDOM");
-        }
-        else
-        {
+        } else {
             LOGGER.info("FAIL KINGDOM");
             return false;
         }
 
-        for ( RepliconEntity r : this.repliconService.getByHierarchy(this.organism) )
-        {
+        for (RepliconEntity r : this.repliconService.getByHierarchy(this.organism)) {
             r.setComputed(true);
             this.repliconService.save(r);
         }
