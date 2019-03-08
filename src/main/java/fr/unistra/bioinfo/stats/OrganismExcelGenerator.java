@@ -23,6 +23,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+
+Il faut faire comme ça :
+
+
+    OrganismExcelGenerator o = new OrganismExcelGenerator(this.hierarchy_entity, path_to_results_dir, this.hierarchyService, this.repliconService);
+    o.generateExcel();
+
+*/
+
+
 public class OrganismExcelGenerator
 {
     private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -298,6 +309,12 @@ public class OrganismExcelGenerator
         {
             LOGGER.info("FAIL KINGDOM");
             return false;
+        }
+
+        for ( RepliconEntity r : this.repliconService.getByHierarchy(this.organism) )
+        {
+            r.setComputed(true);
+            this.repliconService.save(r);
         }
 
         return true;
