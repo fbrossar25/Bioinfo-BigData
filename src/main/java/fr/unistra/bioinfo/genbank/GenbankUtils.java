@@ -311,6 +311,8 @@ public class GenbankUtils {
             }
         }
         repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
+        repliconService.deleteWhereNameIsNotIn(new ArrayList<>(noDuplicates.keySet()));
+        hierarchyService.deleteHierarchyWithoutReplicons();
         CommonUtils.enableHibernateLogging(false);
     }
 

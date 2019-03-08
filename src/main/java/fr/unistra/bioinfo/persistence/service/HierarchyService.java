@@ -18,4 +18,6 @@ public interface HierarchyService extends AbstractService<HierarchyEntity, Long>
      */
     List<HierarchyEntity> getOrganismToUpdateExcel();
     List<HierarchyEntity> getByIds(List<Long> ids);
+
+    void deleteHierarchyWithoutReplicons();
 }

@@ -260,4 +260,26 @@ class HierarchyServiceTest {
         assertTrue(organismsToUpdate.contains(h1));
         CommonUtils.enableHibernateLogging(true);
     }
+
+    @Test
+    void deleteHierarchyWithoutReplicon(){
+        CommonUtils.disableHibernateLogging();
+
+        HierarchyEntity h1 = new HierarchyEntity("K1", "G1", "S1", "O1");
+        HierarchyEntity h2 = new HierarchyEntity("K2", "G2", "S2", "O2");
+
+        RepliconEntity r1 = new RepliconEntity("R1", 1, h1);
+        repliconService.save(r1);
+        RepliconEntity r2 = new RepliconEntity("R2", 1, h2);
+        repliconService.save(r2);
+
+        assertEquals(2, hierarchyService.count().longValue());
+
+        repliconService.delete(r1);
+        hierarchyService.deleteHierarchyWithoutReplicons();
+
+        assertEquals(1, hierarchyService.count().longValue());
+
+        CommonUtils.enableHibernateLogging(true);
+    }
 }

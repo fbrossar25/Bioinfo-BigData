@@ -64,4 +64,10 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     public RepliconEntity getByName(@NonNull String name) {
         return repliconManager.getByName(name);
     }
+
+    @Override
+    public void deleteWhereNameIsNotIn(@NonNull List<String> names) {
+        if(!names.isEmpty())
+            repliconManager.deleteAllByNameNotIn(names);
+    }
 }

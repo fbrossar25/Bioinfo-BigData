@@ -10,12 +10,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, Long> implements HierarchyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(HierarchyServiceImpl.class);
     private final HierarchyManager hierarchyManager;
@@ -29,14 +30,12 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
     }
 
     @Override
-    @Transactional
     public void delete(@NonNull HierarchyEntity entity) {
         repliconManager.deleteAllByHierarchyEntity(entity);
         super.delete(entity);
     }
 
     @Override
-    @Transactional
     public void deleteAll(@NonNull List<HierarchyEntity> entities) {
         repliconManager.deleteAllByHierarchyEntityIn(entities);
         super.deleteAll(entities);
@@ -99,6 +98,17 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
 
     @Override
     public List<HierarchyEntity> getByIds(List<Long> ids) {
-        return hierarchyManager.findByIdIn(ids);
+        return hierarchyManager.getByIdIn(ids);
+    }
+
+    @Override
+    public void deleteHierarchyWithoutReplicons() {
+        List<Long> ids = repliconManager
+                .getAll()
+                .stream()
+                .map(replicon -> replicon.getHierarchyEntity().getId())
+                .distinct()
+                .collect(Collectors.toList());
+        hierarchyManager.deleteAllByIdNotIn(ids);
     }
 }
