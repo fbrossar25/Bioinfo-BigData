@@ -3,7 +3,9 @@ package fr.unistra.bioinfo.parsing;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +61,7 @@ public final class GenbankParser {
         RepliconEntity repliconEntity;
         try{
             LinkedHashMap<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
+            LOGGER.debug("{} replicons dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
             for(DNASequence seq : dnaSequences.values()){
                 List<String> cdsList = new ArrayList<>();
                 LOGGER.trace("DNA header : "+seq.getOriginalHeader());
@@ -80,6 +84,9 @@ public final class GenbankParser {
                 repliconEntity.setComputed(false);
                 repliconEntity.setParsed(false);
                 repliconEntity.setVersion(seq.getAccession().getVersion());
+                synchronized(synchronizedObject){
+                    repliconService.save(repliconEntity);
+                }
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
                     String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
                     cdsList.add(cdsSeq);
@@ -113,22 +120,6 @@ public final class GenbankParser {
             return false;
         }
         return true;
-    }
-
-    private static final class LambdaBoolean{
-        private boolean value = true;
-
-        void setFalse(){
-            value = false;
-        }
-
-        void setTrue(){
-            value = true;
-        }
-
-        boolean get(){
-            return value;
-        }
     }
 
     private static void countPrefPhases(RepliconEntity replicon){
@@ -176,10 +167,13 @@ public final class GenbankParser {
     }
 
     private static boolean countFrequencies(@NonNull List<String> cdsList, @NonNull final RepliconEntity repliconEntity){
-        final LambdaBoolean result = new LambdaBoolean();
+        final AtomicBoolean result = new AtomicBoolean();
         cdsList.forEach(cds -> {
             if(!countFrequencies(cds, repliconEntity)){
-                result.setFalse();
+                result.set(false);
+                repliconEntity.incrementInvalidsCDS();
+            }else{
+                repliconEntity.incrementValidsCDS();
             }
         });
         return result.get();
@@ -228,6 +222,7 @@ public final class GenbankParser {
         if(!check){
             return false;
         }
+        check = false;
         for(String end : CommonUtils.TRINUCLEOTIDES_STOP){
             if(sequence.endsWith(end)){
                 check = true;

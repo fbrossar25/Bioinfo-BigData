@@ -18,7 +18,7 @@ public final class CommonUtils {
     private CommonUtils(){}
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    public static final Path DATABASE_PATH = Paths.get("database", "database.json").toAbsolutePath();
+    public static final Path DATAS_PATH = Paths.get("Datas").toAbsolutePath();
     public static final Path RESULTS_PATH = Paths.get("Results").toAbsolutePath();
 
     public static final Set<String> DINUCLEOTIDES;

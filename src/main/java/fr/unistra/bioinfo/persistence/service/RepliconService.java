@@ -9,4 +9,6 @@ import java.util.List;
 public interface RepliconService extends AbstractService<RepliconEntity, Long> {
     List<RepliconEntity> getByHierarchy(@NonNull HierarchyEntity hierarchy);
     RepliconEntity getByName(@NonNull String name);
+
+    void deleteWhereNameIsNotIn(@NonNull List<String> names);
 }

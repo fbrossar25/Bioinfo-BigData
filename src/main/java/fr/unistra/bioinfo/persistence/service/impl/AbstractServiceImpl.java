@@ -15,19 +15,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.Serializable;
 import java.util.List;
 
+@Transactional
 public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serializable> implements AbstractService<T, K> {
     private static final Integer PAGE_SIZE = 50;
 
     AbstractServiceImpl(){ }
 
     @Override
-    @Transactional
     public List<T> getAll() {
         return getManager().getAll();
     }
 
     @Override
-    @Transactional
     public T getById(@NonNull K id) {
         return getManager().findById(id).orElse(null);
     }
@@ -39,26 +38,22 @@ public abstract class AbstractServiceImpl<T extends IEntity<K>, K extends Serial
     }
 
     @Override
-    @Transactional
     public T save(@NonNull T entity) {
         return getManager().save(entity);
     }
 
     @Override
-    @Transactional
     public List<T> saveAll(@NonNull List<T> entities) {
         return getManager().saveAll(entities);
     }
 
     @Override
-    @Transactional
     public void delete(@NonNull T entity) {
         getManager().delete(entity);
         entity.setId(null);
     }
 
     @Override
-    @Transactional
     public void deleteAll(@NonNull List<T> entities) {
         getManager().deleteInBatch(entities);
         if(CollectionUtils.isNotEmpty(entities)){

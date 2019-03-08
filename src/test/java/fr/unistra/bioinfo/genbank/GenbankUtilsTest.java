@@ -9,9 +9,7 @@ import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,12 +22,17 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,11 +43,22 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankUtilsTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static Path TEST_DL_PATH = Paths.get("Temp");
 
     @Autowired
     private HierarchyService hierarchyService;
     @Autowired
     private RepliconService repliconService;
+
+    @BeforeAll
+    static void beforeAll(){
+        FileUtils.deleteQuietly(TEST_DL_PATH.toFile());
+    }
+
+    @AfterAll
+    static void afterAll(){
+        FileUtils.deleteQuietly(TEST_DL_PATH.toFile());
+    }
 
     @BeforeEach
     void beforeEach(){
@@ -66,17 +80,52 @@ class GenbankUtilsTest {
 
     @Test
     void testRateLimiter(){
+        int n = 45;
         try{
-            IntStream.range(0, 100000).parallel().forEach((i) -> GenbankUtils.GENBANK_REQUEST_LIMITER.tryAcquire());
-        }catch(Exception e){
-            fail("Problème avec le limiteur d'appel", e);
+            GenbankUtils.updateNCDatabase(45);
+        }catch(GenbankException e){
+            fail(e);
+        }
+
+        final AtomicBoolean oneFailed = new AtomicBoolean(false);
+        List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, n)).getContent();
+        assertEquals(n, replicons.size());
+        final List<File> files = new ArrayList<>(n);
+        replicons.parallelStream().forEach((replicon) -> {
+            if(!oneFailed.get()){
+                URI testDlUri = GenbankUtils.getGBDownloadURL(replicon);
+                GenbankUtils.GENBANK_REQUEST_LIMITER.acquire();
+                try(InputStream in = testDlUri.toURL().openStream()){
+                    File f = TEST_DL_PATH.resolve(replicon.getFileName()).toFile();
+                    FileUtils.copyToFile(in, f);
+                    files.add(f);
+                }catch(IOException e){
+                    oneFailed.set(true);
+                    LOGGER.error("Erreur lors du téléchargement", e);
+                }
+            }
+        });
+        assertFalse(oneFailed.get(), "Au moins un téléchargement à échoué");
+
+        for(File f : files){
+            assertTrue(f.isFile());
+            assertTrue(f.exists());
+            assertTrue(f.canRead());
+            try {
+                assertTrue(CollectionUtils.isNotEmpty(FileUtils.readLines(f, StandardCharsets.UTF_8)));
+            } catch (IOException e) {
+                fail(e);
+            }
+            assertTrue(f.delete());
         }
     }
 
     @Test
     void getNumberOfEntries() {
         for(Reign k : Reign.values()){
-            LOGGER.info("Number of "+k.getSearchTable()+" entries : "+GenbankUtils.getNumberOfEntries(k));
+            int n = GenbankUtils.getNumberOfEntries(k);
+            assertTrue(n > 0);
+            LOGGER.info("Number of "+k.getSearchTable()+" entries : "+n);
         }
     }
 
@@ -86,7 +135,7 @@ class GenbankUtilsTest {
             GenbankUtils.updateNCDatabase();
             assertTrue(hierarchyService.count() > 0);
             assertTrue(repliconService.count() > 0);
-        } catch (IOException e) {
+        } catch (GenbankException e) {
             fail(e);
         }
     }
@@ -102,9 +151,10 @@ class GenbankUtilsTest {
             GenbankUtils.downloadReplicons(replicons, future);
             assertFalse(future.get().isEmpty());
             for(File f : future.get()){
-                assertTrue(f.exists());
+                assertTrue(f.exists(), "Les fichier '"+f.getAbsolutePath()+"' n'existe pas");
                 assertTrue(f.canRead());
                 assertTrue(CollectionUtils.isNotEmpty(FileUtils.readLines(f, StandardCharsets.UTF_8)));
+                FileUtils.deleteQuietly(f);
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             fail(e);
@@ -116,7 +166,7 @@ class GenbankUtilsTest {
     void createOrganismsTreeStructure(){
         try {
             GenbankUtils.updateNCDatabase(10);
-        } catch (IOException e) {
+        } catch (GenbankException e) {
             fail("Erreur lors de l'update", e);
         }
         assertTrue(GenbankUtils.createAllOrganismsDirectories(Paths.get(".","Results")));
@@ -171,8 +221,18 @@ class GenbankUtilsTest {
             assertFalse(replicon.isParsed());
             assertFalse(replicon.isComputed());
             assertFalse(replicon.isDownloaded());
-        } catch (IOException e) {
+        } catch (GenbankException e) {
             fail(e);
         }
+    }
+
+    @Test
+    void testRepliconsIdsString(){
+        RepliconEntity testReplicon = new RepliconEntity();
+        testReplicon.setName("NC_0123");
+        testReplicon.setVersion(0);
+        List<RepliconEntity> replicons = new ArrayList<>(5);
+        IntStream.range(0,5).forEach(i -> replicons.add(testReplicon));
+        assertEquals("NC_0123.0,NC_0123.0,NC_0123.0,NC_0123.0,NC_0123.0", GenbankUtils.getRepliconsIdsString(replicons));
     }
 }
