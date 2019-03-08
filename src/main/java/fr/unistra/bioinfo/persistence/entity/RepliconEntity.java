@@ -10,6 +10,7 @@ import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -76,6 +77,17 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         setVersion(version);
         setHierarchyEntity(hierarchy);
         resetCounters();
+    }
+
+    public void setDinucleotideCount( String din, Phase ph, Integer value )
+    {
+        String key = din.toUpperCase() + "-" + ph.toString();
+        this.dinucleotides.put(key, value);
+    }
+    public void setTrinucleotidesCount( String tri, Phase ph, Integer value )
+    {
+        String key = tri.toUpperCase() + "-" + ph.toString();
+        this.trinucleotides.put(key, value);
     }
 
     public Long getId() {
@@ -230,6 +242,15 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
     }
 
+    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, Integer value){
+        String key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(trinucleotides_pref.containsKey(key)){
+            trinucleotides_pref.put(key, value);
+        }else{
+            throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
+        }
+    }
+
     public void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
         String key = getNucleotidePhaseKey(trinucleotide, phase);
         if(trinucleotides_pref.containsKey(key)){
@@ -263,6 +284,15 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
     }
 
+    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, Integer value){
+        String key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(dinucleotides_pref.containsKey(key)){
+            dinucleotides_pref.put(key, value);
+        }else{
+            throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
+        }
+    }
+
     public void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
         String key = getNucleotidePhaseKey(dinucleotide, phase);
         if(dinucleotides_pref.containsKey(key)){
@@ -280,8 +310,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
             setPhasePrefDinucleotide(dinucleotide, p);
         }
     }
-
-    //TODO phases prefs
 
     public Integer getValidsCDS() {
         return validsCDS;
@@ -342,6 +370,126 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public String getFileName() {
         return getGenbankName()+".gb";
+    }
+
+
+    public static RepliconEntity add ( RepliconEntity e, RepliconEntity ee )
+    {
+        if ( e.getType() != ee.getType() )
+        {
+            return null;
+        }
+
+        RepliconEntity result = new RepliconEntity();
+        String din = null;
+        String tri = null;
+
+        result.setType(e.getType());
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                din = "" + c + cc;
+
+                result.setDinucleotideCount(
+                        din,
+                        Phase.PHASE_0,
+                        e.getDinucleotideCount(din, Phase.PHASE_0) + ee.getDinucleotideCount(din, Phase.PHASE_0)
+                );
+                result.setDinucleotideCount(
+                        din,
+                        Phase.PHASE_1,
+                        e.getDinucleotideCount(din, Phase.PHASE_1) + ee.getDinucleotideCount(din, Phase.PHASE_1)
+                );
+
+                result.setPhasePrefDinucleotide(
+                        din,
+                        Phase.PHASE_0,
+                        e.getPhasePrefDinucleotide(din, Phase.PHASE_0) + ee.getPhasePrefDinucleotide(din, Phase.PHASE_0)
+                );
+                result.setPhasePrefDinucleotide(
+                        din,
+                        Phase.PHASE_1,
+                        e.getPhasePrefDinucleotide(din, Phase.PHASE_1) + ee.getPhasePrefDinucleotide(din, Phase.PHASE_1)
+                );
+
+                for ( char ccc : "ACGT".toCharArray() )
+                {
+                    tri = din + ccc;
+                    for ( Phase ph : Phase.values() )
+                    {
+                        result.setTrinucleotidesCount(
+                                tri,
+                                ph,
+                                e.getTrinucleotideCount(tri, ph) + ee.getTrinucleotideCount(tri, ph)
+                        );
+                        result.setPhasePrefTrinucleotide(
+                                tri,
+                                ph,
+                                e.getPhasePrefTrinucleotide(tri, ph) + ee.getPhasePrefTrinucleotide(tri, ph)
+                        );
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public RepliconEntity add( RepliconEntity r )
+    {
+        return RepliconEntity.add(this, r);
+    }
+
+    public static RepliconEntity add ( List<RepliconEntity> replicons )
+    {
+        // TODO : clone if size == 1
+        if ( replicons.size() == 1 ) { return replicons.get(0); }
+
+        RepliconEntity pre_result = replicons.get(0).add(replicons.get(1));
+
+        for ( int i = 2 ; i < replicons.size() ; i++ )
+        {
+            pre_result = pre_result.add(replicons.get(i));
+        }
+
+        return pre_result;
+    }
+
+    public Integer getTotalTrinucleotides( Phase ph )
+    {
+        Integer r = 0;
+        String tri = null;
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                for ( char ccc : "ACGT".toCharArray() )
+                {
+                    tri = "" + c + cc + ccc;
+                    r += this.getTrinucleotideCount(tri.toUpperCase(), ph);
+                }
+            }
+        }
+        return r;
+    }
+
+    public Integer getTotalDinucleotides( Phase ph )
+    {
+        Integer r = 0;
+        String din = null;
+
+        for ( char c : "ACGT".toCharArray() )
+        {
+            for ( char cc : "ACGT".toCharArray() )
+            {
+                din = "" + c + cc;
+                r += this.getDinucleotideCount(din.toUpperCase(), ph);
+            }
+        }
+        return r;
     }
 
     public void incrementInvalidsCDS() {
