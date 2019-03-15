@@ -4,6 +4,7 @@ import ch.qos.logback.core.Appender;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.EventUtils;
+import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
@@ -17,8 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-
-import java.io.IOException;
 
 @Controller
 public class MainWindowController {
@@ -93,7 +92,7 @@ public class MainWindowController {
                 GenbankUtils.updateNCDatabase();
                 Main.generateOrganismDirectories();
                 LOGGER.info("Mise à jour terminée");
-            } catch (IOException e) {
+            } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
             }finally {
                 btnDemarrer.setDisable(false);

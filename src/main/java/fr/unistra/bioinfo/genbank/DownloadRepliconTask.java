@@ -51,14 +51,19 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
             FileUtils.copyToFile(in, f);
             for(RepliconEntity r : replicons){
                 r.setDownloaded(true);
+                r.setParsed(false);
+                r.setComputed(false);
                 synchronized(synchronizedObject){
                     repliconService.save(r);
                 }
+                EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_END, r);
             }
             LOGGER.trace("Téléchargement des replicons '{}' -> '{}' terminé",repliconsIds, f.getPath());
         }catch (IOException e){
             for(RepliconEntity r : replicons){
                 r.setDownloaded(false);
+                r.setParsed(false);
+                r.setComputed(false);
                 synchronized(synchronizedObject){
                     repliconService.save(r);
                 }
@@ -66,8 +71,6 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
             LOGGER.error("Erreur lors du téléchargement des replicons '{}' -> '{}'", repliconsIds, f.getPath());
             throw new IOException("Erreur lors du téléchargement des replicons '"+repliconsIds+"' -> '"+f.getPath()+"'", e);
         }
-        replicon.setDownloaded(true);
-        EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_END, replicon);
         return f;
     }
 
