@@ -77,7 +77,7 @@ public final class CommonUtils {
      * @param preventBindingLogging si true, empêche le logging des binding (paramètres des requêtes)
      */
     public static void enableHibernateLogging(boolean preventBindingLogging){
-        LOGGER.info("Activation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"' "+(preventBindingLogging ? "avec" : "sans") + " les bindings");
+        LOGGER.info("Activation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"' "+(preventBindingLogging ? "sans" : "avec") + " les bindings");
         setLogLevelForPackage("org.hibernate.SQL", Level.DEBUG);
         if(!preventBindingLogging){
             setLogLevelForPackage("org.hibernate.type.descriptor.sql", Level.TRACE);

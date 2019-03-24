@@ -12,6 +12,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -66,7 +67,7 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     }
 
     @Override
-    public void deleteWhereNameIsNotIn(@NonNull List<String> names) {
+    public void deleteWhereNameIsNotIn(@NonNull Collection<String> names) {
         if(!names.isEmpty())
             repliconManager.deleteAllByNameNotIn(names);
     }

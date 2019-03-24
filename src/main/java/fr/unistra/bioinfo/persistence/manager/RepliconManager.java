@@ -4,6 +4,7 @@ import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface RepliconManager extends IManager<RepliconEntity, Long> {
@@ -16,7 +17,7 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
 
     void deleteAllByHierarchyEntityIn(List<HierarchyEntity> hierarchyEntities);
 
-    void deleteAllByNameNotIn(List<String> names);
+    void deleteAllByNameNotIn(Collection<String> names);
 
     RepliconEntity getByName(String name);
 
