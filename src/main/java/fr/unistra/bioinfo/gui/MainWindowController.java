@@ -131,6 +131,7 @@ public class MainWindowController {
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
             LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
+            treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
             CommonUtils.enableHibernateLogging(true);
             btnDemarrer.setDisable(false);
