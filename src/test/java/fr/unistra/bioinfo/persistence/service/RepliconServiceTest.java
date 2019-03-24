@@ -100,7 +100,7 @@ class RepliconServiceTest {
     void batchSaveTest(){
         CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1","G1","S1","O1");
-        int N = 1000;
+        int N = 10000;
         //Création de N replicons
         List<RepliconEntity> replicons = Collections.synchronizedList(new ArrayList<>(N));
         IntStream

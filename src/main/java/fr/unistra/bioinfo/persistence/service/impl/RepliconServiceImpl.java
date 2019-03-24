@@ -1,7 +1,9 @@
 package fr.unistra.bioinfo.persistence.service.impl;
 
+import fr.unistra.bioinfo.persistence.entity.CountersEntity;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.manager.CountersManager;
 import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
 import fr.unistra.bioinfo.persistence.manager.RepliconManager;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
@@ -21,30 +23,41 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     private static final Logger LOGGER = LoggerFactory.getLogger(RepliconServiceImpl.class);
     private final RepliconManager repliconManager;
     private final HierarchyManager hierarchyManager;
+    private final CountersManager countersManager;
 
     @Autowired
-    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager) {
+    public RepliconServiceImpl(RepliconManager repliconManager, HierarchyManager hierarchyManager, CountersManager countersManager) {
         super();
         this.repliconManager = repliconManager;
         this.hierarchyManager = hierarchyManager;
+        this.countersManager = countersManager;
     }
 
-    @Override
-    public RepliconEntity save(@NonNull RepliconEntity entity) {
+    private void saveForeignEntities(@NonNull RepliconEntity entity){
         HierarchyEntity h = entity.getHierarchyEntity();
         if(h != null && h.getId() == null){
             hierarchyManager.save(h);
         }
+        CountersEntity c = entity.getCounters();
+        if(c == null){
+            c = new CountersEntity();
+            entity.setCounters(c);
+            countersManager.save(c);
+        }else if(c.getId() == null){
+            countersManager.save(c);
+        }
+    }
+
+    @Override
+    public RepliconEntity save(@NonNull RepliconEntity entity) {
+        saveForeignEntities(entity);
         return super.save(entity);
     }
 
     @Override
     public List<RepliconEntity> saveAll(@NonNull List<RepliconEntity> entities) {
         for(RepliconEntity entity : entities){
-            HierarchyEntity h = entity.getHierarchyEntity();
-            if(h != null && h.getId() == null){
-                hierarchyManager.save(h);
-            }
+            saveForeignEntities(entity);
         }
         return super.saveAll(entities);
     }
