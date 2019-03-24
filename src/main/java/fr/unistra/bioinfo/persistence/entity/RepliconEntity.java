@@ -1,7 +1,6 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -29,24 +28,24 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private RepliconType type = RepliconType.DNA;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "DINUCLEOTIDES")
     private Map<String, Integer> dinucleotides = new HashMap<>();
 
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "TRINUCLEOTIDES")
     private Map<String, Integer> trinucleotides = new HashMap<>();
 
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "DINUCLEOTIDES_PREF")
     private Map<String, Integer> dinucleotides_pref = new HashMap<>();
 
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "TRINUCLEOTIDES_PREF")
     private Map<String, Integer> trinucleotides_pref = new HashMap<>();
 
     @Column(nullable = false)
