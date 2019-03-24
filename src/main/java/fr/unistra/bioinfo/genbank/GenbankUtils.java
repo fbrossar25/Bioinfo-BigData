@@ -313,15 +313,21 @@ public class GenbankUtils {
                 Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
             }
         }
+        if(!replicons.isEmpty()){
+            repliconService.saveAll(replicons);
+            //sauvegarde des réplicons restants
+            repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+            replicons.clear();
+        }
         if(controller != null){
             Platform.runLater(()->controller.getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" organismes mis à jour"));
             controller.getProgressBar().setProgress(1.0F);
         }
-        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
         //On supprime la différence entre genbank et la base de données
         repliconService.deleteWhereNameIsNotIn(repliconsNames);
         hierarchyService.deleteHierarchyWithoutReplicons();
         CommonUtils.enableHibernateLogging(true);
+        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){
