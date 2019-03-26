@@ -194,4 +194,22 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         return replicons.get(replicon.getName());
     }
 
+    /**
+     * Supprime tous les noeuds est replicons de la vues sauf le noeud racine
+     */
+    public void clear(){
+        //Suppression des liens parents/enfant
+        organisms.values().forEach(o -> o.getChildren().clear());
+        subgroups.values().forEach(s -> s.getChildren().clear());
+        groups.values().forEach(g -> g.getChildren().clear());
+        kingdoms.values().forEach(k -> k.getChildren().clear());
+        getRoot().getChildren().clear();
+
+        //Suppression des lien maps / noeuds
+        kingdoms.clear();
+        groups.clear();
+        subgroups.clear();
+        organisms.clear();
+        replicons.clear();
+    }
 }
