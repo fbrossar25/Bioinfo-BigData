@@ -66,18 +66,18 @@ public class GenbankUtils {
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
         List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
-        final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
+        final List<DownloadRepliconTask> tasks = new ArrayList<>(splittedRepliconsList.size());
 
         splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
         try {
-            LOGGER.debug("Débuts des téléchargements");
+            LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
                     try {
                         ses.shutdown();
                         ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                        LOGGER.debug("Fin des téléchargements");
+                        LOGGER.info("Fin des téléchargements");
                         List<File> files = new ArrayList<>(replicons.size());
                         for(Future<File> future : futuresFiles){
                             files.add(future.get());
@@ -99,7 +99,7 @@ public class GenbankUtils {
      * @throws IOException En cas d'erreurs pendant le téléchargement
      * @see GenbankUtils#updateNCDatabase
      */
-    public static void downloadAllReplicons(CompletableFuture<List<File>> callback) throws IOException{
+    public static void downloadAllReplicons(CompletableFuture<List<File>> callback){
         downloadReplicons(repliconService.getAll(), callback);
     }
 
@@ -234,7 +234,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(0);
+        GenbankUtils.updateNCDatabase(20);
     }
 
     /**
@@ -280,7 +280,7 @@ public class GenbankUtils {
      * @param limit limite d'entité à charger (pour les tests principalement)
      * @throws GenbankException Si une erreur empêche la mise à jours des métadonnées
      */
-    static void updateNCDatabase(int limit) throws GenbankException  {
+    public static void updateNCDatabase(int limit) throws GenbankException  {
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode dataNode;
@@ -294,10 +294,16 @@ public class GenbankUtils {
         //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
         int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
         LOGGER.info("Traitement de {} organismes", numberOfOrganisms);
-        List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
+        //12331 replicons à lors du développement
+        List<RepliconEntity> replicons = new ArrayList<>(13000);
+        List<String> repliconsNames = new ArrayList<>(13000);
         for(JsonNode organismJson : contentNode) {
             replicons.addAll(jsonEntryToReplicon(organismJson));
             if(++organismCount % 100 == 0){
+                repliconService.saveAll(replicons);
+                //sauvegarde régulière pour éviter un pic de mémoire trop élevé
+                repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+                replicons.clear();
                 LOGGER.info("{}/{} organismes traités", organismCount, numberOfOrganisms);
             }
             float d = ((float)organismCount / numberOfOrganisms);
@@ -307,24 +313,21 @@ public class GenbankUtils {
                 Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
             }
         }
+        if(!replicons.isEmpty()){
+            repliconService.saveAll(replicons);
+            //sauvegarde des réplicons restants
+            repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+            replicons.clear();
+        }
         if(controller != null){
             Platform.runLater(()->controller.getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" organismes mis à jour"));
             controller.getProgressBar().setProgress(1.0F);
         }
-        LOGGER.info("Sauvegarde de {} replicons", replicons.size());
-        Map<String, RepliconEntity> noDuplicates = new HashMap<>(replicons.size());
-        for(RepliconEntity r : replicons){
-            if(!noDuplicates.containsKey(r.getName())){
-                noDuplicates.put(r.getName(), r);
-            }else{
-                LOGGER.warn("Doublon encore présent : {} -> {}", r, noDuplicates.get(r.getName()));
-            }
-        }
-        repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
-        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
-        repliconService.deleteWhereNameIsNotIn(new ArrayList<>(noDuplicates.keySet()));
+        //On supprime la différence entre genbank et la base de données
+        repliconService.deleteWhereNameIsNotIn(repliconsNames);
         hierarchyService.deleteHierarchyWithoutReplicons();
-        CommonUtils.enableHibernateLogging(false);
+        CommonUtils.enableHibernateLogging(true);
+        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){

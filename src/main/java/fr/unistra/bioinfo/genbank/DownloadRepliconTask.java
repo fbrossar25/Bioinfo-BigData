@@ -46,7 +46,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
 
     private File download() throws IOException{
         File f = CommonUtils.DATAS_PATH.resolve("replicons-"+fileCount.getAndIncrement()+".gb").toFile();
-        LOGGER.trace("Téléchargement des replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
+        LOGGER.debug("Téléchargement des replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
         try(InputStream in = GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()) {
             FileUtils.copyToFile(in, f);
             for(RepliconEntity r : replicons){
@@ -58,7 +58,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
                 }
                 EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_END, r);
             }
-            LOGGER.trace("Téléchargement des replicons '{}' -> '{}' terminé",repliconsIds, f.getPath());
+            LOGGER.debug("Téléchargement des replicons '{}' -> '{}' terminé",repliconsIds, f.getPath());
         }catch (IOException e){
             for(RepliconEntity r : replicons){
                 r.setDownloaded(false);
@@ -68,7 +68,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
                     repliconService.save(r);
                 }
             }
-            LOGGER.error("Erreur lors du téléchargement des replicons '{}' -> '{}'", repliconsIds, f.getPath());
+            LOGGER.debug("Erreur lors du téléchargement des replicons '{}' -> '{}'", repliconsIds, f.getPath());
             throw new IOException("Erreur lors du téléchargement des replicons '"+repliconsIds+"' -> '"+f.getPath()+"'", e);
         }
         return f;

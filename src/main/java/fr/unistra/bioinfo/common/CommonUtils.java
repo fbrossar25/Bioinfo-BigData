@@ -63,21 +63,37 @@ public final class CommonUtils {
         return previousLevel;
     }
 
+    private static boolean isHibernateLoggingDisabledInLogback(){
+        LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
+        if(loggerContext == null)
+            return true;
+        ch.qos.logback.classic.Logger hibernateLogger = loggerContext.getLogger("org.hibernate.type.descriptor.sql");
+        if(hibernateLogger == null){
+            return true;
+        }
+        Level level = hibernateLogger.getLevel();
+        return level == null || level.equals(Level.OFF);
+    }
+
     /**
      * Définis le niveau de log d'hibernate à erreur uniquement
      */
     public static void disableHibernateLogging(){
+        if(isHibernateLoggingDisabledInLogback())
+            return;
         LOGGER.info("Désactivation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"'");
         setLogLevelForPackage("org.hibernate.SQL", Level.ERROR);
         setLogLevelForPackage("org.hibernate.type.descriptor.sql", Level.ERROR);
     }
 
     /**
-     * Active le logging des requêtes d'hibernate
+     * Active le logging des requêtes d'hibernate, sauf s'il est désactivé dans logback
      * @param preventBindingLogging si true, empêche le logging des binding (paramètres des requêtes)
      */
     public static void enableHibernateLogging(boolean preventBindingLogging){
-        LOGGER.info("Activation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"' "+(preventBindingLogging ? "avec" : "sans") + " les bindings");
+        if(isHibernateLoggingDisabledInLogback())
+            return;
+        LOGGER.info("Activation des logs hibernate par '"+ Thread.currentThread().getStackTrace()[2] +"' "+(preventBindingLogging ? "sans" : "avec") + " les bindings");
         setLogLevelForPackage("org.hibernate.SQL", Level.DEBUG);
         if(!preventBindingLogging){
             setLogLevelForPackage("org.hibernate.type.descriptor.sql", Level.TRACE);

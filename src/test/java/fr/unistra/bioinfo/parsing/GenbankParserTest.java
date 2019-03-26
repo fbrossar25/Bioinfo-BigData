@@ -47,6 +47,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-0.gb");
+    private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get(".","src", "test", "resources", "void.gb");
+    private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get(".","src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
     private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-batch-test.gb");
     @Autowired
@@ -72,10 +75,35 @@ class GenbankParserTest {
         CommonUtils.enableHibernateLogging(true);
     }
 
+    @Test
+    void testParseFuckedUpButRealBatchFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_REAL_FILE_PATH.toFile();
+        assertTrue(GenbankParser.parseGenbankFile(f));
+        assertEquals(2, repliconService.count().intValue());
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testParseVoidFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_VOID_FILE_PATH.toFile();
+        assertFalse(GenbankParser.parseGenbankFile(f));
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testParseOnlyEndTagsFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH.toFile();
+        assertFalse(GenbankParser.parseGenbankFile(f));
+        CommonUtils.enableHibernateLogging(true);
+    }
+
     void checkReplicon(RepliconEntity r){
-        assertNotNull(r);
-        assertTrue(r.isParsed());
-        assertFalse(r.isComputed());
+        assertNotNull(r, "Replicon null");
+        assertTrue(r.isParsed(), "Replicon non parsé");
+        assertFalse(r.isComputed(), "Stats Replicon générées");
         boolean phasePrefChceck = false;
         for(Phase p : Phase.values()){
             if(p == Phase.PHASE_2)
@@ -85,10 +113,11 @@ class GenbankParserTest {
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
                     phasePrefChceck = true;
+                    break;
                 }
             }
         }
-        assertTrue(phasePrefChceck);
+        assertTrue(phasePrefChceck, "Phase pref dinucleotides KO");
         phasePrefChceck = false;
         for(Phase p : Phase.values()){
             for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
@@ -96,22 +125,23 @@ class GenbankParserTest {
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
                     phasePrefChceck = true;
+                    break;
                 }
             }
         }
-        assertTrue(phasePrefChceck);
+        assertTrue(phasePrefChceck, "Phase pref trinucleotides KO");
         assertEquals(1, r.getVersion().intValue());
         HierarchyEntity h = r.getHierarchyEntity();
-        assertNotNull(h);
+        assertNotNull(h, "Hierarchy null");
         assertEquals("Eukaryota", h.getKingdom());
         assertEquals("Animals", h.getGroup());
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
-        assertEquals(6, r.getInvalidsCDS().intValue());
-        assertEquals(7, r.getValidsCDS().intValue());
-        assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0);
-        assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0));
+        assertEquals(6, r.getInvalidsCDS().intValue(), "Comptages CDS invalides KO");
+        assertEquals(7, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
+        assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0, "Comptage dinucleotides KO");
+        assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0), "Comptage dinucleotides sensible à la casse");
     }
 
     @Test

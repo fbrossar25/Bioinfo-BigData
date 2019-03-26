@@ -8,6 +8,7 @@ import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrganismExcelGenerator {
-    private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private HierarchyEntity organism = null;
     private String base_path = null;
 
@@ -86,9 +87,11 @@ public class OrganismExcelGenerator {
     }
 
     public boolean generate_excel_organism() {
+        //Ligne a décommenter pour les tests.
+        /*
         if (!OrganismExcelGenerator.generate_herarchy_dir(this.organism, this.base_path)) {
             return false;
-        }
+        }*/
 
         XSSFWorkbook wb = new XSSFWorkbook();
         List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
@@ -150,62 +153,66 @@ public class OrganismExcelGenerator {
     }
 
     public boolean genetate_excel_group() {
-        XSSFWorkbook wb = new XSSFWorkbook();
-
-        List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
-        if (orgas.isEmpty()) {
-            LOGGER.info("GROUP ORGA EMPTY");
-            return false;
-        }
-
-        List<RepliconEntity> repls = new ArrayList<>();
-        for (HierarchyEntity o : orgas) {
-            List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
-            repls.addAll(tmp_repls);
-        }
-
-        new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.GROUP).write_lines();
-
-        for (RepliconType t : RepliconType.values()) {
-            List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
-            if (!typedRepls.isEmpty()) {
-                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.GROUP).write_sheet();
-                LOGGER.info("NEW Sheet for " + t);
+        try(XSSFWorkbook wb = new XSSFWorkbook()){
+            List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
+            if (orgas.isEmpty()) {
+                LOGGER.info("GROUP ORGA EMPTY");
+                return false;
             }
-            LOGGER.info("" + t);
-        }
 
-        write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
+            List<RepliconEntity> repls = new ArrayList<>();
+            for (HierarchyEntity o : orgas) {
+                List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
+                repls.addAll(tmp_repls);
+            }
+
+            new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.GROUP).write_lines();
+
+            for (RepliconType t : RepliconType.values()) {
+                List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
+                if (!typedRepls.isEmpty()) {
+                    new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.GROUP).write_sheet();
+                    LOGGER.info("NEW Sheet for " + t);
+                }
+                LOGGER.info("" + t);
+            }
+
+            write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
+        }
         return true;
     }
 
     public boolean generate_excel_kingdom() {
-        XSSFWorkbook wb = new XSSFWorkbook();
-
-        List<HierarchyEntity> orgas = this.hierarchyService.getByKingdom(this.organism.getKingdom());
-        if (orgas.isEmpty()) {
-            LOGGER.info("KINDOM ORGA EMPTY");
-            return false;
-        }
-
-        List<RepliconEntity> repls = new ArrayList<>();
-        for (HierarchyEntity o : orgas) {
-            List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
-            repls.addAll(tmp_repls);
-        }
-
-        new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.KINGDOM).write_lines();
-
-        for (RepliconType t : RepliconType.values()) {
-            List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
-            if (!typedRepls.isEmpty()) {
-                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.KINGDOM).write_sheet();
-                LOGGER.info("NEW Sheet for " + t);
+        try(XSSFWorkbook wb = new XSSFWorkbook()){
+            List<HierarchyEntity> orgas = this.hierarchyService.getByKingdom(this.organism.getKingdom());
+            if (orgas.isEmpty()) {
+                LOGGER.info("KINDOM ORGA EMPTY");
+                return false;
             }
-            LOGGER.info("" + t);
-        }
 
-        write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
+            List<RepliconEntity> repls = new ArrayList<>();
+            for (HierarchyEntity o : orgas) {
+                List<RepliconEntity> tmp_repls = repliconService.getByHierarchy(o);
+                repls.addAll(tmp_repls);
+            }
+
+            new GeneralInformationSheet(wb, orgas, repls, GeneralInformationSheet.LEVEL.KINGDOM).write_lines();
+
+            for (RepliconType t : RepliconType.values()) {
+                List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
+                if (!typedRepls.isEmpty()) {
+                    new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.KINGDOM).write_sheet();
+                    LOGGER.info("NEW Sheet for " + t);
+                }
+                LOGGER.info("" + t);
+            }
+
+            write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
+        }
         return true;
     }
 

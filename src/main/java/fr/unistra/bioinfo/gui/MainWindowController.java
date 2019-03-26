@@ -7,8 +7,11 @@ import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
+import fr.unistra.bioinfo.parsing.GenbankParser;
+import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import fr.unistra.bioinfo.stats.OrganismExcelGenerator;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -18,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+
+import java.io.File;
 
 @Controller
 public class MainWindowController {
@@ -91,10 +96,24 @@ public class MainWindowController {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
                 Main.generateOrganismDirectories();
+                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), null);
+                File dir = CommonUtils.DATAS_PATH.toFile();
+                File[] listFiles = dir.listFiles();
+                if(listFiles != null) {
+                    for (File gb : listFiles) {
+                        LOGGER.debug("Parsing file '{}'", gb.getName());
+                        GenbankParser.parseGenbankFile(gb);
+                    }
+                }
+                OrganismExcelGenerator o;
+                for(HierarchyEntity orga : hierarchyService.getAll()){
+                    o = new OrganismExcelGenerator(orga, this.hierarchyService, this.repliconService);
+                    o.generateExcel();
+                }
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
-            }finally {
+            } finally {
                 btnDemarrer.setDisable(false);
             }
         }).start();
@@ -131,10 +150,12 @@ public class MainWindowController {
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
             LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
+            treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
             CommonUtils.enableHibernateLogging(true);
             btnDemarrer.setDisable(false);
             treeView.setDisable(false);
+            LOGGER.info("Mise à jour de l'arbre terminée");
         }).start();
     }
 
