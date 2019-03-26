@@ -122,7 +122,7 @@ class RepliconServiceTest {
         Collections.sort(allReplicons);
         assertEquals(replicons.size(), allReplicons.size());
         List<RepliconEntity> repliconsByHierarchy = new ArrayList<>(replicons.size());
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeout(ofSeconds(30), () ->
             repliconsByHierarchy.addAll(repliconService.getByHierarchy(h))
         );
         assertNotNull(repliconsByHierarchy);

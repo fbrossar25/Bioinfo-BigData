@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.common.JSONUtils;
 import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.gui.MainWindowController;
@@ -52,6 +53,15 @@ public class GenbankUtils {
     private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
+    private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_END && event.getReplicon() != null){
+            repliconService.save(event.getReplicon());
+        }
+    };
+
+    static{
+        EventUtils.subscribe(DOWNLOAD_END_LISTENER);
+    }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
@@ -284,10 +294,16 @@ public class GenbankUtils {
         //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
         int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
         LOGGER.info("Traitement de {} organismes", numberOfOrganisms);
-        List<RepliconEntity> replicons = new ArrayList<>(numberOfOrganisms);
+        //12331 replicons à lors du développement
+        List<RepliconEntity> replicons = new ArrayList<>(13000);
+        List<String> repliconsNames = new ArrayList<>(13000);
         for(JsonNode organismJson : contentNode) {
             replicons.addAll(jsonEntryToReplicon(organismJson));
             if(++organismCount % 100 == 0){
+                repliconService.saveAll(replicons);
+                //sauvegarde régulière pour éviter un pic de mémoire trop élevé
+                repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+                replicons.clear();
                 LOGGER.info("{}/{} organismes traités", organismCount, numberOfOrganisms);
             }
             float d = ((float)organismCount / numberOfOrganisms);
@@ -297,23 +313,21 @@ public class GenbankUtils {
                 Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
             }
         }
+        if(!replicons.isEmpty()){
+            repliconService.saveAll(replicons);
+            //sauvegarde des réplicons restants
+            repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+            replicons.clear();
+        }
         if(controller != null){
             Platform.runLater(()->controller.getDownloadLabel().setText(numberOfOrganisms+"/"+numberOfOrganisms+" organismes mis à jour"));
             controller.getProgressBar().setProgress(1.0F);
         }
-        LOGGER.info("Sauvegarde de {} replicons", replicons.size());
-        Map<String, RepliconEntity> noDuplicates = new HashMap<>(replicons.size());
-        for(RepliconEntity r : replicons){
-            if(!noDuplicates.containsKey(r.getName())){
-                noDuplicates.put(r.getName(), r);
-            }else{
-                LOGGER.warn("Doublon encore présent : {} -> {}", r, noDuplicates.get(r.getName()));
-            }
-        }
-        repliconService.saveAll(new ArrayList<>(noDuplicates.values()));
-        repliconService.deleteWhereNameIsNotIn(new ArrayList<>(noDuplicates.keySet()));
+        //On supprime la différence entre genbank et la base de données
+        repliconService.deleteWhereNameIsNotIn(repliconsNames);
         hierarchyService.deleteHierarchyWithoutReplicons();
-        CommonUtils.enableHibernateLogging(false);
+        CommonUtils.enableHibernateLogging(true);
+        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){

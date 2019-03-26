@@ -2,10 +2,13 @@ package fr.unistra.bioinfo.gui;
 
 import ch.qos.logback.core.Appender;
 import fr.unistra.bioinfo.Main;
+import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.EventUtils;
+import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
+import fr.unistra.bioinfo.gui.tree.RepliconView;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -15,12 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @Controller
 public class MainWindowController {
@@ -47,7 +44,13 @@ public class MainWindowController {
     @FXML private ProgressBar progressBar;
     @FXML private Label downloadLabel;
     @FXML private TextArea logs;
-    @FXML private TreeView<Path> treeView;
+    @FXML private RepliconView treeView;
+
+    private final EventUtils.EventListener GENBANK_METADATA_END_LISTENER = (event -> {
+        if(event.getType() == EventUtils.EventType.METADATA_END){
+            updateFullTreeView();
+        }
+    });
 
     @Autowired
     public MainWindowController(HierarchyService hierarchyService, RepliconService repliconService){
@@ -76,6 +79,8 @@ public class MainWindowController {
             logs.setText("Le logger '"+textAeraAppenderName+"' de l'IHM n'a pas pu être trouvé");
             LOGGER.warn("Le logger '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
         }
+        EventUtils.subscribe(GENBANK_METADATA_END_LISTENER);
+        updateFullTreeView();
     }
 
     @FXML
@@ -86,9 +91,8 @@ public class MainWindowController {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
                 Main.generateOrganismDirectories();
-                createArborescence();
                 LOGGER.info("Mise à jour terminée");
-            } catch (IOException e) {
+            } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
             }finally {
                 btnDemarrer.setDisable(false);
@@ -116,32 +120,23 @@ public class MainWindowController {
         logsAppender.clear();
     }
 
-
-    private void createArborescence() throws IOException{
-        // create root
-        TreeItem<Path> treeItem = new TreeItem<>(Paths.get(ROOT_FOLDER));
-        treeItem.setExpanded(true);
-
-        createTree("", treeItem);
-
-        Platform.runLater(() -> treeView.setRoot(treeItem));
-    }
-    //TODO: Vérifier que la méthode est toujours fonctionnel lors d'un update.
-    public static void createTree(String pathToParent, TreeItem<Path> rootItem) throws IOException{
-        Path p = Paths.get(pathToParent,rootItem.getValue().toString());
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(p)) {
-            for (Path path : directoryStream) {
-                int count= path.getNameCount()-1;
-                TreeItem<Path> newItem = new TreeItem<Path>(path.getName(count));
-                newItem.setExpanded(true);
-
-                rootItem.getChildren().add(newItem);
-
-                if (Files.isDirectory(path)) {
-                    createTree(pathToParent+rootItem.getValue().toString()+"/", newItem);
-                }
-            }
-        }
+    /**
+     * Met à jour l'arbre des replicon avec les données en base.</br>
+     * Le bouton 'démarrer' est désactiver pendant cette opération
+     */
+    private void updateFullTreeView(){
+        //TODO afficher une petite popup pour indiquer la progression du chargement
+        btnDemarrer.setDisable(true);
+        treeView.setDisable(true);
+        new Thread(() -> {
+            CommonUtils.disableHibernateLogging();
+            LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
+            treeView.clear();
+            repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
+            CommonUtils.enableHibernateLogging(true);
+            btnDemarrer.setDisable(false);
+            treeView.setDisable(false);
+        }).start();
     }
 
     public ProgressBar getProgressBar(){

@@ -1,7 +1,5 @@
 package fr.unistra.bioinfo.persistence.entity;
 
-import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -9,9 +7,7 @@ import org.hibernate.annotations.NaturalId;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Entity
 public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>{
@@ -29,25 +25,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private RepliconType type = RepliconType.DNA;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private HierarchyEntity hierarchyEntity;
 
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> dinucleotides = new HashMap<>();
-
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> trinucleotides = new HashMap<>();
-
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> dinucleotides_pref = new HashMap<>();
-
-    @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> trinucleotides_pref = new HashMap<>();
+    @OneToOne(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
+    @JoinColumn(nullable = false)
+    private CountersEntity counters;
 
     @Column(nullable = false)
     private boolean downloaded = false;
@@ -64,9 +48,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @Column(nullable = false)
     private Integer invalidsCDS = 0;
 
-    public RepliconEntity() {
-        resetCounters();
-    }
+    public RepliconEntity() { }
 
     public RepliconEntity(String replicon, HierarchyEntity hierarchy) {
         this(replicon, 1, hierarchy);
@@ -76,18 +58,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         setName(replicon);
         setVersion(version);
         setHierarchyEntity(hierarchy);
-        resetCounters();
-    }
-
-    public void setDinucleotideCount( String din, Phase ph, Integer value )
-    {
-        String key = din.toUpperCase() + "-" + ph.toString();
-        this.dinucleotides.put(key, value);
-    }
-    public void setTrinucleotidesCount( String tri, Phase ph, Integer value )
-    {
-        String key = tri.toUpperCase() + "-" + ph.toString();
-        this.trinucleotides.put(key, value);
     }
 
     public Long getId() {
@@ -165,150 +135,13 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.computed = computed;
     }
 
-    private String getNucleotidePhaseKey(@NonNull String nucleotide, @NonNull Phase phase){
-        return nucleotide.toUpperCase() + "-" + phase.toString();
-    }
-
-    public Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides.containsKey(key)){
-            return dinucleotides.get(key);
-        }else{
-            throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
-        }
-    }
-
-    public Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides.containsKey(key)){
-            return trinucleotides.get(key);
-        }else{
-            throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
-        }
-    }
-
-    public void incrementDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides.containsKey(key)){
-            dinucleotides.put(key, dinucleotides.get(key) + 1);
-        }else{
-            throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
-        }
-    }
-
-    public void incrementTrinucleotideCount(String trinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides.containsKey(key)){
-            trinucleotides.put(key, trinucleotides.get(key) + 1);
-        }else{
-            throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
-        }
-    }
-
-    public void resetCounters() {
-        for(Phase phase : Phase.values()){
-            if(phase != Phase.PHASE_2) {
-                for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-                    dinucleotides.put(getNucleotidePhaseKey(dinucleotide, phase), 0);
-                    dinucleotides_pref.put(getNucleotidePhaseKey(dinucleotide, phase), 0);
-                }
-            }
-            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-                trinucleotides.put(getNucleotidePhaseKey(trinucleotide, phase), 0);
-                trinucleotides_pref.put(getNucleotidePhaseKey(trinucleotide, phase), 0);
-            }
-        }
-    }
-
+    /**
+     * Retourne le nom du réplicon concaténé à sa version.</br>
+     * Example : NC_123456.1
+     * @return Le nom genbank de ce replicon
+     */
     public String getGenbankName(){
         return ""+name+"."+version;
-    }
-
-    public Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            return trinucleotides_pref.get(key);
-        }else{
-            throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, 1);
-        }else{
-            throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, Integer value){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, value);
-        }else{
-            throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
-        }
-    }
-
-    public void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, 0);
-        }else{
-            throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasesPrefsTrinucleotide(@NonNull String trinucleotide, @NonNull Phase... phase){
-        for(Phase p : phase){
-            setPhasePrefTrinucleotide(trinucleotide, p);
-        }
-    }
-
-    public Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            return dinucleotides_pref.get(key);
-        }else{
-            throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, 1);
-        }else{
-            throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, Integer value){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, value);
-        }else{
-            throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
-        }
-    }
-
-    public void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, 0);
-        }else{
-            throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
-        }
-    }
-
-    public void setPhasesPrefsDinucleotide(@NonNull String dinucleotide, @NonNull Phase... phase){
-        for(Phase p : phase){
-            if(p == Phase.PHASE_2){
-                throw new IllegalArgumentException("La phase 2 n'existe pas pour les dinucléotides");
-            }
-            setPhasePrefDinucleotide(dinucleotide, p);
-        }
     }
 
     public Integer getValidsCDS() {
@@ -327,6 +160,86 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.invalidsCDS = invalidsCDS;
     }
 
+    public void setCounters(CountersEntity entity){
+        this.counters = entity;
+    }
+
+    public CountersEntity getCounters(){
+        if(this.counters == null){
+            this.counters = new CountersEntity();
+        }
+        return this.counters;
+    }
+
+    public void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
+        getCounters().setDinucleotideCount(din, ph, value);
+    }
+    public void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Integer value ) {
+        getCounters().setTrinucleotideCount(tri, ph, value);
+    }
+
+    public Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+        return getCounters().getDinucleotideCount(dinucleotide, phase);
+    }
+
+    public Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+        return getCounters().getTrinucleotideCount(trinucleotide, phase);
+    }
+
+    public void incrementDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+        getCounters().incrementDinucleotideCount(dinucleotide, phase);
+    }
+
+    public void incrementTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+        getCounters().incrementTrinucleotideCount(trinucleotide, phase);
+    }
+
+    public Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        return getCounters().getPhasePrefTrinucleotide(trinucleotide, phase);
+    }
+
+    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        getCounters().setPhasePrefTrinucleotide(trinucleotide, phase);
+    }
+
+    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Integer value){
+        getCounters().setPhasePrefTrinucleotide(trinucleotide, phase, value);
+    }
+
+    public void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        getCounters().unsetPhasePrefTrinucleotide(trinucleotide, phase);
+    }
+
+    public void setPhasesPrefsTrinucleotide(@NonNull String trinucleotide, @NonNull Phase... phase){
+        getCounters().setPhasesPrefsTrinucleotide(trinucleotide, phase);
+    }
+
+    public Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        return getCounters().getPhasePrefDinucleotide(dinucleotide, phase);
+    }
+
+    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        getCounters().setPhasePrefDinucleotide(dinucleotide, phase);
+    }
+
+    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Integer value){
+        getCounters().setPhasePrefDinucleotide(dinucleotide, phase, value);
+    }
+
+    public void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        getCounters().unsetPhasePrefDinucleotide(dinucleotide, phase);
+    }
+
+    public void setPhasesPrefsDinucleotide(@NonNull String dinucleotide, @NonNull Phase... phase){
+        for(Phase p : phase){
+            if(p == Phase.PHASE_2){
+                throw new IllegalArgumentException("La phase 2 n'existe pas pour les dinucléotides");
+            }
+            setPhasePrefDinucleotide(dinucleotide, p);
+        }
+    }
+
+
     @Override
     public boolean equals(Object object) {
         if (object == this)
@@ -342,24 +255,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return false;
     }
 
-    @Override
-    public String toString(){
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append(id)
-                .append(name)
-                .append(version)
-                .build();
-    }
-
-    @Override
-    public int compareTo(RepliconEntity o) {
-        return new CompareToBuilder()
-                .append(getGenbankName(), o.getGenbankName())
-                .append(computed, o.computed)
-                .append(downloaded, o.downloaded)
-                .build();
-    }
-
     public RepliconType getType() {
         return type;
     }
@@ -372,11 +267,17 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return getGenbankName()+".gb";
     }
 
+    public void incrementInvalidsCDS() {
+        invalidsCDS++;
+    }
 
-    public static RepliconEntity add ( RepliconEntity e, RepliconEntity ee )
-    {
-        if ( e.getType() != ee.getType() )
-        {
+    public void incrementValidsCDS() {
+        validsCDS++;
+    }
+
+
+    public static RepliconEntity add(RepliconEntity e, RepliconEntity ee) {
+        if (e.getType() != ee.getType()) {
             return null;
         }
 
@@ -386,10 +287,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
         result.setType(e.getType());
 
-        for ( char c : "ACGT".toCharArray() )
-        {
-            for ( char cc : "ACGT".toCharArray() )
-            {
+        for (char c : "ACGT".toCharArray()) {
+            for (char cc : "ACGT".toCharArray()) {
                 din = "" + c + cc;
 
                 result.setDinucleotideCount(
@@ -414,12 +313,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
                         e.getPhasePrefDinucleotide(din, Phase.PHASE_1) + ee.getPhasePrefDinucleotide(din, Phase.PHASE_1)
                 );
 
-                for ( char ccc : "ACGT".toCharArray() )
-                {
+                for (char ccc : "ACGT".toCharArray()) {
                     tri = din + ccc;
-                    for ( Phase ph : Phase.values() )
-                    {
-                        result.setTrinucleotidesCount(
+                    for (Phase ph : Phase.values()) {
+                        result.setTrinucleotideCount(
                                 tri,
                                 ph,
                                 e.getTrinucleotideCount(tri, ph) + ee.getTrinucleotideCount(tri, ph)
@@ -437,37 +334,32 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return result;
     }
 
-    public RepliconEntity add( RepliconEntity r )
-    {
+    public RepliconEntity add(RepliconEntity r) {
         return RepliconEntity.add(this, r);
     }
 
-    public static RepliconEntity add ( List<RepliconEntity> replicons )
-    {
+    public static RepliconEntity add(List<RepliconEntity> replicons) {
         // TODO : clone if size == 1
-        if ( replicons.size() == 1 ) { return replicons.get(0); }
+        if (replicons.size() == 1) {
+            return replicons.get(0);
+        }
 
         RepliconEntity pre_result = replicons.get(0).add(replicons.get(1));
 
-        for ( int i = 2 ; i < replicons.size() ; i++ )
-        {
+        for (int i = 2; i < replicons.size(); i++) {
             pre_result = pre_result.add(replicons.get(i));
         }
 
         return pre_result;
     }
 
-    public Integer getTotalTrinucleotides( Phase ph )
-    {
+    public Integer getTotalTrinucleotides(Phase ph) {
         Integer r = 0;
         String tri = null;
 
-        for ( char c : "ACGT".toCharArray() )
-        {
-            for ( char cc : "ACGT".toCharArray() )
-            {
-                for ( char ccc : "ACGT".toCharArray() )
-                {
+        for (char c : "ACGT".toCharArray()) {
+            for (char cc : "ACGT".toCharArray()) {
+                for (char ccc : "ACGT".toCharArray()) {
                     tri = "" + c + cc + ccc;
                     r += this.getTrinucleotideCount(tri.toUpperCase(), ph);
                 }
@@ -476,15 +368,12 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return r;
     }
 
-    public Integer getTotalDinucleotides( Phase ph )
-    {
+    public Integer getTotalDinucleotides(Phase ph) {
         Integer r = 0;
         String din = null;
 
-        for ( char c : "ACGT".toCharArray() )
-        {
-            for ( char cc : "ACGT".toCharArray() )
-            {
+        for (char c : "ACGT".toCharArray()) {
+            for (char cc : "ACGT".toCharArray()) {
                 din = "" + c + cc;
                 r += this.getDinucleotideCount(din.toUpperCase(), ph);
             }
@@ -492,11 +381,21 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return r;
     }
 
-    public void incrementInvalidsCDS() {
-        invalidsCDS++;
+    @Override
+    public String toString(){
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append(id)
+                .append(name)
+                .append(version)
+                .build();
     }
 
-    public void incrementValidsCDS() {
-        validsCDS++;
+    @Override
+    public int compareTo(RepliconEntity o) {
+        return new CompareToBuilder()
+                .append(getGenbankName(), o.getGenbankName())
+                .append(computed, o.computed)
+                .append(downloaded, o.downloaded)
+                .build();
     }
 }

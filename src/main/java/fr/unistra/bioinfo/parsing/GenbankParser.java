@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.parsing;
 
 import fr.unistra.bioinfo.common.CommonUtils;
+import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
