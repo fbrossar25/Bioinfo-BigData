@@ -7,6 +7,7 @@ import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
+import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.event.ActionEvent;
@@ -18,6 +19,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InvalidObjectException;
 
 @Controller
 public class MainWindowController {
@@ -91,10 +96,20 @@ public class MainWindowController {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
                 Main.generateOrganismDirectories();
+                GenbankUtils.downloadAllReplicons(null);
+                File dir = CommonUtils.DATAS_PATH.toFile();
+                File[] listFiles = dir.listFiles();
+                if(listFiles != null) {
+                    for (File gb : listFiles) {
+                        GenbankParser.parseGenbankFile(gb);
+                    }
+                }
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
-            }finally {
+            } catch (IOException e){
+                LOGGER.error("Erreur lors du téléchargements de tous les replicons",e);
+            } finally {
                 btnDemarrer.setDisable(false);
             }
         }).start();

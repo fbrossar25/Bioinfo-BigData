@@ -234,7 +234,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(0);
+        GenbankUtils.updateNCDatabase(10);
     }
 
     /**
