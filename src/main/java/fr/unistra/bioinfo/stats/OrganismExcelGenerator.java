@@ -86,9 +86,11 @@ public class OrganismExcelGenerator {
     }
 
     public boolean generate_excel_organism() {
+        //Ligne a décommenter pour les tests.
+        /*
         if (!OrganismExcelGenerator.generate_herarchy_dir(this.organism, this.base_path)) {
             return false;
-        }
+        }*/
 
         XSSFWorkbook wb = new XSSFWorkbook();
         List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);

@@ -25,7 +25,7 @@
         </filter>
     </appender>
 
-    <logger name="fr.unistra.bioinfo" level="INFO"/>
+    <logger name="fr.unistra.bioinfo" level="DEBUG"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->

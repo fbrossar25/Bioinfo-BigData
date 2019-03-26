@@ -8,8 +8,10 @@ import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
 import fr.unistra.bioinfo.parsing.GenbankParser;
+import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import fr.unistra.bioinfo.stats.OrganismExcelGenerator;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -101,8 +103,14 @@ public class MainWindowController {
                 File[] listFiles = dir.listFiles();
                 if(listFiles != null) {
                     for (File gb : listFiles) {
+                        LOGGER.debug("Parsing file '{}'", gb.getName());
                         GenbankParser.parseGenbankFile(gb);
                     }
+                }
+                OrganismExcelGenerator o = null;
+                for(HierarchyEntity orga : hierarchyService.getAll()){
+                    o = new OrganismExcelGenerator(orga, this.hierarchyService, this.repliconService);
+                    o.generateExcel();
                 }
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
