@@ -84,4 +84,9 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
         if(!names.isEmpty())
             repliconManager.deleteAllByNameNotIn(names);
     }
+
+    @Override
+    public List<RepliconEntity> getNotDownloadedReplicons() {
+        return repliconManager.getAllByDownloaded(false);
+    }
 }

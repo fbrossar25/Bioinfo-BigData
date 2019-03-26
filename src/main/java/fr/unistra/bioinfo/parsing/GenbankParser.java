@@ -1,7 +1,6 @@
 package fr.unistra.bioinfo.parsing;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -10,19 +9,18 @@ import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.compound.DNACompoundSet;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 import org.biojava.nbio.core.sequence.features.FeatureInterface;
 import org.biojava.nbio.core.sequence.features.Qualifier;
-import org.biojava.nbio.core.sequence.io.GenbankReaderHelper;
+import org.biojava.nbio.core.sequence.io.DNASequenceCreator;
+import org.biojava.nbio.core.sequence.io.GenericGenbankHeaderParser;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -51,7 +49,7 @@ public final class GenbankParser {
      * Parse le fichier donné en paramètre et créé ou met à jour le replicon qu'il représente.</br>
      * Normalement thread-safe.
      * @param repliconFile le fichier .gb
-     * @return true si le parsing à été correctement effectué, false sinon
+     * @return true si le parsing à été correctement effectué, false sinon, et false si 0 replicon étaient présents
      */
     public static boolean parseGenbankFile(@NonNull File repliconFile){
         if(!repliconFile.isFile() || !repliconFile.canRead()){
@@ -60,8 +58,12 @@ public final class GenbankParser {
         }
         RepliconEntity repliconEntity;
         try{
-            LinkedHashMap<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
+            //Map<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
+            Map<String, DNASequence> dnaSequences = bioJAVAReadDNASequences(repliconFile);
             LOGGER.debug("{} replicons dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
+            if(dnaSequences.size() == 0){
+                return false;
+            }
             for(DNASequence seq : dnaSequences.values()){
                 List<String> cdsList = new ArrayList<>();
                 LOGGER.trace("DNA header : "+seq.getOriginalHeader());
@@ -265,5 +267,18 @@ public final class GenbankParser {
             }
         }
         return null;
+    }
+
+    private static Map<String, DNASequence> bioJAVAReadDNASequences(@NonNull File file){
+        try{
+            CustomGenbankReader GenbankReader = new CustomGenbankReader(
+                    file,
+                    new GenericGenbankHeaderParser<>(),
+                    new DNASequenceCreator(DNACompoundSet.getDNACompoundSet()));
+            return GenbankReader.process();
+        }catch(IOException e){
+            LOGGER.error("Erreur lors du parsing du fichier '{}'", file.getAbsolutePath(), e);
+            return new HashMap<>();
+        }
     }
 }

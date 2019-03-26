@@ -66,18 +66,18 @@ public class GenbankUtils {
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
         List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
-        final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
+        final List<DownloadRepliconTask> tasks = new ArrayList<>(splittedRepliconsList.size());
 
         splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
         try {
-            LOGGER.debug("Débuts des téléchargements");
+            LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
                     try {
                         ses.shutdown();
                         ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                        LOGGER.debug("Fin des téléchargements");
+                        LOGGER.info("Fin des téléchargements");
                         List<File> files = new ArrayList<>(replicons.size());
                         for(Future<File> future : futuresFiles){
                             files.add(future.get());
@@ -99,7 +99,7 @@ public class GenbankUtils {
      * @throws IOException En cas d'erreurs pendant le téléchargement
      * @see GenbankUtils#updateNCDatabase
      */
-    public static void downloadAllReplicons(CompletableFuture<List<File>> callback) throws IOException{
+    public static void downloadAllReplicons(CompletableFuture<List<File>> callback){
         downloadReplicons(repliconService.getAll(), callback);
     }
 
@@ -234,7 +234,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(10);
+        GenbankUtils.updateNCDatabase(20);
     }
 
     /**
@@ -280,7 +280,7 @@ public class GenbankUtils {
      * @param limit limite d'entité à charger (pour les tests principalement)
      * @throws GenbankException Si une erreur empêche la mise à jours des métadonnées
      */
-    static void updateNCDatabase(int limit) throws GenbankException  {
+    public static void updateNCDatabase(int limit) throws GenbankException  {
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode dataNode;

@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InvalidObjectException;
 
 @Controller
 public class MainWindowController {
@@ -98,7 +96,7 @@ public class MainWindowController {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
                 Main.generateOrganismDirectories();
-                GenbankUtils.downloadAllReplicons(null);
+                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), null);
                 File dir = CommonUtils.DATAS_PATH.toFile();
                 File[] listFiles = dir.listFiles();
                 if(listFiles != null) {
@@ -107,7 +105,7 @@ public class MainWindowController {
                         GenbankParser.parseGenbankFile(gb);
                     }
                 }
-                OrganismExcelGenerator o = null;
+                OrganismExcelGenerator o;
                 for(HierarchyEntity orga : hierarchyService.getAll()){
                     o = new OrganismExcelGenerator(orga, this.hierarchyService, this.repliconService);
                     o.generateExcel();
@@ -115,8 +113,6 @@ public class MainWindowController {
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
-            } catch (IOException e){
-                LOGGER.error("Erreur lors du téléchargements de tous les replicons",e);
             } finally {
                 btnDemarrer.setDisable(false);
             }
@@ -159,6 +155,7 @@ public class MainWindowController {
             CommonUtils.enableHibernateLogging(true);
             btnDemarrer.setDisable(false);
             treeView.setDisable(false);
+            LOGGER.info("Mise à jour de l'arbre terminée");
         }).start();
     }
 

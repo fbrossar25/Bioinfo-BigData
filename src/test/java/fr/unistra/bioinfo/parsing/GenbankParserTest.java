@@ -47,6 +47,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-0.gb");
+    private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get(".","src", "test", "resources", "void.gb");
+    private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get(".","src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
     private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-batch-test.gb");
     @Autowired
@@ -69,6 +72,31 @@ class GenbankParserTest {
         CommonUtils.disableHibernateLogging();
         hierarchyService.deleteAll();
         repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testParseFuckedUpButRealBatchFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_REAL_FILE_PATH.toFile();
+        assertTrue(GenbankParser.parseGenbankFile(f));
+        assertEquals(2, repliconService.count().intValue());
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testParseVoidFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_VOID_FILE_PATH.toFile();
+        assertFalse(GenbankParser.parseGenbankFile(f));
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testParseOnlyEndTagsFile(){
+        CommonUtils.disableHibernateLogging();
+        File f = GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH.toFile();
+        assertFalse(GenbankParser.parseGenbankFile(f));
         CommonUtils.enableHibernateLogging(true);
     }
 

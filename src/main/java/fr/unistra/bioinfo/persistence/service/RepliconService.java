@@ -12,4 +12,6 @@ public interface RepliconService extends AbstractService<RepliconEntity, Long> {
     RepliconEntity getByName(@NonNull String name);
 
     void deleteWhereNameIsNotIn(@NonNull Collection<String> names);
+
+    List<RepliconEntity> getNotDownloadedReplicons();
 }

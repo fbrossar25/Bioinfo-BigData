@@ -31,7 +31,7 @@
     <!-- Logs hibernate -->
     <logger name="org.hibernate" level="ERROR"/>
     <!-- logger les requêtes -->
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="OFF"/>
     <!-- logger les valeurs des paramètres -->
     <!-- <logger name="org.hibernate.type.descriptor.sql" level="TRACE"/> -->
 
