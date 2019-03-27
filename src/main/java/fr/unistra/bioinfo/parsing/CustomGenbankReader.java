@@ -3,21 +3,16 @@
  */
 package fr.unistra.bioinfo.parsing;
 
+import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.biojava.nbio.core.exceptions.CompoundNotFoundException;
 import org.biojava.nbio.core.sequence.DNASequence;
 import org.biojava.nbio.core.sequence.DataSource;
-import org.biojava.nbio.core.sequence.ProteinSequence;
 import org.biojava.nbio.core.sequence.TaxonomyID;
-import org.biojava.nbio.core.sequence.compound.AminoAcidCompound;
-import org.biojava.nbio.core.sequence.compound.AminoAcidCompoundSet;
-import org.biojava.nbio.core.sequence.compound.DNACompoundSet;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 import org.biojava.nbio.core.sequence.features.AbstractFeature;
 import org.biojava.nbio.core.sequence.features.DBReferenceInfo;
-import org.biojava.nbio.core.sequence.io.DNASequenceCreator;
 import org.biojava.nbio.core.sequence.io.GenbankSequenceParser;
-import org.biojava.nbio.core.sequence.io.GenericGenbankHeaderParser;
-import org.biojava.nbio.core.sequence.io.ProteinSequenceCreator;
 import org.biojava.nbio.core.sequence.io.template.SequenceCreatorInterface;
 import org.biojava.nbio.core.sequence.io.template.SequenceHeaderParserInterface;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
@@ -28,6 +23,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -37,6 +35,8 @@ import java.util.LinkedHashMap;
  * Class modifiée pour utiliser l'implémentation modifié de CustomGenbankSequenceParser
  */
 public class CustomGenbankReader {
+
+    private static RepliconService repliconService;
 
     private SequenceCreatorInterface<NucleotideCompound> sequenceCreator;
     private GenbankSequenceParser<DNASequence, NucleotideCompound> genbankParser;
@@ -112,12 +112,15 @@ public class CustomGenbankReader {
      */
     public LinkedHashMap<String, DNASequence> process(final int max) throws IOException {
         LinkedHashMap<String, DNASequence> sequences = new LinkedHashMap<>();
-        @SuppressWarnings("unchecked")
+        List<String> invalidRepliconsNames = new ArrayList<>();
+        String repliconName;
         int i=0;
         while(true) {
             if(max>0 && i>=max) break;
             i++;
             String seqString = genbankParser.getSequence(bufferedReader, 0);
+            repliconName = getRepliconFromLocusOrLocus(genbankParser.getHeader());
+            invalidRepliconsNames.add(repliconName);
             //reached end of file?
             if(seqString==null){
                 if(isEOF(bufferedReader)){
@@ -136,7 +139,7 @@ public class CustomGenbankReader {
                     continue;
                 }
             }catch(CompoundNotFoundException e){
-                logger.error("Erreur lors du parsing du fichier '{}', la séquence ADN n'est pas valide", file.getAbsolutePath(), e);
+                logger.error("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide", file.getAbsolutePath(), repliconName, e);
                 continue;
             }
             genbankParser.getSequenceHeaderParser().parseHeader(genbankParser.getHeader(), sequence);
@@ -157,6 +160,16 @@ public class CustomGenbankReader {
             }
 
             sequences.put(sequence.getAccession().getID(), sequence);
+            invalidRepliconsNames.remove(sequence.getAccession().getID()); //Les replicons qui ont une séquence sont valides
+        }
+
+        if(!invalidRepliconsNames.isEmpty()){
+            //Tous les replicons traités mais qui ne sont pas valides sont marqués comme parsé
+            List<RepliconEntity> replicons = repliconService.getByNameIn(invalidRepliconsNames);
+            for(RepliconEntity r : replicons){
+                r.setParsed(true);
+            }
+            repliconService.saveAll(replicons);
         }
 
         if (max < 0) {
@@ -164,6 +177,26 @@ public class CustomGenbankReader {
         }
 
         return sequences;
+    }
+
+    private String setParsedFromLocus(String locus){
+        String replicon = getRepliconFromLocusOrLocus(locus);
+        if(repliconService != null){
+            RepliconEntity r = repliconService.getByName(replicon);
+            r.setParsed(true);
+            repliconService.save(r);
+        }
+        return replicon;
+    }
+
+    private String getRepliconFromLocusOrLocus(String locus) {
+        Pattern p = Pattern.compile("^.*(NC_\\d+?)([^\\d].*)?$");
+        Matcher m = p.matcher(locus);
+        if(m.matches()){
+            return m.group(1);
+        }else{
+            return locus;
+        }
     }
 
     private static boolean isEOF(BufferedReader r) throws IOException {
@@ -183,28 +216,8 @@ public class CustomGenbankReader {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        String proteinFile = "src/test/resources/BondFeature.gb";
-        FileInputStream is = new FileInputStream(proteinFile);
-
-        org.biojava.nbio.core.sequence.io.GenbankReader<ProteinSequence, AminoAcidCompound> proteinReader = new org.biojava.nbio.core.sequence.io.GenbankReader<>(is, new GenericGenbankHeaderParser<>(), new ProteinSequenceCreator(AminoAcidCompoundSet.getAminoAcidCompoundSet()));
-        LinkedHashMap<String,ProteinSequence> proteinSequences = proteinReader.process();
-        System.out.println(proteinSequences);
-
-        String inputFile = "src/test/resources/NM_000266.gb";
-        is = new FileInputStream(inputFile);
-        org.biojava.nbio.core.sequence.io.GenbankReader<DNASequence, NucleotideCompound> dnaReader = new org.biojava.nbio.core.sequence.io.GenbankReader<>(is, new GenericGenbankHeaderParser<>(), new DNASequenceCreator(DNACompoundSet.getDNACompoundSet()));
-        LinkedHashMap<String,DNASequence> dnaSequences = dnaReader.process();
-        System.out.println(dnaSequences);
-
-        String crazyFile = "src/test/resources/CraftedFeature.gb";
-        is = new FileInputStream(crazyFile);
-        org.biojava.nbio.core.sequence.io.GenbankReader<DNASequence, NucleotideCompound> crazyReader = new org.biojava.nbio.core.sequence.io.GenbankReader<>(is, new GenericGenbankHeaderParser<>(), new DNASequenceCreator(DNACompoundSet.getDNACompoundSet()));
-        LinkedHashMap<String,DNASequence> crazyAnnotatedSequences = crazyReader.process();
-
-        is.close();
-        System.out.println(crazyAnnotatedSequences);
+    public static void setRepliconService(RepliconService repliconService){
+        CustomGenbankReader.repliconService = repliconService;
     }
-
 }
 

@@ -58,7 +58,6 @@ public final class GenbankParser {
         }
         RepliconEntity repliconEntity;
         try{
-            //Map<String, DNASequence> dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
             Map<String, DNASequence> dnaSequences = bioJAVAReadDNASequences(repliconFile);
             LOGGER.debug("{} replicons dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
             if(dnaSequences.size() == 0){

@@ -105,11 +105,19 @@ public class MainWindowController {
                         GenbankParser.parseGenbankFile(gb);
                     }
                 }
-                OrganismExcelGenerator o;
-                for(HierarchyEntity orga : hierarchyService.getAll()){
-                    o = new OrganismExcelGenerator(orga, this.hierarchyService, this.repliconService);
-                    o.generateExcel();
+                for(HierarchyEntity entity : hierarchyService.getAll()){
+                    new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
                 }
+//                OrganismExcelGenerator o;
+//                Page<HierarchyEntity> page = hierarchyService.getAll(0, Sort.Direction.ASC, HierarchyMembers.ORGANISM);
+//                while(page.hasNext()){
+//                    List<HierarchyEntity> entities = page.getContent();
+//                    for(HierarchyEntity entity : entities){
+//                        o = new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService);
+//                        o.generateExcel();
+//                    }
+//                    page = hierarchyService.getAll(page.nextPageable());
+//                }
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);

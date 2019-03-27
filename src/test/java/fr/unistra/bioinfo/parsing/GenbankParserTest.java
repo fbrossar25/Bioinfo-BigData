@@ -80,7 +80,11 @@ class GenbankParserTest {
         CommonUtils.disableHibernateLogging();
         File f = GENBANK_BATCH_REAL_FILE_PATH.toFile();
         assertTrue(GenbankParser.parseGenbankFile(f));
-        assertEquals(2, repliconService.count().intValue());
+        List<RepliconEntity> replicons = repliconService.getAll();
+        assertEquals(6, replicons.size());
+        for(RepliconEntity r : replicons){
+            assertTrue(r.isParsed());
+        }
         CommonUtils.enableHibernateLogging(true);
     }
 

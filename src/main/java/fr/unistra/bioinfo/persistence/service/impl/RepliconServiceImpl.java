@@ -89,4 +89,9 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     public List<RepliconEntity> getNotDownloadedReplicons() {
         return repliconManager.getAllByDownloaded(false);
     }
+
+    @Override
+    public List<RepliconEntity> getByNameIn(@NonNull List<String> repliconsNames){
+        return repliconManager.getAllByNameIn(repliconsNames);
+    }
 }

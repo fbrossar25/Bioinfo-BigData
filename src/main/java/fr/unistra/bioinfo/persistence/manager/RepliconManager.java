@@ -26,4 +26,6 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
     List<RepliconEntity> getAllByParsed(boolean parsed);
 
     List<RepliconEntity> getAllByDownloaded(boolean downloaded);
+
+    List<RepliconEntity> getAllByNameIn(List<String> repliconsNames);
 }
