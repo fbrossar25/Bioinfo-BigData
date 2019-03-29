@@ -33,7 +33,9 @@ public final class GenbankParser {
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
 
-    private static Pattern organismPattern = Pattern.compile("^([\\s]+)?ORGANISM([\\s]+)(.+)([\\s]+)?$");
+    private static final Pattern ORGANISM_PATTERN = Pattern.compile("^([\\s]+)?ORGANISM([\\s]+)(.+)([\\s]+)?$");
+
+    private static final Pattern ACCESSION_PATTERN = Pattern.compile("^([\\s]+)?ACCESSION([\\s]+)(.+)([\\s]+)?$");
 
     public static void setHierarchyService(@NonNull HierarchyService hierarchySerice){
         GenbankParser.hierarchyService = hierarchySerice;
@@ -69,16 +71,7 @@ public final class GenbankParser {
                 synchronized(synchronizedObject){
                     repliconEntity = repliconService.getByName(seq.getAccession().getID());
                     if(repliconEntity == null){
-                        repliconEntity = new RepliconEntity();
-                        repliconEntity.setName(seq.getAccession().getID());
-                        HierarchyEntity h = readHierarchy(repliconFile);
-                        if(h == null){
-                            LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '{}', abandon du parsing",repliconFile.getAbsolutePath());
-                            return false;
-                        }
-                        hierarchyService.save(h);
-                        repliconEntity.setHierarchyEntity(h);
-                        repliconService.save(repliconEntity);
+                        repliconEntity = createReplicon(repliconFile, seq.getAccession().getID());
                     }
                 }
                 repliconEntity.setDownloaded(true);
@@ -234,14 +227,37 @@ public final class GenbankParser {
     }
 
     /**
+     * Créé et sauvegarde le replicon à partir du fichier fournis et de son nom. Créer également le HierarchyEntity associé s'il n'existe pas.
+     * @param repliconFile Le fichier genbank
+     * @param repliconName Le nom du replicon
+     * @return Le repliconEntity créé où null
+     * @throws IOException Si une erreur arrive lors de la lecture du fichier
+     */
+    static RepliconEntity createReplicon(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
+        RepliconEntity repliconEntity = new RepliconEntity();
+        repliconEntity.setName(repliconName);
+        HierarchyEntity h = readHierarchy(repliconFile, repliconEntity.getName());
+        if(h == null){
+            LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '{}', abandon du parsing",repliconFile.getAbsolutePath());
+            return null;
+        }
+        synchronized(synchronizedObject){
+            hierarchyService.save(h);
+            repliconEntity.setHierarchyEntity(h);
+            repliconService.save(repliconEntity);
+        }
+        return repliconEntity;
+    }
+
+    /**
      * Retourne le Hierarchy correspondant au fichier donné en lisant la section ORGANISM du fichier si elle existe.<br/>
      * Si elle n'existe pas, null est renvoyé, sinon le Hierarchy est soit pris dans la BDD, soit créé et sauvegardé s'il n'y est pas.
      * @param repliconFile le fichier à lire
      * @return Le hierarchy correspondant, null si non trouvé
      * @throws IOException En cas de problème de lecture du fichier
      */
-    private static HierarchyEntity readHierarchy(@NonNull File repliconFile) throws IOException{
-        String organism = readOrganism(repliconFile);
+    static HierarchyEntity readHierarchy(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
+        String organism = readOrganism(repliconFile, repliconName);
         if(StringUtils.isBlank(organism)){
             LOGGER.warn("le fichier '{}' ne contient pas de section ORGANISM", repliconFile.getName());
             return null;
@@ -255,14 +271,22 @@ public final class GenbankParser {
      * @return Le nom de l'organisme, null si la section n'existe pas ou est vide
      * @throws IOException En cas d'erreur de lecture du fichier
      */
-    private static String readOrganism(@NonNull File repliconFile) throws IOException{
+    static String readOrganism(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
         BufferedReader reader = new BufferedReader(new FileReader(repliconFile));
+        boolean isCorrectAccession = false;
         Iterator<String> it = reader.lines().iterator();
+        Matcher m;
         while(it.hasNext()){
             String l = it.next();
-            Matcher m = organismPattern.matcher(l);
+            m = ACCESSION_PATTERN.matcher(l);
             if(m.matches()){
-                return m.group(3);
+                isCorrectAccession = repliconName.equalsIgnoreCase(m.group(3));
+            }
+            if(isCorrectAccession){
+                m = ORGANISM_PATTERN.matcher(l);
+                if(m.matches()){
+                    return m.group(3);
+                }
             }
         }
         return null;

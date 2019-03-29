@@ -44,6 +44,7 @@ public class CustomGenbankReader {
     private boolean closed;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final File file;
+    private final Object synchronizedObject = new Object();
 
     public boolean isClosed() {
         return closed;
@@ -163,20 +164,49 @@ public class CustomGenbankReader {
         }
 
         repliconsNames.removeAll(sequences.keySet()); //Les replicons qui ont une séquence sont valides
-        if(!repliconsNames.isEmpty()){
-            //Tous les replicons traités mais qui ne sont pas valides sont marqués comme parsé
-            List<RepliconEntity> replicons = repliconService.getByNameIn(repliconsNames);
-            for(RepliconEntity r : replicons){
+
+        //Tous les replicons traités mais qui ne sont pas valides sont marqués comme parsé
+        List<RepliconEntity> replicons = new ArrayList<>(repliconsNames.size());
+        for(String replicon : repliconsNames){
+            RepliconEntity r = getOrCreateReplicon(replicon);
+            if(r != null){
+                replicons.add(r);
                 r.setParsed(true);
+                r.setDownloaded(true);
+            }else{
+                logger.warn("Le replicon '{}' n'as pas pu être récupéré", replicon);
             }
-            repliconService.saveAll(replicons);
         }
+        repliconService.saveAll(replicons);
 
         if (max < 0) {
             close();
         }
 
         return sequences;
+    }
+
+    /**
+     * Retourne le replicon du nom donné. Le créé s'il n'existe pas ainsi que le hierarchy associé.
+     * @param replicon Le nom du replicon
+     * @return Le replicon, où null s'il n'as pas pu être créé
+     * @see GenbankParser#createReplicon(File, String)
+     */
+    private RepliconEntity getOrCreateReplicon(String replicon){
+        RepliconEntity entity;
+        synchronized(synchronizedObject){
+            entity = repliconService.getByName(replicon);
+        }
+        if(entity == null){
+            try {
+                return GenbankParser.createReplicon(file, replicon);
+            } catch (IOException e) {
+                logger.error("Erreur lors de la lecture du fichier", e);
+                return null;
+            }
+        }else{
+            return entity;
+        }
     }
 
     private String setParsedFromLocus(String locus){
