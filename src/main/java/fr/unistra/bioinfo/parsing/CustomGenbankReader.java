@@ -177,6 +177,7 @@ public class CustomGenbankReader {
                 logger.warn("Le replicon '{}' n'as pas pu être récupéré", replicon);
             }
         }
+        logger.warn("Les replicons suivants sont invalides : '{}'", repliconsNames);
         repliconService.saveAll(replicons);
 
         if (max < 0) {

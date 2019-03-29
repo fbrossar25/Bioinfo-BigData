@@ -33,10 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,8 +79,13 @@ class GenbankParserTest {
         assertTrue(GenbankParser.parseGenbankFile(f));
         List<RepliconEntity> replicons = repliconService.getAll();
         assertEquals(6, replicons.size());
+        List<String> invalidsReplicons = Arrays.asList("NC_003071", "NC_003074", "NC_003075", "NC_003076");
         for(RepliconEntity r : replicons){
             assertTrue(r.isParsed());
+            if(invalidsReplicons.contains(r.getName())){
+                assertEquals(0, r.getValidsCDS().intValue());
+                assertEquals(0, r.getInvalidsCDS().intValue());
+            }
         }
         CommonUtils.enableHibernateLogging(true);
     }
