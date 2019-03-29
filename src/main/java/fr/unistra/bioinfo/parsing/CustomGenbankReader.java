@@ -112,7 +112,7 @@ public class CustomGenbankReader {
      */
     public LinkedHashMap<String, DNASequence> process(final int max) throws IOException {
         LinkedHashMap<String, DNASequence> sequences = new LinkedHashMap<>();
-        List<String> invalidRepliconsNames = new ArrayList<>();
+        List<String> repliconsNames = new ArrayList<>();
         String repliconName;
         int i=0;
         while(true) {
@@ -120,7 +120,7 @@ public class CustomGenbankReader {
             i++;
             String seqString = genbankParser.getSequence(bufferedReader, 0);
             repliconName = getRepliconFromLocusOrLocus(genbankParser.getHeader());
-            invalidRepliconsNames.add(repliconName);
+            repliconsNames.add(repliconName);
             //reached end of file?
             if(seqString==null){
                 if(isEOF(bufferedReader)){
@@ -160,12 +160,12 @@ public class CustomGenbankReader {
             }
 
             sequences.put(sequence.getAccession().getID(), sequence);
-            invalidRepliconsNames.remove(sequence.getAccession().getID()); //Les replicons qui ont une séquence sont valides
         }
 
-        if(!invalidRepliconsNames.isEmpty()){
+        repliconsNames.removeAll(sequences.keySet()); //Les replicons qui ont une séquence sont valides
+        if(!repliconsNames.isEmpty()){
             //Tous les replicons traités mais qui ne sont pas valides sont marqués comme parsé
-            List<RepliconEntity> replicons = repliconService.getByNameIn(invalidRepliconsNames);
+            List<RepliconEntity> replicons = repliconService.getByNameIn(repliconsNames);
             for(RepliconEntity r : replicons){
                 r.setParsed(true);
             }
