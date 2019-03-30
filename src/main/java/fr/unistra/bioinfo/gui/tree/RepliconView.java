@@ -5,7 +5,6 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import javafx.application.Platform;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +32,8 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         NonBlockingAddNode(TreeItem<RepliconViewNode> son, TreeItem<RepliconViewNode> father){
             this.son = son;
             this.father = father;
-            Image i1 = new Image(this.son.getValue().getState().getValue());
             ImageView iv1 = new ImageView();
-            iv1.setImage(i1);
+            iv1.setImage(this.son.getValue().getState().getImage());
             this.son.setGraphic(iv1);
         }
 

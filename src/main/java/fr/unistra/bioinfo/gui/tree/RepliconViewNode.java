@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.gui.tree;
 
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import javafx.scene.image.Image;
 
 /**
  * Vue d'un replicon dans un RepliconView
@@ -19,17 +20,23 @@ public class RepliconViewNode {
      */
 
     enum RepliconViewNodeState{
-        OK("../resources/images/vert.png"),
-        NOK("../resources/images/rouge.png"),
-        INTERMEDIARY("../resources/images/jaune.png");
+        OK("images/vert.png"),
+        NOK("images/rouge.png"),
+        INTERMEDIARY("images/jaune.png");
 
         private String value;
-        private RepliconViewNodeState(String value){
+        private Image img;
+
+        RepliconViewNodeState(String value){
             this.value = value;
+            this.img = new Image(value);
         }
 
         public String getValue(){
             return value;
+        }
+        public Image getImage(){
+            return img;
         }
 
     }
