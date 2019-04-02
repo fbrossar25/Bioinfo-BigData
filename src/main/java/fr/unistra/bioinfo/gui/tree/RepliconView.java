@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.gui.tree;
 
+import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import javafx.application.Platform;
@@ -136,6 +137,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @return L'item du replicon créé ou existant. Retourne null si le replicon n'as pas de hierarchy
      */
     public synchronized TreeItem<RepliconViewNode> addReplicon(@NonNull RepliconEntity replicon){
+        MainWindowController.increaseCounterReplicon();
         TreeItem<RepliconViewNode> node = getRepliconNode(replicon);
         if(node != null){
             return node;

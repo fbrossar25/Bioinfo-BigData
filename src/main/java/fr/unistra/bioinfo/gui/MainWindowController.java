@@ -7,14 +7,18 @@ import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
+import fr.unistra.bioinfo.gui.tree.RepliconViewNode;
 import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import fr.unistra.bioinfo.stats.OrganismExcelGenerator;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +35,8 @@ public class MainWindowController {
 
     private static MainWindowController singleton;
     private static boolean init = true;
+    private static long nbReplicon = 0;
+    private static long countReplicon = 0;
 
     private final HierarchyService hierarchyService;
     private final RepliconService repliconService;
@@ -47,13 +53,31 @@ public class MainWindowController {
     @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
     @FXML private ProgressBar progressBar;
+    @FXML private ProgressBar progressBarTreeView;
     @FXML private Label downloadLabel;
+    @FXML private Label treeViewLabel;
     @FXML private TextArea logs;
     @FXML private RepliconView treeView;
 
     private final EventUtils.EventListener GENBANK_METADATA_END_LISTENER = (event -> {
         if(event.getType() == EventUtils.EventType.METADATA_END){
             updateFullTreeView();
+        }
+    });
+
+    private final EventUtils.EventListener STATS_END_LISTENER = (event -> {
+        if(event.getType() == EventUtils.EventType.STATS_END){
+            RepliconEntity r = event.getReplicon();
+            try {
+                TreeItem<RepliconViewNode> replicon = treeView.getRepliconNode(r);
+                replicon.getValue().setState(RepliconViewNode.RepliconViewNodeState.OK);
+                Node n = replicon.getGraphic();
+                if(n instanceof ImageView){
+                    ((ImageView)n).setImage(replicon.getValue().getState().getImage());
+                }
+            }catch(NullPointerException e){
+                //On ignore les réplicons qui ne sont pas dans l'arbre/défectueux
+            }
         }
     });
 
@@ -85,6 +109,7 @@ public class MainWindowController {
             LOGGER.warn("Le logger '{}' de l'IHM n'a pas pu être trouvé", textAeraAppenderName);
         }
         EventUtils.subscribe(GENBANK_METADATA_END_LISTENER);
+        EventUtils.subscribe(STATS_END_LISTENER);
         updateFullTreeView();
     }
 
@@ -118,6 +143,7 @@ public class MainWindowController {
 //                    }
 //                    page = hierarchyService.getAll(page.nextPageable());
 //                }
+                LOGGER.info("countReplicon = "+ this.countReplicon);
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
@@ -155,14 +181,19 @@ public class MainWindowController {
         //TODO afficher une petite popup pour indiquer la progression du chargement
         btnDemarrer.setDisable(true);
         treeView.setDisable(true);
+
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
             LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
+            this.nbReplicon = repliconService.count();
+            this.countReplicon = 0;
+
             treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
             CommonUtils.enableHibernateLogging(true);
             btnDemarrer.setDisable(false);
             treeView.setDisable(false);
+
             LOGGER.info("Mise à jour de l'arbre terminée");
         }).start();
     }
@@ -174,6 +205,15 @@ public class MainWindowController {
     public Label getDownloadLabel(){
         return downloadLabel;
     }
+
+    public ProgressBar getProgressBarTreeView() { return progressBarTreeView;}
+
+    public Label getTreeViewLabel(){ return treeViewLabel; }
+
+    public static void increaseCounterReplicon(){
+        countReplicon++;
+    }
+
 
     public static MainWindowController get(){
         return singleton;

@@ -17,6 +17,10 @@ public final class EventUtils {
         DOWNLOAD_BEGIN,
         /** Téléchargemetn d'un fichier replicon terminé */
         DOWNLOAD_END,
+        /** Parsing d'un fichier démarré */
+        PARSING_BEGIN,
+        /** Parsing d'un fichier terminé */
+        PARSING_END,
         /** Génération des statistiques pour un replicon terminée */
         STATS_END,
         /** Téléchargement de toutes les méta-données terminés */

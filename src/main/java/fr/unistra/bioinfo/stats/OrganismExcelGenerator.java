@@ -1,6 +1,7 @@
 package fr.unistra.bioinfo.stats;
 
 import fr.unistra.bioinfo.Main;
+import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconType;
@@ -104,6 +105,10 @@ public class OrganismExcelGenerator {
         }
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.ORGANISM));
+        for(RepliconEntity r : replicons){
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END,r);
+        }
+
         return true;
     }
 
@@ -125,7 +130,7 @@ public class OrganismExcelGenerator {
 
         List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getSubgroup());
         if (orgas.isEmpty()) {
-            LOGGER.info("SUB GROUP ORGA EMPTY");
+            LOGGER.debug("SUB GROUP ORGA EMPTY");
             return false;
         }
 
@@ -142,9 +147,9 @@ public class OrganismExcelGenerator {
             List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
             if (!typedRepls.isEmpty()) {
                 new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_sheet();
-                LOGGER.info("NEW Sheet for " + t);
+                LOGGER.debug("NEW Sheet for " + t);
             }
-            LOGGER.info("" + t);
+            LOGGER.debug("" + t);
         }
 
 
@@ -156,7 +161,7 @@ public class OrganismExcelGenerator {
         try(XSSFWorkbook wb = new XSSFWorkbook()){
             List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
             if (orgas.isEmpty()) {
-                LOGGER.info("GROUP ORGA EMPTY");
+                LOGGER.debug("GROUP ORGA EMPTY");
                 return false;
             }
 
@@ -172,9 +177,9 @@ public class OrganismExcelGenerator {
                 List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
                 if (!typedRepls.isEmpty()) {
                     new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.GROUP).write_sheet();
-                    LOGGER.info("NEW Sheet for " + t);
+                    LOGGER.debug("NEW Sheet for " + t);
                 }
-                LOGGER.info("" + t);
+                LOGGER.debug("" + t);
             }
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
@@ -188,7 +193,7 @@ public class OrganismExcelGenerator {
         try(XSSFWorkbook wb = new XSSFWorkbook()){
             List<HierarchyEntity> orgas = this.hierarchyService.getByKingdom(this.organism.getKingdom());
             if (orgas.isEmpty()) {
-                LOGGER.info("KINDOM ORGA EMPTY");
+                LOGGER.debug("KINDOM ORGA EMPTY");
                 return false;
             }
 
@@ -204,9 +209,9 @@ public class OrganismExcelGenerator {
                 List<RepliconEntity> typedRepls = this.getListRepliconsByType(repls, t);
                 if (!typedRepls.isEmpty()) {
                     new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.KINGDOM).write_sheet();
-                    LOGGER.info("NEW Sheet for " + t);
+                    LOGGER.debug("NEW Sheet for " + t);
                 }
-                LOGGER.info("" + t);
+                LOGGER.debug("" + t);
             }
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
@@ -218,33 +223,33 @@ public class OrganismExcelGenerator {
 
     public boolean generateExcel() {
         if (this.generate_excel_organism()) {
-            LOGGER.info("OK ORGA");
+            LOGGER.debug("OK ORGA");
         } else {
-            LOGGER.info("FAIL ORGA");
+            LOGGER.debug("FAIL ORGA");
             return false;
         }
 
 
         if (this.genetate_excel_sub_group()) {
-            LOGGER.info("OK SS GR");
+            LOGGER.debug("OK SS GR");
         } else {
-            LOGGER.info("FAIL SS GR");
+            LOGGER.debug("FAIL SS GR");
             return false;
         }
 
 
         if (this.genetate_excel_group()) {
-            LOGGER.info("OK GROUP");
+            LOGGER.debug("OK GROUP");
         } else {
-            LOGGER.info("FAIL SS GROUP");
+            LOGGER.debug("FAIL SS GROUP");
             return false;
         }
 
 
         if (this.generate_excel_kingdom()) {
-            LOGGER.info("OK KINGDOM");
+            LOGGER.debug("OK KINGDOM");
         } else {
-            LOGGER.info("FAIL KINGDOM");
+            LOGGER.debug("FAIL KINGDOM");
             return false;
         }
 
@@ -252,6 +257,8 @@ public class OrganismExcelGenerator {
             r.setComputed(true);
             this.repliconService.save(r);
         }
+
+
 
         return true;
     }

@@ -19,7 +19,7 @@ public class RepliconViewNode {
      * Enumeration des états d'un item
      */
 
-    enum RepliconViewNodeState{
+    public enum RepliconViewNodeState{
         OK("images/vert.png"),
         NOK("images/rouge.png"),
         INTERMEDIARY("images/jaune.png");

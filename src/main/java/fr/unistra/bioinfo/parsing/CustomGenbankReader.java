@@ -140,7 +140,7 @@ public class CustomGenbankReader {
                     continue;
                 }
             }catch(CompoundNotFoundException e){
-                logger.error("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide", file.getAbsolutePath(), repliconName, e);
+                logger.warn("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide. {}", file.getAbsolutePath(), repliconName, e.getMessage());
                 continue;
             }
             genbankParser.getSequenceHeaderParser().parseHeader(genbankParser.getHeader(), sequence);
