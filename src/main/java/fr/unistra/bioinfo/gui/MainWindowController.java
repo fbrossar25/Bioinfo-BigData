@@ -172,6 +172,8 @@ public class MainWindowController {
                     if(current % 100 == 0){
                         LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", current, count);
                     }
+//                    this.progressBarTreeView.setProgress(current/count);
+//                    this.treeViewLabel.setText(current+"/"+count+" organismes traités (génération des excels");
                 }
                 LOGGER.info("Génération des excels terminés");
 //                OrganismExcelGenerator o;
