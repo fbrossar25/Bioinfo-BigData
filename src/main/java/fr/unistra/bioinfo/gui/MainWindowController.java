@@ -153,7 +153,6 @@ public class MainWindowController {
             try {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
-                Main.generateOrganismDirectories();
                 GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), null);
                 File dir = CommonUtils.DATAS_PATH.toFile();
                 File[] listFiles = dir.listFiles();
@@ -172,20 +171,8 @@ public class MainWindowController {
                     if(current % 100 == 0){
                         LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", current, count);
                     }
-//                    this.progressBarTreeView.setProgress(current/count);
-//                    this.treeViewLabel.setText(current+"/"+count+" organismes traités (génération des excels");
                 }
                 LOGGER.info("Génération des excels terminés");
-//                OrganismExcelGenerator o;
-//                Page<HierarchyEntity> page = hierarchyService.getAll(0, Sort.Direction.ASC, HierarchyMembers.ORGANISM);
-//                while(page.hasNext()){
-//                    List<HierarchyEntity> entities = page.getContent();
-//                    for(HierarchyEntity entity : entities){
-//                        o = new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService);
-//                        o.generateExcel();
-//                    }
-//                    page = hierarchyService.getAll(page.nextPageable());
-//                }
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);

@@ -35,6 +35,10 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -237,17 +241,24 @@ class GenbankParserTest {
     @Test
     @Disabled("Tests à des fins de debuggage")
     void parseDatas(){
-        GenbankUtils.updateNCDatabase(100);
+        GenbankUtils.updateNCDatabase(50);
+        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        GenbankUtils.downloadAllReplicons(future);
+        List<File> files;
+        try {
+            files = future.get(20, TimeUnit.MINUTES);
+            assertNotNull(files, "Pas de fichier trouvés");
+            assertFalse(files.isEmpty(), "0 Fichiers trouvés");
+            for(File f : files){
+                GenbankParser.parseGenbankFile(f);
+            }
+            assertTrue(repliconService.count() > 0);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            fail("Erreur lors du téléchargement", e);
+        }
         File dataDir = CommonUtils.DATAS_PATH.toFile();
         assertNotNull(dataDir);
         assertTrue(dataDir.exists() && dataDir.isDirectory());
-        File[] files = dataDir.listFiles();
-        assertNotNull(files, "Pas de fichier trouvés");
-        assertTrue(files.length > 0, "0 Fichiers trouvés");
-        for(File f : files){
-            GenbankParser.parseGenbankFile(f);
-        }
-        assertTrue(repliconService.count() > 0);
     }
 
     @Test

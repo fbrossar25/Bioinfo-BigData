@@ -3,15 +3,17 @@ package fr.unistra.bioinfo.stats;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
+import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.parsing.GenbankParser;
-import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
@@ -21,14 +23,21 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
 @Import({StaticInitializer.class})
@@ -254,5 +263,68 @@ public class ExcelTest {
 
         OrganismExcelGenerator oo = new OrganismExcelGenerator( hierarchyService.getByOrganism("Bos taurus"), TEST_PATH, this.hierarchyService, this.repliconService);
         oo.generateExcel();
+    }
+
+    @Test
+    @Disabled("Test à des fins de profiling")
+    void parseAndGenerateStats(){
+        GenbankUtils.updateNCDatabase(100);
+        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        long begin = System.currentTimeMillis();
+        GenbankUtils.downloadAllReplicons(future);
+        List<File> files = null;
+        try {
+            files = future.get(1, TimeUnit.HOURS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            fail("Erreur lors du téléchargement", e);
+        }
+        assertNotNull(files, "Pas de résultats renvoyé");
+        assertFalse(files.isEmpty(), "Pas de fichier trouvés");
+
+        long end = System.currentTimeMillis();
+        long elapsedSeconds = (end - begin)/1000;
+        LOGGER.info("Elapsed time for downloading {} replicons: {}s", repliconService.count(), elapsedSeconds);
+        long prediction = (long)((((double) elapsedSeconds) / repliconService.count()) * 13000);
+        LOGGER.info("Downloading all replicons (~13000) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+
+        begin = System.currentTimeMillis();
+        for(File f : files){
+            GenbankParser.parseGenbankFile(f);
+        }
+        end = System.currentTimeMillis();
+        elapsedSeconds = (end - begin) / 1000;
+        LOGGER.info("Elapsed time for parsing {} files: {}s", files.size(), elapsedSeconds);
+        prediction = (long)((((double) elapsedSeconds) / files.size()) * 1300);
+        LOGGER.info("Parsing all replicons (~1300 files) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+
+        begin = System.currentTimeMillis();
+        for(HierarchyEntity entity : hierarchyService.getAll()){
+            new OrganismExcelGenerator(entity, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel();
+        }
+        end = System.currentTimeMillis();
+        elapsedSeconds = (end - begin) / 1000;
+        LOGGER.info("Elapsed time for generating excels for {} organisms: {}s", hierarchyService.count(), elapsedSeconds);
+        prediction = (long)((((double) elapsedSeconds) / hierarchyService.count()) * 5000);
+        LOGGER.info("Generating all organism's Excels (~5000 organisms) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+    }
+
+    @Test
+    @Disabled("Test à des fins de profiling")
+    void generateStats(){
+        GenbankUtils.updateNCDatabase(100);
+        File dataDir = CommonUtils.DATAS_PATH.toFile();
+        File[] files = dataDir.listFiles();
+        assertNotNull(files);
+        assertTrue(files.length > 0, "Pas de fichier trouvés");
+
+        long begin = System.currentTimeMillis();
+        for(HierarchyEntity entity : hierarchyService.getAll()){
+            new OrganismExcelGenerator(entity, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel();
+        }
+        long end = System.currentTimeMillis();
+        long elapsedSeconds = (end - begin) / 1000;
+        LOGGER.info("Elapsed time for generating excels for {} organisms: {}s", hierarchyService.count(), elapsedSeconds);
+        long prediction = (long)((((double) elapsedSeconds) / hierarchyService.count()) * 4000);
+        LOGGER.info("Generating all organism's Excels (~5000 organisms) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
     }
 }

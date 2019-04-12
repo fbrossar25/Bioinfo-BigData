@@ -132,9 +132,10 @@ class GenbankUtilsTest {
     @Test
     void updateDB(){
         try {
-            GenbankUtils.updateNCDatabase();
+            GenbankUtils.updateNCDatabase(0);
             assertTrue(hierarchyService.count() > 0);
             assertTrue(repliconService.count() > 0);
+            LOGGER.info("Méta-données de {} replicons chargées", repliconService.count());
         } catch (GenbankException e) {
             fail(e);
         }

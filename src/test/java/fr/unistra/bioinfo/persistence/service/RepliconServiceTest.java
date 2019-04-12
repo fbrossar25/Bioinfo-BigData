@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.persistence.service;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
+import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,16 +80,18 @@ class RepliconServiceTest {
         CommonUtils.disableHibernateLogging();
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", 1, h);
+        r.setDinucleotideCount("AA", Phase.PHASE_1, 42);
         repliconService.save(r);
 
         assertNotNull(r.getId());
         assertNotNull(h.getId());
 
-        assertNotNull(repliconService.getById(r.getId()));
-        assertEquals(r, repliconService.getById(r.getId()));
-        assertEquals(r.getHierarchyEntity(), h);
         assertTrue(repliconService.existsById(r.getId()));
         assertTrue(hierarchyService.existsById(h.getId()));
+        assertNotNull(repliconService.getById(r.getId()));
+        assertEquals(r, repliconService.getById(r.getId()));
+        assertEquals(42, repliconService.getById(r.getId()).getDinucleotideCount("AA", Phase.PHASE_1).intValue());
+        assertEquals(r.getHierarchyEntity(), h);
 
         List<RepliconEntity> replicons = repliconService.getByHierarchy(h);
         assertNotNull(replicons);

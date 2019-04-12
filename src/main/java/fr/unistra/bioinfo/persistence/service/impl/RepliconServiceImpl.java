@@ -68,10 +68,7 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
 
     @Override
     public List<RepliconEntity> getByHierarchy(@NonNull HierarchyEntity hierarchy) {
-        LOGGER.debug("Calling with '"+hierarchy.getOrganism()+"'");
-        List<RepliconEntity> entities = repliconManager.getAllByHierarchyEntity(hierarchy);
-        LOGGER.debug("Matched '"+entities.size()+"' replicons");
-        return entities;
+        return repliconManager.getAllByHierarchyEntity(hierarchy);
     }
 
     @Override

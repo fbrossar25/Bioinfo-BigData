@@ -12,12 +12,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public final class CommonUtils {
     private CommonUtils(){}
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
+    private static final SimpleDateFormat DATE_TO_INT_FORMATTER = new SimpleDateFormat("yyyyMMddHHmmss");
+
     public static final Path DATAS_PATH = Paths.get("Datas").toAbsolutePath();
     public static final Path RESULTS_PATH = Paths.get("Results").toAbsolutePath();
 
@@ -102,5 +106,9 @@ public final class CommonUtils {
 
     public static URL getResourceURL(@NonNull String resourceName) throws IOException {
         return new ClassPathResource(resourceName).getURL();
+    }
+
+    public static String dateToInt(Date date) {
+        return DATE_TO_INT_FORMATTER.format(date);
     }
 }

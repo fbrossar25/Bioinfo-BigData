@@ -14,6 +14,7 @@ import org.springframework.lang.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -22,7 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private static Logger LOGGER = LogManager.getLogger();
 
-    public static final AtomicInteger fileCount = new AtomicInteger(0);
+    private static final AtomicInteger fileCount = new AtomicInteger(0);
+    private static final String SESSION_ID = CommonUtils.dateToInt(new Date());
 
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
@@ -31,6 +33,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private final String repliconsIds;
     private final Retryer<File> retryer;
     private final RepliconService repliconService;
+    private final String fileName = "replicons-"+SESSION_ID+"-"+fileCount.getAndIncrement()+".gb";
 
     public DownloadRepliconTask(@NonNull List<RepliconEntity> replicons, @NonNull RepliconService repliconService) {
         this.replicons = replicons;
@@ -45,7 +48,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     }
 
     private File download() throws IOException{
-        File f = CommonUtils.DATAS_PATH.resolve("replicons-"+fileCount.getAndIncrement()+".gb").toFile();
+        File f = CommonUtils.DATAS_PATH.resolve(fileName).toFile();
         LOGGER.debug("Téléchargement des replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
         try(InputStream in = GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()) {
             FileUtils.copyToFile(in, f);
