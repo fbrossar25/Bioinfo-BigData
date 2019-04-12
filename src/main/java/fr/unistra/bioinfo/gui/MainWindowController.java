@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
 import java.io.File;
+import java.util.List;
 
 @Controller
 public class MainWindowController {
@@ -35,8 +36,6 @@ public class MainWindowController {
 
     private static MainWindowController singleton;
     private static boolean init = true;
-    private static long nbReplicon = 0;
-    private static long countReplicon = 0;
 
     private final HierarchyService hierarchyService;
     private final RepliconService repliconService;
@@ -164,9 +163,17 @@ public class MainWindowController {
                         GenbankParser.parseGenbankFile(gb);
                     }
                 }
+                LOGGER.info("Début de la génération des excels...");
+                List<HierarchyEntity> hierarchies = hierarchyService.getAll();
+                int current = 0, count = hierarchies.size();
                 for(HierarchyEntity entity : hierarchyService.getAll()){
                     new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
+                    current++;
+                    if(current % 100 == 0){
+                        LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", current, count);
+                    }
                 }
+                LOGGER.info("Génération des excels terminés");
 //                OrganismExcelGenerator o;
 //                Page<HierarchyEntity> page = hierarchyService.getAll(0, Sort.Direction.ASC, HierarchyMembers.ORGANISM);
 //                while(page.hasNext()){
@@ -177,7 +184,6 @@ public class MainWindowController {
 //                    }
 //                    page = hierarchyService.getAll(page.nextPageable());
 //                }
-                LOGGER.info("countReplicon = "+ this.countReplicon);
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
@@ -218,8 +224,6 @@ public class MainWindowController {
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
             LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
-            nbReplicon = repliconService.count();
-            countReplicon = 0;
 
             treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
@@ -242,10 +246,6 @@ public class MainWindowController {
     public ProgressBar getProgressBarTreeView() { return progressBarTreeView;}
 
     public Label getTreeViewLabel(){ return treeViewLabel; }
-
-    public static void increaseCounterReplicon(){
-        countReplicon++;
-    }
 
 
     public static MainWindowController get(){

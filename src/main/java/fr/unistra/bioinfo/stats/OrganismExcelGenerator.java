@@ -258,13 +258,13 @@ public class OrganismExcelGenerator {
             return false;
         }
 
-        for (RepliconEntity r : this.repliconService.getByHierarchy(this.organism)) {
+        List<RepliconEntity> replicons = this.repliconService.getByHierarchy(this.organism);
+        for (RepliconEntity r : replicons) {
             r.setComputed(true);
-            this.repliconService.save(r);
         }
+        this.repliconService.saveAll(replicons);
 
-
-
+        EventUtils.sendEvent( EventUtils.EventType.STATS_END);
         return true;
     }
 }

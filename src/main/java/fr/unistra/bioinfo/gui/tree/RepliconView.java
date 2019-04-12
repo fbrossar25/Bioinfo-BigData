@@ -33,13 +33,43 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         NonBlockingAddNode(TreeItem<RepliconViewNode> son, TreeItem<RepliconViewNode> father){
             this.son = son;
             this.father = father;
-            ImageView iv1 = new ImageView();
-            iv1.setImage(this.son.getValue().getState().getImage());
-            this.son.setGraphic(iv1);
+        }
+
+        private void updateNodeState(TreeItem<RepliconViewNode> node){
+            TreeItem<RepliconViewNode> parent = node;
+            do{
+                RepliconViewNode.RepliconViewNodeState nextState = RepliconViewNode.RepliconViewNodeState.OK;
+                for(TreeItem<RepliconViewNode> child : parent.getChildren()){
+                    if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.INTERMEDIARY){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                    }else if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.NOK){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                        break;
+                    }
+                }
+                parent.getValue().setState(nextState);
+                ImageView iv1 = new ImageView();
+                iv1.setImage(parent.getValue().getState().getImage());
+                parent.setGraphic(iv1);
+            }while((parent = parent.getParent()) != null);
         }
 
         @Override
         public void run() {
+            if(this.son.getValue().getType() == RepliconViewNode.RepliconViewNodeType.REPLICON){
+                RepliconEntity r = this.son.getValue().getReplicon();
+                if(r.isComputed()){
+                    this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.OK);
+                }else if(!r.isDownloaded() && !r.isParsed()){
+                    this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.NOK);
+                }else{
+                    this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.INTERMEDIARY);
+                }
+            }
+            updateNodeState(this.father);
+            ImageView iv1 = new ImageView();
+            iv1.setImage(this.son.getValue().getState().getImage());
+            this.son.setGraphic(iv1);
             father.getChildren().add(son);
         }
     }
@@ -137,7 +167,6 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @return L'item du replicon créé ou existant. Retourne null si le replicon n'as pas de hierarchy
      */
     public synchronized TreeItem<RepliconViewNode> addReplicon(@NonNull RepliconEntity replicon){
-        MainWindowController.increaseCounterReplicon();
         TreeItem<RepliconViewNode> node = getRepliconNode(replicon);
         if(node != null){
             return node;
