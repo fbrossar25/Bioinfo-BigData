@@ -1,7 +1,6 @@
 package fr.unistra.bioinfo.parsing;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -21,7 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -75,6 +77,10 @@ public final class GenbankParser {
                         repliconEntity = createReplicon(repliconFile, seq.getAccession().getID());
                     }
                 }
+                if(repliconEntity == null){
+                    LOGGER.warn("replicons '{}' introuvable", seq.getAccession().getID());
+                    continue;
+                }
                 repliconEntity.setDownloaded(true);
                 repliconEntity.setComputed(false);
                 repliconEntity.setParsed(false);
@@ -83,8 +89,14 @@ public final class GenbankParser {
                     repliconService.save(repliconEntity);
                 }
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
-                    String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
-                    cdsList.add(cdsSeq);
+                    try{
+                        String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
+                        if(StringUtils.isNotBlank(cdsSeq)){
+                            cdsList.add(cdsSeq);
+                        }
+                    }catch(NullPointerException e){
+                        LOGGER.error("Erreur lors de la lecture du cds '{}' du replicon '{}'", feature.getLocations(), seq.getAccession().getID(), e);
+                    }
                 }
                 FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> source = seq.getFeaturesByType("source").get(0);
                 for (Map.Entry<String, List<Qualifier>> entry : source.getQualifiers().entrySet()) {

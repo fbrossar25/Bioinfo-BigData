@@ -15,6 +15,8 @@ import org.biojava.nbio.core.sequence.features.DBReferenceInfo;
 import org.biojava.nbio.core.sequence.io.GenbankSequenceParser;
 import org.biojava.nbio.core.sequence.io.template.SequenceCreatorInterface;
 import org.biojava.nbio.core.sequence.io.template.SequenceHeaderParserInterface;
+import org.biojava.nbio.core.sequence.location.InsdcLocations;
+import org.biojava.nbio.core.sequence.location.template.Location;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +142,7 @@ public class CustomGenbankReader {
                     continue;
                 }
             }catch(CompoundNotFoundException e){
-                logger.warn("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide. {}", file.getAbsolutePath(), repliconName, e.getMessage());
+                logger.warn("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide. {}", file.getName(), repliconName, e.getMessage());
                 continue;
             }
             genbankParser.getSequenceHeaderParser().parseHeader(genbankParser.getHeader(), sequence);
@@ -149,10 +151,18 @@ public class CustomGenbankReader {
             for (String k: genbankParser.getFeatures().keySet()){
                 for (AbstractFeature f: genbankParser.getFeatures(k)){
                     //f.getLocations().setSequence(sequence);  // can't set proper sequence source to features. It is actually needed? Don't think so...
-                    sequence.addFeature(f);
+                    if("CDS".equals(f.getType())){
+                        if(checkCDSFeature(f, seqString.length(), repliconName)){
+                            sequence.addFeature(f);
+                        }
+                    }else{
+                        sequence.addFeature(f);
+                    }
                 }
             }
-
+            if(sequence.getFeaturesByType("CDS").isEmpty()){
+                logger.warn("Aucun CDS valide pour le replicon '{}' dans le fichier '{}'", repliconName, file.getName());
+            }
             // add taxonomy ID to new sequence
             ArrayList<DBReferenceInfo> dbQualifier = genbankParser.getDatabaseReferences().get("db_xref");
             if (dbQualifier != null){
@@ -177,7 +187,9 @@ public class CustomGenbankReader {
                 logger.warn("Le replicon '{}' n'as pas pu être récupéré", replicon);
             }
         }
-        logger.warn("Les replicons suivants sont invalides : '{}'", repliconsNames);
+        if(!repliconsNames.isEmpty()){
+            logger.warn("Les replicons suivants sont invalides dans le fichier '{}' : '{}'", file.getName(), repliconsNames);
+        }
         repliconService.saveAll(replicons);
 
         if (max < 0) {
@@ -185,6 +197,35 @@ public class CustomGenbankReader {
         }
 
         return sequences;
+    }
+
+    private boolean checkCDSFeature(AbstractFeature f, int segLength, String repliconName){
+        //Élimination des CDS invalides, conservation des CDS valides
+        List<Location> checkedLocations = new ArrayList<>();
+        if(!f.getLocations().getSubLocations().isEmpty()){
+            //Si le CDS est composé
+            for(Location subLocation : f.getLocations().getSubLocations()){
+                if(subLocation.getStart().getPosition() >= 0 && subLocation.getEnd().getPosition() < segLength){
+                    checkedLocations.add(subLocation);
+                }else{
+                    logger.debug("CDS invalides : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), subLocation, segLength);
+                }
+            }
+        }else if(f.getLocations().getStart().getPosition() >= 0 && f.getLocations().getEnd().getPosition() < segLength){
+            //Si le CDS n'est pas composé
+            checkedLocations.add(f.getLocations());
+        }else{
+            //Si le CDS non composé est invalide
+            logger.debug("CDS invalide : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), f.getLocations(), segLength);
+        }
+
+        if(checkedLocations.isEmpty()){
+            return false;
+        }else{
+            //On garde les CDS valides
+            f.setLocation(new InsdcLocations.GroupLocation(checkedLocations));
+            return true;
+        }
     }
 
     /**

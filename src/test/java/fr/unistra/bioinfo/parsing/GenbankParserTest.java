@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.parsing;
 import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
+import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -231,6 +232,22 @@ class GenbankParserTest {
         long end = System.currentTimeMillis();
         LOGGER.info("Le parsing de 10000 fichier à pris "+(end - begin)+"ms");
         checkRepliconBenchmark();
+    }
+
+    @Test
+    @Disabled("Tests à des fins de debuggage")
+    void parseDatas(){
+        GenbankUtils.updateNCDatabase(100);
+        File dataDir = CommonUtils.DATAS_PATH.toFile();
+        assertNotNull(dataDir);
+        assertTrue(dataDir.exists() && dataDir.isDirectory());
+        File[] files = dataDir.listFiles();
+        assertNotNull(files, "Pas de fichier trouvés");
+        assertTrue(files.length > 0, "0 Fichiers trouvés");
+        for(File f : files){
+            GenbankParser.parseGenbankFile(f);
+        }
+        assertTrue(repliconService.count() > 0);
     }
 
     @Test
