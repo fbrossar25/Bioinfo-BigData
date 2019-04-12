@@ -327,7 +327,7 @@ public class GenbankUtils {
         repliconService.deleteWhereNameIsNotIn(repliconsNames);
         hierarchyService.deleteHierarchyWithoutReplicons();
         CommonUtils.enableHibernateLogging(true);
-        EventUtils.sendEvent(EventUtils.EventType.METADATA_END, null);
+        EventUtils.sendEvent(EventUtils.EventType.METADATA_END);
     }
 
     public static boolean createAllOrganismsDirectories(Path rootDirectory){

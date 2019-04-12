@@ -160,7 +160,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param kingdom Le nom du royaume
      * @return L'item du royaume correspondant ou null
      */
-    private TreeItem<RepliconViewNode> getKingdomNode(String kingdom){
+    public TreeItem<RepliconViewNode> getKingdomNode(String kingdom){
         return kingdoms.get(kingdom);
     }
 
@@ -169,7 +169,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param group Le nom du groupe
      * @return L'item du groupe correspondant ou null
      */
-    private TreeItem<RepliconViewNode> getGroupNode(String group){
+    public TreeItem<RepliconViewNode> getGroupNode(String group){
         return groups.get(group);
     }
 
@@ -178,7 +178,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param subgroup Le nom du sous-groupe
      * @return L'item du sous-groupe correspondant ou null
      */
-    private TreeItem<RepliconViewNode> getSubgroupNode(String subgroup){
+    public TreeItem<RepliconViewNode> getSubgroupNode(String subgroup){
         return subgroups.get(subgroup);
     }
 
@@ -187,7 +187,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param organism nom de l'organisme
      * @return L'item de l'organisme correspondant ou null
      */
-    private TreeItem<RepliconViewNode> getOrganismNode(String organism){
+    public TreeItem<RepliconViewNode> getOrganismNode(String organism){
         return organisms.get(organism);
     }
 

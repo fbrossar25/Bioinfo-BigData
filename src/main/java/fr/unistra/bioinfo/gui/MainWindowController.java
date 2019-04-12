@@ -66,17 +66,51 @@ public class MainWindowController {
     });
 
     private final EventUtils.EventListener STATS_END_LISTENER = (event -> {
-        if(event.getType() == EventUtils.EventType.STATS_END){
-            RepliconEntity r = event.getReplicon();
-            try {
-                TreeItem<RepliconViewNode> replicon = treeView.getRepliconNode(r);
-                replicon.getValue().setState(RepliconViewNode.RepliconViewNodeState.OK);
-                Node n = replicon.getGraphic();
-                if(n instanceof ImageView){
-                    ((ImageView)n).setImage(replicon.getValue().getState().getImage());
+        RepliconEntity r = event.getReplicon();
+        String entityName = event.getEntityName();
+        TreeItem<RepliconViewNode> replicon = null;
+        RepliconViewNode.RepliconViewNodeState nextState = null;
+        switch(event.getType()){
+            case PARSING_BEGIN:
+                break;
+            case STATS_END:
+                replicon = treeView.getRoot();
+                break;
+            case STATS_END_REPLICON:
+                replicon = treeView.getRepliconNode(r);
+                nextState = RepliconViewNode.RepliconViewNodeState.OK;
+                break;
+            case STATS_END_ORGANISM:
+                replicon = treeView.getOrganismNode(entityName);
+                nextState = RepliconViewNode.RepliconViewNodeState.OK;
+                break;
+            case STATS_END_SUBGROUP:
+                replicon = treeView.getSubgroupNode(entityName);
+                break;
+            case STATS_END_GROUP:
+                replicon = treeView.getGroupNode(entityName);
+                break;
+            case STATS_END_KINGDOM:
+                replicon = treeView.getKingdomNode(entityName);
+                break;
+            default:
+        }
+        if(replicon != null){
+            if(nextState == null){
+                nextState = RepliconViewNode.RepliconViewNodeState.OK;
+                for(TreeItem<RepliconViewNode> son : replicon.getChildren()){
+                    if(son.getValue().getState() == RepliconViewNode.RepliconViewNodeState.INTERMEDIARY){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                    }else if(son.getValue().getState() == RepliconViewNode.RepliconViewNodeState.NOK){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                        break;
+                    }
                 }
-            }catch(NullPointerException e){
-                //On ignore les réplicons qui ne sont pas dans l'arbre/défectueux
+            }
+            replicon.getValue().setState(nextState);
+            Node n = replicon.getGraphic();
+            if(n instanceof ImageView){
+                ((ImageView)n).setImage(replicon.getValue().getState().getImage());
             }
         }
     });
@@ -178,15 +212,14 @@ public class MainWindowController {
      * Le bouton 'démarrer' est désactiver pendant cette opération
      */
     private void updateFullTreeView(){
-        //TODO afficher une petite popup pour indiquer la progression du chargement
         btnDemarrer.setDisable(true);
         treeView.setDisable(true);
 
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
             LOGGER.info("Mise à jour de l'arbre des replicons ({} entrées), veuillez patienter...", repliconService.count());
-            this.nbReplicon = repliconService.count();
-            this.countReplicon = 0;
+            nbReplicon = repliconService.count();
+            countReplicon = 0;
 
             treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));

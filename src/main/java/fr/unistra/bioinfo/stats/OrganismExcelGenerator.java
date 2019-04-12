@@ -106,9 +106,9 @@ public class OrganismExcelGenerator {
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.ORGANISM));
         for(RepliconEntity r : replicons){
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END,r);
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
         }
-
+        EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
         return true;
     }
 
@@ -154,6 +154,8 @@ public class OrganismExcelGenerator {
 
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.SUB_GROUP));
+
+        EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
         return true;
     }
 
@@ -183,6 +185,7 @@ public class OrganismExcelGenerator {
             }
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
         }catch(IOException e){
             LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
         }
@@ -215,6 +218,8 @@ public class OrganismExcelGenerator {
             }
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
+
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
         }catch(IOException e){
             LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
         }

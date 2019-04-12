@@ -21,8 +21,18 @@ public final class EventUtils {
         PARSING_BEGIN,
         /** Parsing d'un fichier terminé */
         PARSING_END,
-        /** Génération des statistiques pour un replicon terminée */
+        /** Génération de toutes les statistiques est terminée */
         STATS_END,
+        /** Génération des statistiques pour un replicon est terminée */
+        STATS_END_REPLICON,
+        /** Génération des statistiques pour un organism est terminée */
+        STATS_END_ORGANISM,
+        /** Génération des statistiques pour un subgroup terminée */
+        STATS_END_SUBGROUP,
+        /** Génération des statistiques pour un group terminée */
+        STATS_END_GROUP,
+        /** Génération des statistiques pour un kingdom terminée */
+        STATS_END_KINGDOM,
         /** Téléchargement de toutes les méta-données terminés */
         METADATA_END
     }
@@ -35,10 +45,21 @@ public final class EventUtils {
         private EventType type;
         /** Le replicon concerné par l'évenement */
         private RepliconEntity replicon;
+        /** L'entité concernée par l'évenement */
+        private String entityName;
+
+        Event(@NonNull EventType type){
+            this.type = type;
+        }
 
         Event(@NonNull EventType type, RepliconEntity replicon){
             this.type = type;
             this.replicon = replicon;
+        }
+
+        Event(@NonNull EventType type, String entityName){
+            this.type = type;
+            this.entityName = entityName;
         }
 
         /** Type de l'évenement. Non null. */
@@ -50,6 +71,11 @@ public final class EventUtils {
         public RepliconEntity getReplicon(){
             return replicon;
         }
+
+        /** Entité concernée par l'événement. Peut être null. */
+        public String getEntityName(){
+            return entityName;
+        }
     }
 
     public interface EventListener{
@@ -60,6 +86,24 @@ public final class EventUtils {
      * @see EventUtils#subscribe(EventListener) */
     public static void sendEvent(EventType type, RepliconEntity replicon){
         Event event = new Event(type, replicon);
+        for(EventListener listener : listeners){
+            listener.onEvent(event);
+        }
+    }
+
+    /** Envoie un nouvel événement à tous les listener inscrits via la méthode subscribe.
+     * @see EventUtils#subscribe(EventListener) */
+    public static void sendEvent(EventType type, String entityName){
+        Event event = new Event(type, entityName);
+        for(EventListener listener : listeners){
+            listener.onEvent(event);
+        }
+    }
+
+    /** Envoie un nouvel événement à tous les listener inscrits via la méthode subscribe.
+     * @see EventUtils#subscribe(EventListener) */
+    public static void sendEvent(EventType type){
+        Event event = new Event(type);
         for(EventListener listener : listeners){
             listener.onEvent(event);
         }
