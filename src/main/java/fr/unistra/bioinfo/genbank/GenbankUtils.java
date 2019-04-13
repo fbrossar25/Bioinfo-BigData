@@ -77,7 +77,10 @@ public class GenbankUtils {
         try {
             LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
-            MainWindowController.get().setNumberOfFiles(tasks.size());
+            MainWindowController controller = MainWindowController.get();
+            if(controller != null){
+                controller.setNumberOfFiles(tasks.size());
+            }
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {

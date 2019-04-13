@@ -230,21 +230,22 @@ public class ExcelTest {
     @Test
     void test_path_generator()
     {
+        String replace = "\\".equals(File.separator) ? "\\\\" : File.separator;
         assertEquals(
                 OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.ORGANISM),
-                "test_results/Eukaryota/Animals/Mammals/Felis catus.xlsx"
+                "test_results/Eukaryota/Animals/Mammals/Felis catus.xlsx".replaceAll("/", replace)
         );
         assertEquals(
                 OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.SUB_GROUP),
-                "test_results/Eukaryota/Animals/Mammals.xlsx"
+                "test_results/Eukaryota/Animals/Mammals.xlsx".replaceAll("/", replace)
         );
         assertEquals(
                 OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.GROUP),
-                "test_results/Eukaryota/Animals.xlsx"
+                "test_results/Eukaryota/Animals.xlsx".replaceAll("/", replace)
         );
         assertEquals(
                 OrganismExcelGenerator.generate_path(this.orga, TEST_PATH, GeneralInformationSheet.LEVEL.KINGDOM),
-                "test_results/Eukaryota.xlsx"
+                "test_results/Eukaryota.xlsx".replaceAll("/", replace)
         );
     }
 
@@ -252,7 +253,7 @@ public class ExcelTest {
     void test_excel_organism_write()
     {
         OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
-        o.generate_excel_organism();
+        o.generate_excel_organism(repliconService.getByHierarchy(this.orga));
     }
 
     @Test
