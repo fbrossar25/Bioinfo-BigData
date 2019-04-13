@@ -71,7 +71,7 @@ public class OrganismExcelGenerator {
                 path += File.separator + o.getGroup() + ".xlsx";
                 break;
             case SUB_GROUP:
-                path += o.getKingdom();
+                path += o.getKingdom(); 
                 path += File.separator + o.getGroup();
                 path += File.separator + o.getSubgroup() + ".xlsx";
                 break;
