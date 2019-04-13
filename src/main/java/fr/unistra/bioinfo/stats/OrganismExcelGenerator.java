@@ -51,7 +51,7 @@ public class OrganismExcelGenerator {
     }
 
     public static String generate_path(HierarchyEntity o, String base_path, GeneralInformationSheet.LEVEL level) {
-        String path = base_path + "/";
+        String path = base_path + File.separator;
 
         switch (level) {
             case KINGDOM:
@@ -59,18 +59,18 @@ public class OrganismExcelGenerator {
                 break;
             case GROUP:
                 path += o.getKingdom();
-                path += "/" + o.getGroup() + ".xlsx";
+                path += File.separator + o.getGroup() + ".xlsx";
                 break;
             case SUB_GROUP:
-                path += o.getKingdom();
-                path += "/" + o.getGroup();
-                path += "/" + o.getSubgroup() + ".xlsx";
+                path += o.getKingdom(); 
+                path += File.separator + o.getGroup();
+                path += File.separator + o.getSubgroup() + ".xlsx";
                 break;
             case ORGANISM:
                 path += o.getKingdom();
-                path += "/" + o.getGroup();
-                path += "/" + o.getSubgroup();
-                path += "/" + o.getOrganism() + ".xlsx";
+                path += File.separator + o.getGroup();
+                path += File.separator + o.getSubgroup();
+                path += File.separator + o.getOrganism() + ".xlsx";
                 break;
         }
 
