@@ -77,10 +77,6 @@ public class GenbankUtils {
         try {
             LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
-            MainWindowController controller = MainWindowController.get();
-            if(controller != null){
-                controller.setNumberOfFiles(tasks.size());
-            }
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
@@ -244,7 +240,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(10);
+        GenbankUtils.updateNCDatabase(5);
     }
 
     /**
@@ -301,12 +297,10 @@ public class GenbankUtils {
             throw new GenbankException("Erreur lors de la récupération des données de GenBank", e);
         }
         JsonNode contentNode = dataNode.get("content");
-        //int organismCount = 0, numberOfOrganisms = dataNode.get("totalCount").intValue();
         int organismCount = 0, numberOfOrganisms = dataNode.get("content").size();
         LOGGER.info("Traitement de {} organismes", numberOfOrganisms);
-        //12331 replicons à lors du développement
-        List<RepliconEntity> replicons = new ArrayList<>(13000);
-        List<String> repliconsNames = new ArrayList<>(13000);
+        List<RepliconEntity> replicons = new ArrayList<>(128);
+        List<String> repliconsNames = new ArrayList<>(128);
         for(JsonNode organismJson : contentNode) {
             replicons.addAll(jsonEntryToReplicon(organismJson));
             if(++organismCount % 100 == 0){
