@@ -84,6 +84,7 @@ public class MainWindowController {
                 this.getProgressBarTreeView().setProgress(0.0);
                 this.getTreeViewLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
             });
+            numberOfFiles.set(Integer.parseInt(event.getEntityName()));
         }
     });
 
