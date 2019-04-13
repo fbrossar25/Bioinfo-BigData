@@ -14,6 +14,7 @@ import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import fr.unistra.bioinfo.stats.OrganismExcelGenerator;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Controller;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainWindowController {
@@ -52,9 +54,9 @@ public class MainWindowController {
     @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
     @FXML private ProgressBar progressBar;
-    @FXML private ProgressBar progressBarTreeView;
+    @FXML private ProgressBar progressBarParsing;
     @FXML private Label downloadLabel;
-    @FXML private Label treeViewLabel;
+    @FXML private Label parsingLabel;
     @FXML private TextArea logs;
     @FXML private RepliconView treeView;
 
@@ -164,13 +166,20 @@ public class MainWindowController {
                 }
                 LOGGER.info("Début de la génération des excels...");
                 List<HierarchyEntity> hierarchies = hierarchyService.getAll();
-                int current = 0, count = hierarchies.size();
+                int count = hierarchies.size();
+                final AtomicInteger atomicCount = new AtomicInteger(0);
                 for(HierarchyEntity entity : hierarchyService.getAll()){
                     new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
-                    current++;
-                    if(current % 100 == 0){
-                        LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", current, count);
+                    atomicCount.incrementAndGet();
+                    if(atomicCount.get() % 100 == 0){
+                        LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", atomicCount.get(), count);
                     }
+                    Platform.runLater(() -> {
+
+                        this.getProgressBarTreeView().setProgress(atomicCount.get()/(double)count);
+                        this.getTreeViewLabel().setText(atomicCount.get() + "/" + count + " organismes traités (génération des excels)");
+
+                    });
                 }
                 LOGGER.info("Génération des excels terminés");
                 LOGGER.info("Mise à jour terminée");
@@ -232,9 +241,9 @@ public class MainWindowController {
         return downloadLabel;
     }
 
-    public ProgressBar getProgressBarTreeView() { return progressBarTreeView;}
+    public ProgressBar getProgressBarTreeView() { return progressBarParsing;}
 
-    public Label getTreeViewLabel(){ return treeViewLabel; }
+    public Label getTreeViewLabel(){ return parsingLabel; }
 
 
     public static MainWindowController get(){

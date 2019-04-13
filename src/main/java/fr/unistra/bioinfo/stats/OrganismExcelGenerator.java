@@ -86,10 +86,8 @@ public class OrganismExcelGenerator {
         return path;
     }
 
-    public boolean generate_excel_organism() {
+    public boolean generate_excel_organism(List<RepliconEntity> replicons) {
         XSSFWorkbook wb = new XSSFWorkbook();
-        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
-
 
         new GeneralInformationSheet(wb, this.organism, replicons).write_lines();
 
@@ -98,10 +96,8 @@ public class OrganismExcelGenerator {
         }
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.ORGANISM));
-        for(RepliconEntity r : replicons){
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
-        }
-        EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
+
+
         return true;
     }
 
@@ -148,7 +144,6 @@ public class OrganismExcelGenerator {
 
         write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.SUB_GROUP));
 
-        EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
         return true;
     }
 
@@ -178,7 +173,6 @@ public class OrganismExcelGenerator {
             }
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.GROUP));
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
         }catch(IOException e){
             LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
         }
@@ -212,7 +206,6 @@ public class OrganismExcelGenerator {
 
             write_workbook(wb, generate_path(this.organism, this.base_path, GeneralInformationSheet.LEVEL.KINGDOM));
 
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
         }catch(IOException e){
             LOGGER.error("Erreur lors de l'écriture de l'organisme '{}'", this.organism.getOrganism(), e);
         }
@@ -220,8 +213,13 @@ public class OrganismExcelGenerator {
     }
 
     public boolean generateExcel() {
-        if (this.generate_excel_organism()) {
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+        if (this.generate_excel_organism(replicons)) {
             LOGGER.warn("OK ORGA {}", this.organism.getOrganism());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
+            for(RepliconEntity r : replicons){
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
+            }
         } else {
             LOGGER.trace("FAIL ORGA");
             return false;
@@ -230,6 +228,7 @@ public class OrganismExcelGenerator {
 
         if (this.genetate_excel_sub_group()) {
             LOGGER.warn("OK SS GR {}", this.organism.getSubgroup());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getSubgroup());
         } else {
             LOGGER.trace("FAIL SS GR");
             return false;
@@ -238,6 +237,7 @@ public class OrganismExcelGenerator {
 
         if (this.genetate_excel_group()) {
             LOGGER.warn("OK GROUP {}", this.organism.getGroup());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getGroup());
         } else {
             LOGGER.trace("FAIL SS GROUP");
             return false;
@@ -246,12 +246,12 @@ public class OrganismExcelGenerator {
 
         if (this.generate_excel_kingdom()) {
             LOGGER.warn("OK KINGDOM {}", this.organism.getGroup());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getKingdom());
         } else {
             LOGGER.trace("FAIL KINGDOM");
             return false;
         }
 
-        List<RepliconEntity> replicons = this.repliconService.getByHierarchy(this.organism);
         for (RepliconEntity r : replicons) {
             r.setComputed(true);
         }
