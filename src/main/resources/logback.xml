@@ -6,6 +6,9 @@
         <encoder>
             <pattern>${log.pattern}</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
     <appender name="file" class="ch.qos.logback.core.FileAppender">
@@ -25,7 +28,7 @@
         </filter>
     </appender>
 
-    <logger name="fr.unistra.bioinfo" level="INFO"/>
+    <logger name="fr.unistra.bioinfo" level="DEBUG"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->
