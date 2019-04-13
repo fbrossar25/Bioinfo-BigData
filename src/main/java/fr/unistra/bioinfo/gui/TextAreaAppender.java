@@ -36,9 +36,15 @@ public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
             for(int i=overFlowLines; i<numberOfLines; i++){
                 buffer.append(lines[i]).append(System.lineSeparator());
             }
-            Platform.runLater(() -> textAera.setText(buffer.toString()));
+            Platform.runLater(() -> {
+                textAera.setText(buffer.toString());
+                textAera.selectPositionCaret(textAera.getLength());
+            });
         }else{
-            Platform.runLater(() -> textAera.appendText(s));
+            Platform.runLater(() -> {
+                textAera.appendText(s);
+                textAera.selectPositionCaret(textAera.getLength());
+            });
         }
         readLock.unlock();
     }
