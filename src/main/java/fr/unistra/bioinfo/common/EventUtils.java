@@ -13,10 +13,10 @@ public final class EventUtils {
 
     /** Type d'un évenement */
     public enum EventType{
-        /** Téléchargement d'un fichier replicon démarré */
+        /** Téléchargement de tous les fichier replicon démarré */
         DOWNLOAD_BEGIN,
         /** Téléchargemetn d'un fichier replicon terminé */
-        DOWNLOAD_END,
+        DOWNLOAD_REPLICON_END,
         /** Parsing d'un fichier démarré */
         PARSING_BEGIN,
         /** Parsing d'un fichier terminé */
@@ -34,8 +34,9 @@ public final class EventUtils {
         /** Génération des statistiques pour un kingdom terminée */
         STATS_END_KINGDOM,
         /** Téléchargement de toutes les méta-données terminés */
-        METADATA_END
-    }
+        METADATA_END,
+        /** Fin du téléchargement d'un fichier */
+        DOWNLOAD_FILE_END}
 
     /**
      * Décris un événement avec un type et pour un replicon

@@ -216,10 +216,11 @@ public class OrganismExcelGenerator {
         List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
         if (this.generate_excel_organism(replicons)) {
             LOGGER.warn("OK ORGA {}", this.organism.getOrganism());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
             for(RepliconEntity r : replicons){
                 EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
             }
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
+
         } else {
             LOGGER.trace("FAIL ORGA");
             return false;
@@ -228,7 +229,7 @@ public class OrganismExcelGenerator {
 
         if (this.genetate_excel_sub_group()) {
             LOGGER.warn("OK SS GR {}", this.organism.getSubgroup());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getSubgroup());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
         } else {
             LOGGER.trace("FAIL SS GR");
             return false;
@@ -237,7 +238,7 @@ public class OrganismExcelGenerator {
 
         if (this.genetate_excel_group()) {
             LOGGER.warn("OK GROUP {}", this.organism.getGroup());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getGroup());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
         } else {
             LOGGER.trace("FAIL SS GROUP");
             return false;
@@ -246,7 +247,7 @@ public class OrganismExcelGenerator {
 
         if (this.generate_excel_kingdom()) {
             LOGGER.warn("OK KINGDOM {}", this.organism.getGroup());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getKingdom());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
         } else {
             LOGGER.trace("FAIL KINGDOM");
             return false;

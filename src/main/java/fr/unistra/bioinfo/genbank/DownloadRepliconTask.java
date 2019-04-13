@@ -59,8 +59,9 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
                 synchronized(synchronizedObject){
                     repliconService.save(r);
                 }
-                EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_END, r);
+                EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_REPLICON_END, r);
             }
+            EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);
             LOGGER.debug("Téléchargement des replicons '{}' -> '{}' terminé",repliconsIds, f.getPath());
         }catch (IOException e){
             for(RepliconEntity r : replicons){

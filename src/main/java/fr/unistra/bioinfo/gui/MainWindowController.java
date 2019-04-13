@@ -66,6 +66,28 @@ public class MainWindowController {
         }
     });
 
+    private AtomicInteger countDownload = new AtomicInteger(0);
+    private AtomicInteger numberOfFiles = new AtomicInteger(0);
+
+    private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END){
+            Platform.runLater(() -> {
+                this.getProgressBarTreeView().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
+                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+            });
+        }
+    });
+
+    private final EventUtils.EventListener GENBANK_DOWNLOAD_START = (event -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_BEGIN){
+            Platform.runLater(() -> {
+                this.getProgressBarTreeView().setProgress(0.0);
+                this.getTreeViewLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
+            });
+        }
+    });
+
+
     private final EventUtils.EventListener STATS_END_LISTENER = (event -> {
         RepliconEntity r = event.getReplicon();
         String entityName = event.getEntityName();
@@ -145,6 +167,8 @@ public class MainWindowController {
         }
         EventUtils.subscribe(GENBANK_METADATA_END_LISTENER);
         EventUtils.subscribe(STATS_END_LISTENER);
+        EventUtils.subscribe(GENBANK_DOWNLOAD_END);
+        EventUtils.subscribe(GENBANK_DOWNLOAD_START);
         updateFullTreeView();
     }
 
@@ -167,6 +191,10 @@ public class MainWindowController {
                 LOGGER.info("Début de la génération des excels...");
                 List<HierarchyEntity> hierarchies = hierarchyService.getAll();
                 int count = hierarchies.size();
+                Platform.runLater(() -> {
+                    this.getProgressBarTreeView().setProgress(0.0);
+                    this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
+                });
                 final AtomicInteger atomicCount = new AtomicInteger(0);
                 for(HierarchyEntity entity : hierarchyService.getAll()){
                     new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
@@ -248,5 +276,9 @@ public class MainWindowController {
 
     public static MainWindowController get(){
         return singleton;
+    }
+
+    public void setNumberOfFiles(int size) {
+        this.numberOfFiles.set(size);
     }
 }

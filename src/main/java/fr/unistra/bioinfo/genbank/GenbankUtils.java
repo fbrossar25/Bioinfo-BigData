@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -52,10 +53,14 @@ public class GenbankUtils {
     private static final Integer REQUEST_LIMIT = 3;
     private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
+
+    private static AtomicInteger countDowload = new AtomicInteger(0);
     public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
     private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
-        if(event.getType() == EventUtils.EventType.DOWNLOAD_END && event.getReplicon() != null){
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_REPLICON_END && event.getReplicon() != null){
             repliconService.save(event.getReplicon());
+
+
         }
     };
 
@@ -71,6 +76,8 @@ public class GenbankUtils {
         splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
         try {
             LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
+            EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
+            MainWindowController.get().setNumberOfFiles(tasks.size());
             final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
             if(callback != null){
                 new Thread(() -> {
