@@ -12,6 +12,7 @@ import fr.unistra.bioinfo.common.RegexUtils;
 import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.application.Platform;
@@ -34,10 +35,13 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class GenbankUtils {
@@ -53,8 +57,9 @@ public class GenbankUtils {
     private static final Integer REQUEST_LIMIT = 3;
     private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
+    /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
+    private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
 
-    private static AtomicInteger countDowload = new AtomicInteger(0);
     public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
     private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_REPLICON_END && event.getReplicon() != null){
@@ -269,17 +274,21 @@ public class GenbankUtils {
         return genbankJSON.get("ngout").get("data");
     }
 
-    private static List<RepliconEntity> jsonEntryToReplicon(JsonNode organismJson){
-        String organism = organismJson.get("organism").textValue();
+    private static HierarchyEntity getOrCreateHierarchyFromJsonNode(JsonNode json){
+        String organism = json.get("organism").textValue();
         HierarchyEntity h = hierarchyService.getByOrganism(organism);
         if(h == null){
-            String kingdom = organismJson.get("kingdom").textValue();
-            String group = organismJson.get("group").textValue();
-            String subgroup = organismJson.get("subgroup").textValue();
+            String kingdom = json.get("kingdom").textValue();
+            String group = json.get("group").textValue();
+            String subgroup = json.get("subgroup").textValue();
             h = new HierarchyEntity(kingdom, group, subgroup, organism);
             hierarchyService.save(h);
         }
-        return extractRepliconsFromJSONEntry(organismJson.get("replicons").textValue(), h);
+        return h;
+    }
+
+    private static List<RepliconEntity> jsonEntryToReplicon(JsonNode organismJson){
+        return extractRepliconsFromJSONEntry(organismJson.get("replicons").textValue(), getOrCreateHierarchyFromJsonNode(organismJson));
     }
 
     /**
@@ -369,6 +378,7 @@ public class GenbankUtils {
                 RepliconEntity replicon = repliconService.getByName(name);
                 if(replicon == null) {
                     replicon = new RepliconEntity(name, version, hierarchy);
+                    replicon.setType(getTypeFromRepliconJsonEntry(value));
                     LOGGER.trace("Replicon '{}' ajouté en base", replicon);
                 }else{
                     //Mise à jour du replicon
@@ -384,6 +394,58 @@ public class GenbankUtils {
             }
         }
         return replicons;
+    }
+
+    public static RepliconType getRepliconTypeFromRepliconName(String name) {
+        String repliconsList = getRepliconsListFromName(name);
+        if(StringUtils.isNotBlank(repliconsList)){
+            String[] repliconsJSONValues = repliconsList.split(";");
+            for(String s : repliconsJSONValues){
+                if(s.contains(name)){
+                    return getTypeFromRepliconJsonEntry(s);
+                }
+            }
+        }else{
+            LOGGER.warn("La récupération du type du replicon '{}' à échouée", name);
+        }
+        return RepliconType.DNA;
+    }
+
+    private static String getRepliconsListFromName(String name) {
+        try(BufferedReader reader = readRequest(
+                buildNgramURL(
+                        Reign.ALL,
+                        "replicons like \"*"+name+"*\"",
+                        1,
+                        "replicons"))){
+            JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
+            JsonNode content = json.get("ngout").get("data").get("content");
+            if(content.isArray() && content.size() == 1 && content.get(0).has("replicons")){
+                return content.get(0).get("replicons").textValue();
+            }
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de la récupération des informations du replicon '{}'", name, e);
+        }
+        return null;
+    }
+
+    private static RepliconType getTypeFromRepliconJsonEntry(String value) {
+        Matcher m = REPLICON_JSON_ENTRY_PATTERN.matcher(value);
+        if(m.matches()){
+            String type = m.group(1);
+            if(type.contains("chromosome")){
+                return RepliconType.CHROMOSOME;
+            }else if(type.contains("mitochondrion")){
+                return RepliconType.MITOCHONDRION;
+            }else if(type.contains("plast")){
+                return RepliconType.PLAST;
+            }else if(type.contains("plasmid")){
+                return RepliconType.PLASMID;
+            }else if(type.contains("linkage")){
+                return RepliconType.LINKAGE;
+            }
+        }
+        return RepliconType.DNA;
     }
 
     /**
@@ -488,15 +550,29 @@ public class GenbankUtils {
                 JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
                 JsonNode content = json.get("ngout").get("data").get("content");
                 if(content.isArray() && content.size() == 1){
-                    JsonNode jsonHierarchy = content.get(0);
-                    entity = new HierarchyEntity();
-                    entity.setKingdom(jsonHierarchy.get("kingdom").textValue());
-                    entity.setGroup(jsonHierarchy.get("group").textValue());
-                    entity.setSubgroup(jsonHierarchy.get("subgroup").textValue());
-                    entity.setOrganism(jsonHierarchy.get("organism").textValue());
+                    entity = getOrCreateHierarchyFromJsonNode(content.get(0));
                 }
         }catch(IOException e){
             LOGGER.error("Erreur lors de la récupération des informations de l'organisme '{}'", organism, e);
+        }
+        return entity;
+    }
+
+    public static HierarchyEntity getHierarchyInfoByRepliconName(String repliconName) {
+        HierarchyEntity entity = null;
+        try(BufferedReader reader = readRequest(
+                buildNgramURL(
+                        Reign.ALL,
+                        "replicons like \"*"+repliconName+"*\"",
+                        1,
+                        "organism", "kingdom", "group", "subgroup"))){
+            JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
+            JsonNode content = json.get("ngout").get("data").get("content");
+            if(content.isArray() && content.size() == 1){
+                entity = getOrCreateHierarchyFromJsonNode(content.get(0));
+            }
+        }catch(IOException e){
+            LOGGER.error("Erreur lors de la récupération des informations du replicon '{}'", repliconName, e);
         }
         return entity;
     }

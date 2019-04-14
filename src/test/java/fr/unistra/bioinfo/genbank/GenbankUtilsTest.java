@@ -4,6 +4,7 @@ import fr.unistra.bioinfo.Main;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.configuration.StaticInitializer;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.collections4.CollectionUtils;
@@ -207,6 +208,15 @@ class GenbankUtilsTest {
         }catch(URISyntaxException e){
             fail(e);
         }
+    }
+
+    @Test
+    void getRepliconTypeFromRepliconNameTest(){
+        assertEquals(RepliconType.MITOCHONDRION, GenbankUtils.getRepliconTypeFromRepliconName("NC_001700"));
+        assertEquals(RepliconType.CHROMOSOME, GenbankUtils.getRepliconTypeFromRepliconName("NC_007112"));
+        assertEquals(RepliconType.PLASMID, GenbankUtils.getRepliconTypeFromRepliconName("NC_001889"));
+        assertEquals(RepliconType.LINKAGE, GenbankUtils.getRepliconTypeFromRepliconName("NC_037638"));
+        assertEquals(RepliconType.PLAST, GenbankUtils.getRepliconTypeFromRepliconName("NC_007758"));
     }
 
     @Test

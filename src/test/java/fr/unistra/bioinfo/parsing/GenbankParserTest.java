@@ -49,12 +49,18 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(locations = {"classpath:application-test.properties"})
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-0.gb");
-    private static final Path GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH = Paths.get(".","src", "test", "resources", "not-only-acgt.gb");
-    private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get(".","src", "test", "resources", "void.gb");
-    private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get(".","src", "test", "resources", "only-end-tags.gb");
-    private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
-    private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-batch-test.gb");
+    private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get("src", "test", "resources", "replicons-0.gb");
+    private static final Path GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH = Paths.get("src", "test", "resources", "not-only-acgt.gb");
+    private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get("src", "test", "resources", "void.gb");
+    private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get("src", "test", "resources", "only-end-tags.gb");
+    private static final Path GENBANK_TEST_FILE_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
+    private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get("src", "test", "resources", "replicons-batch-test.gb");
+
+    private static final String GENBANK_HUGE_FILE_REPLICON = "NC_011906";
+    private static final String GENBANK_HUGE_FILE_REPLICON_GB = "NC_011907";
+    private static final Path GENBANK_HUGE_FILE = Paths.get("src", "test", "resources", GENBANK_HUGE_FILE_REPLICON+".1.gb");
+    private static final Path GENBANK_HUGE_FILE_FASTA = Paths.get("src", "test", "resources", GENBANK_HUGE_FILE_REPLICON+".1.fasta");
+
     @Autowired
     private RepliconService repliconService;
     @Autowired
@@ -268,6 +274,26 @@ class GenbankParserTest {
         File dataDir = CommonUtils.DATAS_PATH.toFile();
         assertNotNull(dataDir);
         assertTrue(dataDir.exists() && dataDir.isDirectory());
+    }
+
+    @Test
+    void fastaParsingTest(){
+        GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE.toFile());
+        GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE_FASTA.toFile());
+        RepliconEntity fastaReplicon = repliconService.getByName(GENBANK_HUGE_FILE_REPLICON);
+        RepliconEntity gbReplicon = repliconService.getByName(GENBANK_HUGE_FILE_REPLICON_GB);
+        assertNotNull(fastaReplicon);
+        assertNotNull(gbReplicon);
+        assertEquals(RepliconType.CHROMOSOME, gbReplicon.getType());
+        assertEquals(RepliconType.CHROMOSOME, fastaReplicon.getType());
+        assertNotNull(fastaReplicon.getHierarchyEntity());
+        assertNotNull(gbReplicon.getHierarchyEntity());
+        assertNotNull(fastaReplicon.getCounters());
+        assertNotNull(gbReplicon.getCounters());
+        assertEquals(fastaReplicon.getValidsCDS(), gbReplicon.getValidsCDS());
+        assertEquals(fastaReplicon.getInvalidsCDS(), gbReplicon.getInvalidsCDS());
+        assertEquals(0, fastaReplicon.getHierarchyEntity().compareTo(gbReplicon.getHierarchyEntity()));
+        assertTrue(fastaReplicon.getCounters().deepEquals(gbReplicon.getCounters()));
     }
 
     @Test

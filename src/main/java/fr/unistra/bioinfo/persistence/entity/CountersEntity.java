@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.persistence.entity;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.persistence.entity.converters.ListIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
@@ -206,6 +207,14 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         dinucleotides_pref = new ArrayList<>(Collections.nCopies(dinucleotides.size(), 0));
         trinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.TRINUCLEOTIDES.size() * 3, 0));
         trinucleotides_pref = new ArrayList<>(Collections.nCopies(trinucleotides.size(), 0));
+    }
+
+    public boolean deepEquals(CountersEntity other){
+        return new EqualsBuilder()
+                .append(dinucleotides, other.dinucleotides)
+                .append(dinucleotides_pref, other.dinucleotides_pref)
+                .append(trinucleotides, other.trinucleotides)
+                .append(trinucleotides_pref, other.trinucleotides_pref).build();
     }
 
     @Override

@@ -113,7 +113,4 @@ public class HierarchyEntity implements IEntity<Long>, Comparable<HierarchyEntit
                 .build();
     }
 
-//    public boolean containsReplicon(RepliconEntity r) {
-//        return this.repliconEntities.contains(r);
-//    }
 }

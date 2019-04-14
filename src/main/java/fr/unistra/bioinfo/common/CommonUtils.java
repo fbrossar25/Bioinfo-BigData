@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -110,5 +111,13 @@ public final class CommonUtils {
 
     public static String dateToInt(Date date) {
         return DATE_TO_INT_FORMATTER.format(date);
+    }
+
+    public static void closeQuietly(Closeable closeable){
+        try{
+            closeable.close();
+        }catch (IOException e){
+            //ignore
+        }
     }
 }
