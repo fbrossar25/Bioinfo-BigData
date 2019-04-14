@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-0.gb");
+    private static final Path GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH = Paths.get(".","src", "test", "resources", "not-only-acgt.gb");
     private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get(".","src", "test", "resources", "void.gb");
     private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get(".","src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
@@ -168,6 +169,14 @@ class GenbankParserTest {
     @Test
     void parseGenbankFile() {
         assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        RepliconEntity r = repliconService.getByName("NC_001700");
+        checkReplicon(r);
+        LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
+    }
+
+    @Test
+    void parseNotOnlyAcgtGenbankFile() {
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH.toFile()));
         RepliconEntity r = repliconService.getByName("NC_001700");
         checkReplicon(r);
         LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
