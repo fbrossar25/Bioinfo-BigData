@@ -25,26 +25,26 @@ public final class CommonUtils {
     public static final Path DATAS_PATH = Paths.get("Datas").toAbsolutePath();
     public static final Path RESULTS_PATH = Paths.get("Results").toAbsolutePath();
 
-    public static final Set<String> DINUCLEOTIDES;
-    public static final Set<String> TRINUCLEOTIDES;
-    public static final Set<String> TRINUCLEOTIDES_INIT = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("ATG", "CTG", "TTG", "GTG", "ATA", "ATC", "ATT", "TTA")));
-    public static final Set<String> TRINUCLEOTIDES_STOP = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("TAA", "TAG", "TGA", "TTA")));
+    public static final Map<String, Integer> DINUCLEOTIDES;
+    public static final Map<String, Integer> TRINUCLEOTIDES;
+    public static final Set<String> TRINUCLEOTIDES_INIT = new TreeSet<>(Arrays.asList("ATG", "CTG", "TTG", "GTG", "ATA", "ATC", "ATT", "TTA"));
+    public static final Set<String> TRINUCLEOTIDES_STOP = new TreeSet<>(Arrays.asList("TAA", "TAG", "TGA", "TTA"));
     static{
-        Set<String> diset = new TreeSet<>();
-        Set<String> triset = new TreeSet<>();
+        Map<String, Integer> diset = new HashMap<>();
+        Map<String, Integer> triset = new HashMap<>();
         String map = "ACGT";
         for ( char i = 0 ; i < map.length() ; i++ ) {
             for ( char j = 0 ; j < map.length() ; j++ ) {
-                diset.add("" + map.charAt(i) + map.charAt(j));
+                diset.put("" + map.charAt(i) + map.charAt(j), diset.size());
                 for ( char k = 0 ; k < map.length() ; k++ ) {
-                    triset.add("" + map.charAt(i) + map.charAt(j) + map.charAt(k));
+                    triset.put("" + map.charAt(i) + map.charAt(j) + map.charAt(k), triset.size());
                 }
             }
         }
-        DINUCLEOTIDES = Collections.unmodifiableSet(diset);
-        TRINUCLEOTIDES = Collections.unmodifiableSet(triset);
-        LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.toArray()));
-        LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.toArray()));
+        DINUCLEOTIDES = diset;
+        TRINUCLEOTIDES = triset;
+        LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.keySet().toArray(new String[0])));
+        LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.keySet().toArray(new String[0])));
     }
 
     /**

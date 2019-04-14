@@ -84,7 +84,7 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
 
     @Override
     public List<RepliconEntity> getNotDownloadedReplicons() {
-        return repliconManager.getAllByDownloaded(false);
+        return repliconManager.getAllNotDownloaded();
     }
 
     @Override

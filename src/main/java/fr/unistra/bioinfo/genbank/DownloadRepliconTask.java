@@ -25,6 +25,9 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
 
     private static final AtomicInteger fileCount = new AtomicInteger(0);
     private static final String SESSION_ID = CommonUtils.dateToInt(new Date());
+    static{
+        LOGGER.info("Session id is '{}'", SESSION_ID);
+    }
 
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
@@ -53,7 +56,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
         try(InputStream in = GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()) {
             FileUtils.copyToFile(in, f);
             for(RepliconEntity r : replicons){
-                r.setDownloaded(true);
+                r.setFileName(fileName);
                 r.setParsed(false);
                 r.setComputed(false);
                 synchronized(synchronizedObject){
@@ -65,7 +68,7 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
             LOGGER.debug("Téléchargement des replicons '{}' -> '{}' terminé",repliconsIds, f.getPath());
         }catch (IOException e){
             for(RepliconEntity r : replicons){
-                r.setDownloaded(false);
+                r.setFileName(null);
                 r.setParsed(false);
                 r.setComputed(false);
                 synchronized(synchronizedObject){

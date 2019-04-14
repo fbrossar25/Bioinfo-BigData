@@ -68,12 +68,12 @@ class HierarchyServiceTest {
         HierarchyEntity h = new HierarchyEntity("K1", "G1", "S1", "O1");
         RepliconEntity r = new RepliconEntity("R1", h);
         hierarchyService.save(h);
-        for(String tri : CommonUtils.TRINUCLEOTIDES){
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
             r.incrementTrinucleotideCount(tri, Phase.PHASE_1);
             r.incrementTrinucleotideCount(tri, Phase.PHASE_2);
             r.incrementTrinucleotideCount(tri, Phase.PHASE_2);
         }
-        for(String di : CommonUtils.DINUCLEOTIDES){
+        for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
             r.incrementDinucleotideCount(di, Phase.PHASE_1);
         }
         repliconService.save(r);
@@ -81,12 +81,12 @@ class HierarchyServiceTest {
         assertNotNull(r);
         assertEquals("R1", r.getName());
         assertEquals(1, r.getVersion().intValue());
-        for(String tri : CommonUtils.TRINUCLEOTIDES){
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
             assertEquals(0, r.getTrinucleotideCount(tri, Phase.PHASE_0).intValue());
             assertEquals(1, r.getTrinucleotideCount(tri, Phase.PHASE_1).intValue());
             assertEquals(2, r.getTrinucleotideCount(tri, Phase.PHASE_2).intValue());
         }
-        for(String di : CommonUtils.DINUCLEOTIDES){
+        for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
             assertEquals(0, r.getDinucleotideCount(di, Phase.PHASE_0).intValue());
             assertEquals(1, r.getDinucleotideCount(di, Phase.PHASE_1).intValue());
         }

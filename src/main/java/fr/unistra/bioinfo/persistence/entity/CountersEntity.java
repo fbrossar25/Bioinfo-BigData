@@ -1,13 +1,14 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.persistence.entity.converters.MapStringIntConverter;
+import fr.unistra.bioinfo.persistence.entity.converters.ListIntConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>{
@@ -16,20 +17,20 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     private Long id;
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> trinucleotides = new HashMap<>();
+    @Convert(converter = ListIntConverter.class)
+    private List<Integer> trinucleotides = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> trinucleotides_pref = new HashMap<>();
+    @Convert(converter = ListIntConverter.class)
+    private List<Integer> trinucleotides_pref = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> dinucleotides = new HashMap<>();
+    @Convert(converter = ListIntConverter.class)
+    private List<Integer> dinucleotides = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = MapStringIntConverter.class)
-    private Map<String, Integer> dinucleotides_pref = new HashMap<>();
+    @Convert(converter = ListIntConverter.class)
+    private List<Integer> dinucleotides_pref = new ArrayList<>();
 
     public CountersEntity() {
         super();
@@ -45,130 +46,138 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     }
 
 
-    public void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
-        String key = din.toUpperCase() + "-" + ph.toString();
-        this.dinucleotides.put(key, value);
+    void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
+        Integer key = getNucleotidePhaseKey(din, ph);
+        if(key != null){
+            this.dinucleotides.set(key, value);
+        }else{
+            throw new IllegalArgumentException("'"+din+"' phase '"+ph+"' n'est pas un dinucleotide valide");
+        }
     }
-    public void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Integer value ) {
-        String key = tri.toUpperCase() + "-" + ph.toString();
-        this.trinucleotides.put(key, value);
+    void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Integer value ) {
+        Integer key = getNucleotidePhaseKey(tri, ph);
+        if(key != null){
+            trinucleotides.set(key, value);
+        }else{
+            throw new IllegalArgumentException("'"+tri+"' phase '"+ph+"' n'est pas un trinucleotide valide");
+        }
     }
 
-    public Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides.containsKey(key)){
+    Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
             return dinucleotides.get(key);
         }else{
             throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
         }
     }
 
-    public Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides.containsKey(key)){
+    Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
             return trinucleotides.get(key);
         }else{
             throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
         }
     }
 
-    public void incrementDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides.containsKey(key)){
-            dinucleotides.put(key, dinucleotides.get(key) + 1);
+    void incrementDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
+            dinucleotides.set(key, dinucleotides.get(key) + 1);
         }else{
             throw new IllegalArgumentException("'"+dinucleotide+"' phase '"+phase+"' n'est pas un dinucleotide valide");
         }
     }
 
-    public void incrementTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
-        String key  = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides.containsKey(key)){
-            trinucleotides.put(key, trinucleotides.get(key) + 1);
+    void incrementTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
+            trinucleotides.set(key, trinucleotides.get(key) + 1);
         }else{
             throw new IllegalArgumentException("'"+trinucleotide+"' phase '"+phase+"' n'est pas un trinucleotide valide");
         }
     }
 
-    public Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
+    Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
             return trinucleotides_pref.get(key);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
     }
 
-    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, 1);
+    void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
+            trinucleotides_pref.set(key, 1);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
     }
 
-    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Integer value){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, value);
+    void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Integer value){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
+            trinucleotides_pref.set(key, value);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
     }
 
-    public void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(trinucleotide, phase);
-        if(trinucleotides_pref.containsKey(key)){
-            trinucleotides_pref.put(key, 0);
+    void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(trinucleotide, phase);
+        if(key != null){
+            trinucleotides_pref.set(key, 0);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
     }
 
-    public void setPhasesPrefsTrinucleotide(@NonNull String trinucleotide, @NonNull Phase... phase){
+    void setPhasesPrefsTrinucleotide(@NonNull String trinucleotide, @NonNull Phase... phase){
         for(Phase p : phase){
             setPhasePrefTrinucleotide(trinucleotide, p);
         }
     }
 
-    public Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
+    Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
             return dinucleotides_pref.get(key);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
     }
 
-    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, 1);
+    void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
+            dinucleotides_pref.set(key, 1);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
     }
 
-    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Integer value){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, value);
+    void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Integer value){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
+            dinucleotides_pref.set(key, value);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
     }
 
-    public void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
-        String key = getNucleotidePhaseKey(dinucleotide, phase);
-        if(dinucleotides_pref.containsKey(key)){
-            dinucleotides_pref.put(key, 0);
+    void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+        Integer key = getNucleotidePhaseKey(dinucleotide, phase);
+        if(key != null){
+            dinucleotides_pref.set(key, 0);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
     }
 
-    public void setPhasesPrefsDinucleotide(@NonNull String dinucleotide, @NonNull Phase... phase){
+    void setPhasesPrefsDinucleotide(@NonNull String dinucleotide, @NonNull Phase... phase){
         for(Phase p : phase){
             if(p == Phase.PHASE_2){
                 throw new IllegalArgumentException("La phase 2 n'existe pas pour les dinucléotides");
@@ -178,23 +187,25 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     }
 
 
-    private String getNucleotidePhaseKey(@NonNull String nucleotide, @NonNull Phase phase){
-        return nucleotide.toUpperCase() + "-" + phase.toString();
+    private Integer getNucleotidePhaseKey(@NonNull String nucleotide, @NonNull Phase phase){
+        Integer idx;
+        switch(nucleotide.length()){
+            case 2:
+                idx = CommonUtils.DINUCLEOTIDES.get(nucleotide.toUpperCase());
+                break;
+            case 3:
+                idx = CommonUtils.TRINUCLEOTIDES.get(nucleotide.toUpperCase());
+                break;
+            default : return null;
+        }
+        return idx == null ? null : (idx * nucleotide.length()) + phase.getIdx();
     }
 
     private void resetCounters() {
-        for(Phase phase : Phase.values()){
-            if(phase != Phase.PHASE_2) {
-                for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
-                    dinucleotides.put(getNucleotidePhaseKey(dinucleotide, phase), 0);
-                    dinucleotides_pref.put(getNucleotidePhaseKey(dinucleotide, phase), 0);
-                }
-            }
-            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
-                trinucleotides.put(getNucleotidePhaseKey(trinucleotide, phase), 0);
-                trinucleotides_pref.put(getNucleotidePhaseKey(trinucleotide, phase), 0);
-            }
-        }
+        dinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.DINUCLEOTIDES.size() * 2, 0));
+        dinucleotides_pref = new ArrayList<>(Collections.nCopies(dinucleotides.size(), 0));
+        trinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.TRINUCLEOTIDES.size() * 3, 0));
+        trinucleotides_pref = new ArrayList<>(Collections.nCopies(trinucleotides.size(), 0));
     }
 
     @Override

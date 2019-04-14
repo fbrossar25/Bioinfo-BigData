@@ -79,6 +79,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void testRateLimiter(){
         int n = 45;
         try{
@@ -89,6 +90,7 @@ class GenbankUtilsTest {
 
         final AtomicBoolean oneFailed = new AtomicBoolean(false);
         List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, n)).getContent();
+        assertNotNull(replicons);
         assertEquals(n, replicons.size());
         final List<File> files = new ArrayList<>(n);
         replicons.parallelStream().forEach((replicon) -> {
@@ -96,7 +98,9 @@ class GenbankUtilsTest {
                 URI testDlUri = GenbankUtils.getGBDownloadURL(replicon);
                 GenbankUtils.GENBANK_REQUEST_LIMITER.acquire();
                 try(InputStream in = testDlUri.toURL().openStream()){
-                    File f = TEST_DL_PATH.resolve(replicon.getFileName()).toFile();
+                    File f = TEST_DL_PATH
+                            .resolve(replicon.getGenbankName()+".gb")
+                            .toFile();
                     FileUtils.copyToFile(in, f);
                     files.add(f);
                 }catch(IOException e){
@@ -142,6 +146,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void downloadReplicons(){
         int PAGE_SIZE = 16;
         try {
@@ -205,24 +210,44 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void testDownloadThenUpdateReplicons(){
         try {
-            GenbankUtils.updateNCDatabase(10);
+            GenbankUtils.updateNCDatabase(1);
+            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            GenbankUtils.downloadAllReplicons(future);
+            List<File> files = future.get();
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);
+            assertTrue(replicon.isDownloaded());
             replicon.setVersion(0);
-            replicon.setParsed(true);
-            replicon.setComputed(true);
-            replicon.setDownloaded(true);
             repliconService.save(replicon);
-            GenbankUtils.updateNCDatabase(10);
+            GenbankUtils.updateNCDatabase(1);
             replicon = repliconService.getByName(replicon.getName());
             assertTrue(replicon.getVersion() > 0);
             assertFalse(replicon.isParsed());
-            assertFalse(replicon.isComputed());
             assertFalse(replicon.isDownloaded());
-        } catch (GenbankException e) {
+        } catch (GenbankException | InterruptedException | ExecutionException e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    @Disabled("C'est un poil long")
+    void testDownloadThenDeleteRepliconsFile(){
+        try {
+            GenbankUtils.updateNCDatabase(1);
+            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            GenbankUtils.downloadAllReplicons(future);
+            for(File f : future.get()){
+                FileUtils.deleteQuietly(f);
+            }
+            assertTrue(repliconService.count() > 0);
+            RepliconEntity replicon = repliconService.getAll().get(0);
+            assertNotNull(replicon);
+            assertFalse(replicon.isDownloaded(), "Le replicon est considéré comme téléchargé même si le fichier n'est plus présent");
+        } catch (GenbankException | InterruptedException | ExecutionException e) {
             fail(e);
         }
     }

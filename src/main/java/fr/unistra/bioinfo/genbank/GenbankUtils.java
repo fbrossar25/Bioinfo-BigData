@@ -149,8 +149,9 @@ public class GenbankUtils {
     public static URI getGBDownloadURL(String ids){
         URI uri = null;
         Map<String, String> params = new HashMap<>();
-        params.put("db", "nucleotide");
-        params.put("rettype", "gb");
+        params.put("db", "nuccore");
+        params.put("rettype", "gbwithparts");
+        params.put("retmode", "txt");
         params.put("id", ids);
         try{
             uri = getEUtilsLink(EUTILS_EFETCH, params);
@@ -240,7 +241,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(5);
+        GenbankUtils.updateNCDatabase(50);
     }
 
     /**
@@ -372,7 +373,7 @@ public class GenbankUtils {
                 }else{
                     //Mise à jour du replicon
                     if(replicon.getVersion() < version){
-                        replicon.setDownloaded(false);
+                        replicon.setFileName(null);
                         replicon.setComputed(false);
                         replicon.setParsed(false);
                         replicon.setVersion(version);

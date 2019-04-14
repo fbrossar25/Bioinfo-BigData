@@ -182,7 +182,7 @@ public class CustomGenbankReader {
             if(r != null){
                 replicons.add(r);
                 r.setParsed(true);
-                r.setDownloaded(true);
+                r.setFileName(null);
             }else{
                 logger.warn("Le replicon '{}' n'as pas pu être récupéré", replicon);
             }

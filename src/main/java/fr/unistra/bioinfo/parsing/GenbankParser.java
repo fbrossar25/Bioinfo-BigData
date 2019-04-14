@@ -39,6 +39,7 @@ public final class GenbankParser {
     private static final Pattern ORGANISM_PATTERN = Pattern.compile("^([\\s]+)?ORGANISM([\\s]+)(.+)([\\s]+)?$");
 
     private static final Pattern ACCESSION_PATTERN = Pattern.compile("^([\\s]+)?ACCESSION([\\s]+)(.+)([\\s]+)?$");
+    private static final Pattern ACGT_PATTERN = Pattern.compile("^[ACGT]+$");
 
     public static void setHierarchyService(@NonNull HierarchyService hierarchySerice){
         GenbankParser.hierarchyService = hierarchySerice;
@@ -81,7 +82,7 @@ public final class GenbankParser {
                     LOGGER.warn("replicons '{}' introuvable", seq.getAccession().getID());
                     continue;
                 }
-                repliconEntity.setDownloaded(true);
+                repliconEntity.setFileName(repliconFile.getName());
                 repliconEntity.setComputed(false);
                 repliconEntity.setParsed(false);
                 repliconEntity.setVersion(seq.getAccession().getVersion());
@@ -90,10 +91,7 @@ public final class GenbankParser {
                 }
                 for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
                     try{
-                        String cdsSeq = feature.getLocations().getSubSequence(seq).getSequenceAsString();
-                        if(StringUtils.isNotBlank(cdsSeq)){
-                            cdsList.add(cdsSeq);
-                        }
+                        cdsList.add(feature.getLocations().getSubSequence(seq).getSequenceAsString());
                     }catch(NullPointerException e){
                         LOGGER.error("Erreur lors de la lecture du cds '{}' du replicon '{}'", feature.getLocations(), seq.getAccession().getID(), e);
                     }
@@ -130,7 +128,7 @@ public final class GenbankParser {
     }
 
     private static void countPrefPhases(RepliconEntity replicon){
-        for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+        for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
             int p0 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
             int p1 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
             if(p0 > p1){
@@ -143,7 +141,7 @@ public final class GenbankParser {
                 replicon.setPhasesPrefsDinucleotide(dinucleotide);
             }
         }
-        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
             int p0 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_0);
             int p1 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_1);
             int p2 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_2);
@@ -195,13 +193,16 @@ public final class GenbankParser {
      */
     private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
         if(StringUtils.isBlank(sequence)){
-            LOGGER.trace("La séquence du replicon '{}' est vide", repliconEntity.getName());
+            LOGGER.trace("Le CDS du replicon '{}' est vide", repliconEntity.getName());
+            return false;
+        }else if(!ACGT_PATTERN.matcher(sequence).matches()){
+            LOGGER.trace("Le CDS du replicon '{}' n'est pas uniquement constitué des lettres ACGT", repliconEntity.getName());
             return false;
         }else if(sequence.length() % 3 != 0){
-            LOGGER.trace("La taille de la séquence du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
+            LOGGER.trace("La taille du CDS du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
             return false;
         }else if(!checkStartEndCodons(sequence)){
-            LOGGER.trace("La séquence ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", sequence.substring(0,3), sequence.substring(sequence.length() - 3));
+            LOGGER.trace("Le CDS ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", sequence.substring(0,3), sequence.substring(sequence.length() - 3));
             return false;
         }
         int iMax = sequence.length() - 3;

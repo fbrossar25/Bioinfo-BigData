@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GenbankParserTest {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final Path GENBANK_BATCH_REAL_FILE_PATH = Paths.get(".","src", "test", "resources", "replicons-0.gb");
+    private static final Path GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH = Paths.get(".","src", "test", "resources", "not-only-acgt.gb");
     private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get(".","src", "test", "resources", "void.gb");
     private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get(".","src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
@@ -119,7 +120,7 @@ class GenbankParserTest {
         for(Phase p : Phase.values()){
             if(p == Phase.PHASE_2)
                 continue;
-            for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+            for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
                 Integer pref = r.getPhasePrefDinucleotide(dinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
@@ -131,7 +132,7 @@ class GenbankParserTest {
         assertTrue(phasePrefChceck, "Phase pref dinucleotides KO");
         phasePrefChceck = false;
         for(Phase p : Phase.values()){
-            for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+            for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
                 Integer pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
@@ -173,6 +174,14 @@ class GenbankParserTest {
         LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
     }
 
+    @Test
+    void parseNotOnlyAcgtGenbankFile() {
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_NOT_ONLY_ACGT_FILE_PATH.toFile()));
+        RepliconEntity r = repliconService.getByName("NC_001700");
+        checkReplicon(r);
+        LOGGER.info(ToStringBuilder.reflectionToString(r, ToStringStyle.MULTI_LINE_STYLE));
+    }
+
     private void checkRepliconBenchmark(){
         assertEquals(1, hierarchyService.count().longValue());
         HierarchyEntity h = hierarchyService.getByOrganism("Felis catus");
@@ -184,13 +193,13 @@ class GenbankParserTest {
         RepliconEntity r = replicons.get(0);
         for(Phase p : Phase.values()){
             if(p != Phase.PHASE_2){
-                for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+                for (String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()) {
                     Integer count = r.getPhasePrefDinucleotide(dinucleotide, p);
                     assertNotNull(count);
                     assertTrue(count == 0 || count == 1);
                 }
             }
-            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()) {
                 Integer count = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertNotNull(count);
                 assertTrue(count == 0 || count == 1);
