@@ -28,4 +28,8 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
     List<RepliconEntity> getAllByDownloaded(boolean downloaded);
 
     List<RepliconEntity> getAllByNameIn(List<String> repliconsNames);
+
+    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntitySubgroup(String ss_group);
+    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntityGroup(String group);
+    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntityKingdom(String kingdom);
 }
