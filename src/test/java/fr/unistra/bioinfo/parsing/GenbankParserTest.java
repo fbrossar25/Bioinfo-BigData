@@ -119,7 +119,7 @@ class GenbankParserTest {
         for(Phase p : Phase.values()){
             if(p == Phase.PHASE_2)
                 continue;
-            for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+            for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
                 Integer pref = r.getPhasePrefDinucleotide(dinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
@@ -131,7 +131,7 @@ class GenbankParserTest {
         assertTrue(phasePrefChceck, "Phase pref dinucleotides KO");
         phasePrefChceck = false;
         for(Phase p : Phase.values()){
-            for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+            for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
                 Integer pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
@@ -184,13 +184,13 @@ class GenbankParserTest {
         RepliconEntity r = replicons.get(0);
         for(Phase p : Phase.values()){
             if(p != Phase.PHASE_2){
-                for (String dinucleotide : CommonUtils.DINUCLEOTIDES) {
+                for (String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()) {
                     Integer count = r.getPhasePrefDinucleotide(dinucleotide, p);
                     assertNotNull(count);
                     assertTrue(count == 0 || count == 1);
                 }
             }
-            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES) {
+            for (String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()) {
                 Integer count = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertNotNull(count);
                 assertTrue(count == 0 || count == 1);

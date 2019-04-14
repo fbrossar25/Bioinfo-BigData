@@ -89,6 +89,7 @@ class GenbankUtilsTest {
 
         final AtomicBoolean oneFailed = new AtomicBoolean(false);
         List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, n)).getContent();
+        assertNotNull(replicons);
         assertEquals(n, replicons.size());
         final List<File> files = new ArrayList<>(n);
         replicons.parallelStream().forEach((replicon) -> {
@@ -96,7 +97,9 @@ class GenbankUtilsTest {
                 URI testDlUri = GenbankUtils.getGBDownloadURL(replicon);
                 GenbankUtils.GENBANK_REQUEST_LIMITER.acquire();
                 try(InputStream in = testDlUri.toURL().openStream()){
-                    File f = TEST_DL_PATH.resolve(replicon.getFileName()).toFile();
+                    File f = TEST_DL_PATH
+                            .resolve(replicon.getGenbankName()+".gb")
+                            .toFile();
                     FileUtils.copyToFile(in, f);
                     files.add(f);
                 }catch(IOException e){

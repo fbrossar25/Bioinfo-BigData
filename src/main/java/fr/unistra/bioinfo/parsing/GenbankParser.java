@@ -130,7 +130,7 @@ public final class GenbankParser {
     }
 
     private static void countPrefPhases(RepliconEntity replicon){
-        for(String dinucleotide : CommonUtils.DINUCLEOTIDES){
+        for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
             int p0 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
             int p1 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
             if(p0 > p1){
@@ -143,7 +143,7 @@ public final class GenbankParser {
                 replicon.setPhasesPrefsDinucleotide(dinucleotide);
             }
         }
-        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES){
+        for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
             int p0 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_0);
             int p1 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_1);
             int p2 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_2);

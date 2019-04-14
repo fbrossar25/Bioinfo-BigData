@@ -9,15 +9,15 @@ import org.slf4j.LoggerFactory;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Converter
-public class MapStringIntConverter implements AttributeConverter<Map<String, Integer>, String> {
-    private static final Logger LOGGER  = LoggerFactory.getLogger(MapStringIntConverter.class);
+public class ListIntConverter implements AttributeConverter<List<Integer>, String> {
+    private static final Logger LOGGER  = LoggerFactory.getLogger(ListIntConverter.class);
 
     @Override
-    public String convertToDatabaseColumn(Map<String, Integer> attribute) {
+    public String convertToDatabaseColumn(List<Integer> attribute) {
         String json;
         try{
              json = new ObjectMapper().writeValueAsString(attribute);
@@ -29,15 +29,15 @@ public class MapStringIntConverter implements AttributeConverter<Map<String, Int
     }
 
     @Override
-    public Map<String, Integer> convertToEntityAttribute(String dbData) {
-        Map<String, Integer> map;
+    public List<Integer> convertToEntityAttribute(String dbData) {
+        List<Integer> list;
         ObjectMapper mapper = new ObjectMapper();
         try {
-            map = mapper.readValue(dbData, new TypeReference<Map<String, Integer>>(){});
+            list = mapper.readValue(dbData, new TypeReference<List<Integer>>(){});
         } catch (IOException e) {
             LOGGER.error("Erreur de conversion du json en map", e);
-            map = new HashMap<>();
+            list = new ArrayList<>();
         }
-        return map;
+        return list;
     }
 }
