@@ -81,7 +81,7 @@ public final class GenbankParser {
                     LOGGER.warn("replicons '{}' introuvable", seq.getAccession().getID());
                     continue;
                 }
-                repliconEntity.setDownloaded(true);
+                repliconEntity.setFileName(repliconFile.getName());
                 repliconEntity.setComputed(false);
                 repliconEntity.setParsed(false);
                 repliconEntity.setVersion(seq.getAccession().getVersion());

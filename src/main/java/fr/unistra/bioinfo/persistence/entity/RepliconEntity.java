@@ -1,5 +1,7 @@
 package fr.unistra.bioinfo.persistence.entity;
 
+import fr.unistra.bioinfo.common.CommonUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -7,6 +9,7 @@ import org.hibernate.annotations.NaturalId;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
+import java.nio.file.Files;
 import java.util.List;
 
 @Entity
@@ -33,8 +36,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @JoinColumn(nullable = false)
     private CountersEntity counters;
 
-    @Column(nullable = false)
-    private boolean downloaded = false;
+    @Column
+    private String fileName;
 
     @Column(nullable = false)
     private boolean computed = false;
@@ -105,11 +108,20 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
      * @return true si le fichier à été téléchargé, false sinon
      */
     public boolean isDownloaded() {
-        return downloaded;
+        return StringUtils.isNotBlank(fileName) && Files.exists(CommonUtils.DATAS_PATH.resolve(fileName));
     }
 
-    public void setDownloaded(boolean downloaded) {
-        this.downloaded = downloaded;
+    /**
+     * Le nom du fichier où est téléchargé ce replicon. Relatif au dossier CommonUtils.DATAS_PATH
+     * @return Le nom du fichier
+     * @see CommonUtils#DATAS_PATH
+     */
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     /**
@@ -263,10 +275,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         this.type = type;
     }
 
-    public String getFileName() {
-        return getGenbankName()+".gb";
-    }
-
     public void incrementInvalidsCDS() {
         invalidsCDS++;
     }
@@ -394,8 +402,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     public int compareTo(RepliconEntity o) {
         return new CompareToBuilder()
                 .append(getGenbankName(), o.getGenbankName())
-                .append(computed, o.computed)
-                .append(downloaded, o.downloaded)
+                .append(isComputed(), o.isComputed())
+                .append(isDownloaded(), o.isDownloaded())
                 .build();
     }
 }

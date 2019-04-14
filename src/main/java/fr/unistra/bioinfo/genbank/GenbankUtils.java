@@ -240,7 +240,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(5);
+        GenbankUtils.updateNCDatabase(0);
     }
 
     /**
@@ -372,7 +372,7 @@ public class GenbankUtils {
                 }else{
                     //Mise à jour du replicon
                     if(replicon.getVersion() < version){
-                        replicon.setDownloaded(false);
+                        replicon.setFileName(null);
                         replicon.setComputed(false);
                         replicon.setParsed(false);
                         replicon.setVersion(version);

@@ -207,22 +207,40 @@ class GenbankUtilsTest {
     @Test
     void testDownloadThenUpdateReplicons(){
         try {
-            GenbankUtils.updateNCDatabase(10);
+            GenbankUtils.updateNCDatabase(1);
+            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            GenbankUtils.downloadAllReplicons(future);
+            List<File> files = future.get();
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);
+            assertTrue(replicon.isDownloaded());
             replicon.setVersion(0);
-            replicon.setParsed(true);
-            replicon.setComputed(true);
-            replicon.setDownloaded(true);
             repliconService.save(replicon);
-            GenbankUtils.updateNCDatabase(10);
+            GenbankUtils.updateNCDatabase(1);
             replicon = repliconService.getByName(replicon.getName());
             assertTrue(replicon.getVersion() > 0);
             assertFalse(replicon.isParsed());
-            assertFalse(replicon.isComputed());
             assertFalse(replicon.isDownloaded());
-        } catch (GenbankException e) {
+        } catch (GenbankException | InterruptedException | ExecutionException e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void testDownloadThenDeleteRepliconsFile(){
+        try {
+            GenbankUtils.updateNCDatabase(1);
+            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            GenbankUtils.downloadAllReplicons(future);
+            for(File f : future.get()){
+                FileUtils.deleteQuietly(f);
+            }
+            assertTrue(repliconService.count() > 0);
+            RepliconEntity replicon = repliconService.getAll().get(0);
+            assertNotNull(replicon);
+            assertFalse(replicon.isDownloaded(), "Le replicon est considéré comme téléchargé même si le fichier n'est plus présent");
+        } catch (GenbankException | InterruptedException | ExecutionException e) {
             fail(e);
         }
     }
