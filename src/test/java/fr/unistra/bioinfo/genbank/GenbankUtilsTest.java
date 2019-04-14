@@ -79,6 +79,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void testRateLimiter(){
         int n = 45;
         try{
@@ -145,6 +146,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void downloadReplicons(){
         int PAGE_SIZE = 16;
         try {
@@ -208,6 +210,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void testDownloadThenUpdateReplicons(){
         try {
             GenbankUtils.updateNCDatabase(1);
@@ -231,6 +234,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("C'est un poil long")
     void testDownloadThenDeleteRepliconsFile(){
         try {
             GenbankUtils.updateNCDatabase(1);
