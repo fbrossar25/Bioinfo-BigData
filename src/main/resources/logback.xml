@@ -13,7 +13,7 @@
 
     <appender name="file" class="ch.qos.logback.core.FileAppender">
         <file>logs/app.log</file>
-        <append>false</append>
+        <append>true</append>
         <encoder>
             <pattern>${log.pattern}</pattern>
         </encoder>
@@ -29,6 +29,8 @@
     </appender>
 
     <logger name="fr.unistra.bioinfo" level="DEBUG"/>
+    <logger name="fr.unistra.bioinfo.genbank" level="TRACE"/>
+    <logger name="fr.unistra.bioinfo.parsing" level="TRACE"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->

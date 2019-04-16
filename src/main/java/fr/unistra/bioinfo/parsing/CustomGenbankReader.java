@@ -123,6 +123,7 @@ public class CustomGenbankReader extends AbstractCustomReader{
                 LOGGER.warn("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide. {}", file.getName(), repliconName, e.getMessage());
                 continue;
             }
+            LOGGER.trace("Sequence complète du replicon '{}' : {}", repliconName, seqString);
             genbankParser.getSequenceHeaderParser().parseHeader(genbankParser.getHeader(), sequence);
 
             // add features to new sequence
@@ -132,6 +133,8 @@ public class CustomGenbankReader extends AbstractCustomReader{
                     if("CDS".equals(f.getType())){
                         if(checkCDSFeature(f, seqString.length(), repliconName)){
                             sequence.addFeature(f);
+                        }else{
+                            LOGGER.trace("CDS du replicon '{}' invalide : {}", repliconName, f.getLocations());
                         }
                     }else{
                         sequence.addFeature(f);

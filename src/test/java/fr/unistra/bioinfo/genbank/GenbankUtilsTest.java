@@ -30,6 +30,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -220,13 +222,49 @@ class GenbankUtilsTest {
     }
 
     @Test
-    @Disabled("C'est un poil long")
+    void testMultiThreadsDownloadSpeed(){
+        GenbankUtils.updateNCDatabase(1);
+        RepliconEntity r = repliconService.getAll().get(0);
+        assertNotNull(r);
+        try {
+            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            long begin = System.currentTimeMillis();
+            GenbankUtils.downloadReplicons(Collections.singletonList(r), future);
+            List<File> files = future.get();
+            long end = System.currentTimeMillis();
+            assertEquals(1, files.size());
+            long duration = end - begin;
+            double averageDownloadSpeed = ((double)files.get(0).length()) / ((double)duration / 1000); //bytes/s
+            LOGGER.info("Temps de téléchargement pour 1 thread : {} secondes", duration/1000);
+            LOGGER.info("Vitesse moyenne pour 1 thread : {} ko/s ({} ko)", averageDownloadSpeed / 1024, files.get(0).length() / 1024);
+
+            future = new CompletableFuture<>();
+            begin = System.currentTimeMillis();
+            GenbankUtils.downloadReplicons(Arrays.asList(r,r,r), future);
+            files = future.get();
+            end = System.currentTimeMillis();
+            assertEquals(3, files.size());
+            duration = end - begin;
+            long filesSizes = files.get(0).length() + files.get(1).length() + files.get(2).length();
+            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / files.size();
+            LOGGER.info("Temps de téléchargement pour 3 threads : {} secondes", duration/1000);
+            LOGGER.info("Vitesse moyenne pour 3 threads : {} ko/s ({} ko au total)", averageDownloadSpeed / 1024, filesSizes);
+        } catch (InterruptedException |ExecutionException e) {
+            fail(e);
+        }
+    }
+
+    @Test
     void testDownloadThenUpdateReplicons(){
         try {
             GenbankUtils.updateNCDatabase(1);
+            RepliconEntity r = repliconService.getAll().get(0);
+            assertNotNull(r);
+            List<RepliconEntity> entities = new ArrayList<>(1);
+            entities.add(r);
             CompletableFuture<List<File>> future = new CompletableFuture<>();
-            GenbankUtils.downloadAllReplicons(future);
-            List<File> files = future.get();
+            GenbankUtils.downloadReplicons(entities, future);
+            future.get();
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);

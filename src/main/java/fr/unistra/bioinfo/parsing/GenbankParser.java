@@ -10,9 +10,11 @@ import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
 import org.biojava.nbio.core.sequence.DNASequence;
+import org.biojava.nbio.core.sequence.Strand;
 import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
 import org.biojava.nbio.core.sequence.features.FeatureInterface;
 import org.biojava.nbio.core.sequence.features.Qualifier;
+import org.biojava.nbio.core.sequence.location.template.Location;
 import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,90 +65,16 @@ public final class GenbankParser {
         return repliconEntity;
     }
 
-    private static boolean parseFastaFile(@NonNull File repliconFile){
-        RepliconEntity repliconEntity = null;
-        try{
-            Map<String, DNASequence> dnaSequences = bioJAVAReadDNASequences(repliconFile);
-            LOGGER.debug("{} séquences dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
-            if(dnaSequences.size() == 0){
-                return false;
-            }
-            String previousName = null;
-            List<String> cdsList = new ArrayList<>();
-            for(DNASequence seq : dnaSequences.values()) {
-                LOGGER.trace("DNA header : "+seq.getOriginalHeader());
-                Matcher repliconNameMatcher = REPLICON_ACCESSION_PATTERN.matcher(seq.getAccession().getID());
-                if(!repliconNameMatcher.find()){
-                    LOGGER.warn("Impossible de déterminer le replicon de l'entrée FASTA '{}'", seq.getAccession().getID());
-                    continue;
-                }
-                String repliconName = repliconNameMatcher.group(2);
-                if(!repliconName.equals(previousName)){
-                    if(repliconEntity != null){
-                        //Sauvegarde du replicon avec la liste des cds
-                        countFrequencies(cdsList, repliconEntity);
-                        countPrefPhases(repliconEntity);
-                        repliconEntity.setParsed(true);
-                        synchronized(synchronizedObject){
-                            repliconService.save(repliconEntity);
-                        }
-                        cdsList.clear();
-                        //Passage au replicon suivant
-                    }
-                    repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
-                    if(repliconEntity == null){
-                        LOGGER.warn("replicons '{}' introuvable", repliconName);
-                        continue;
-                    }
-                    repliconEntity.setFileName(repliconFile.getName());
-                    repliconEntity.setComputed(false);
-                    repliconEntity.setParsed(false);
-                    int version = 0;
-                    try{
-                        version = Integer.parseInt(repliconNameMatcher.group(3));
-                    }catch (NumberFormatException e){
-                        // ignore
-                    }
-                    repliconEntity.setVersion(version);
-                    synchronized(synchronizedObject){
-                        repliconService.save(repliconEntity);
-                    }
-                }
-                cdsList.add(seq.getSequenceAsString()); //Un seule séquence à la fois, pas de feature dans les FASTA
-                previousName = repliconName;
-            }
-
-            if(repliconEntity != null && !repliconEntity.isParsed()){ //Il ne faut pas perdre le dernier replicon lu
-                //Sauvegarde du replicon avec la liste des cds
-                countFrequencies(cdsList, repliconEntity);
-                countPrefPhases(repliconEntity);
-                repliconEntity.setParsed(true);
-                synchronized(synchronizedObject){
-                    repliconService.save(repliconEntity);
-                }
-                cdsList.clear();
-                //Passage au replicon suivant
-            }
-        }catch(Exception e){
-            LOGGER.error("Erreur de lecture du fichier '{}'", repliconFile.getPath(), e);
-            return false;
-        }
-        return repliconEntity != null;
-    }
-
     /**
      * Parse le fichier donné en paramètre et créé ou met à jour le replicon qu'il représente.</br>
      * Normalement thread-safe.
-     * @param repliconFile le fichier .gb où .fasta
+     * @param repliconFile le fichier .gb
      * @return true si le parsing à été correctement effectué, false sinon, et false si 0 replicon étaient présents
      */
     public static boolean parseGenbankFile(@NonNull File repliconFile){
         if(!repliconFile.isFile() || !repliconFile.canRead()){
             LOGGER.error("Fichier '"+repliconFile.getAbsolutePath()+"' introuvable ou droits insuffisants");
             return false;
-        }
-        if(repliconFile.getName().endsWith(".fasta")){
-            return parseFastaFile(repliconFile);
         }
         try{
             Map<String, DNASequence> dnaSequences = bioJAVAReadDNASequences(repliconFile);
@@ -205,11 +133,32 @@ public final class GenbankParser {
         return true;
     }
 
+    private static String extractSubSequence(DNASequence seq, Location location){
+        if(Strand.NEGATIVE.equals(location.getStrand())){
+            //Par défaut BioJAVA renvoie le reverse complement à la place du complement simple
+            List<NucleotideCompound> compounds = seq.getSubSequence(location.getStart().getPosition(), location.getEnd().getPosition()).getAsList();
+            StringBuilder builder = new StringBuilder(compounds.size());
+            for(NucleotideCompound c : compounds){
+                builder.append(c.getComplement().toString());
+            }
+            return builder.toString();
+        }
+        return location.getSubSequence(seq).getSequenceAsString();
+    }
+
     private static List<String> extractCdsFromSequence(DNASequence seq, String repliconName) {
         List<String> cdsList = new ArrayList<>();
         for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
             try{
-                cdsList.add(feature.getLocations().getSubSequence(seq).getSequenceAsString());
+                if(feature.getLocations().getSubLocations().isEmpty()){
+                    cdsList.add(extractSubSequence(seq, feature.getLocations()));
+                }else{
+                    StringBuilder cdsBuilder = new StringBuilder();
+                    for(Location loc : feature.getLocations().getSubLocations()){
+                        cdsBuilder.append(extractSubSequence(seq, loc));
+                    }
+                    cdsList.add(cdsBuilder.toString());
+                }
             }catch(NullPointerException e){
                 LOGGER.error("Erreur lors de la lecture du cds '{}' du replicon '{}'", feature.getLocations(), repliconName, e);
             }
@@ -283,6 +232,7 @@ public final class GenbankParser {
      * @return true si le cds est valide et pris en compte, false sinon
      */
     private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
+        LOGGER.trace("CDS du replicon '{}' : {}", repliconEntity.getName(), sequence);
         if(StringUtils.isBlank(sequence)){
             LOGGER.trace("Le CDS du replicon '{}' est vide", repliconEntity.getName());
             return false;
@@ -340,21 +290,7 @@ public final class GenbankParser {
      */
     static RepliconEntity createReplicon(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
         RepliconEntity repliconEntity = new RepliconEntity();
-        if(repliconFile.getName().endsWith(".fasta")){
-            Matcher m = REPLICON_NAME_PATTERN_ONLY.matcher(repliconName);
-            if(m.find()){
-                repliconEntity.setName(m.group(1));
-            }else{
-                m = REPLICON_ACCESSION_PATTERN.matcher(repliconName);
-                if(!m.find()){
-                    LOGGER.warn("le fichier '{}' ne contient pas le nom du replicon (repliconName = '{}')", repliconFile.getName(), repliconName);
-                    return null;
-                }
-                repliconEntity.setName(m.group(2));
-            }
-        }else{
-            repliconEntity.setName(repliconName);
-        }
+        repliconEntity.setName(repliconName);
         repliconEntity.setFileName(repliconFile.getName());
         HierarchyEntity h = readHierarchy(repliconFile, repliconEntity.getName());
         if(h == null){
@@ -378,16 +314,12 @@ public final class GenbankParser {
      * @throws IOException En cas de problème de lecture du fichier
      */
     private static HierarchyEntity readHierarchy(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
-        if(repliconFile.getName().endsWith(".fasta")){
-            return GenbankUtils.getHierarchyInfoByRepliconName(repliconName);
-        }else {
-            String organism = readOrganism(repliconFile, repliconName);
-            if(StringUtils.isBlank(organism)){
-                LOGGER.warn("le fichier '{}' ne contient pas de section ORGANISM", repliconFile.getName());
-                return null;
-            }
-            return hierarchyService.getByOrganism(organism, true);
+        String organism = readOrganism(repliconFile, repliconName);
+        if(StringUtils.isBlank(organism)){
+            LOGGER.warn("le fichier '{}' ne contient pas de section ORGANISM", repliconFile.getName());
+            return null;
         }
+        return hierarchyService.getByOrganism(organism, true);
     }
 
     /**
@@ -418,20 +350,11 @@ public final class GenbankParser {
     }
 
     private static Map<String, DNASequence> bioJAVAReadDNASequences(@NonNull File file){
-        if(file.getName().endsWith(".fasta")){
-            try{
-                return new CustomFastaReader(file).process();
-            }catch(IOException e){
-                LOGGER.error("Erreur lors du parsing du fichier '{}'", file.getAbsolutePath(), e);
-                return new HashMap<>();
-            }
-        }else{
-            try{
-                return new CustomGenbankReader(file).process();
-            }catch(IOException e){
-                LOGGER.error("Erreur lors du parsing du fichier '{}'", file.getAbsolutePath(), e);
-                return new HashMap<>();
-            }
+        try{
+            return new CustomGenbankReader(file).process();
+        }catch(IOException e) {
+            LOGGER.error("Erreur lors du parsing du fichier '{}'", file.getAbsolutePath(), e);
+            return new HashMap<>();
         }
     }
 }

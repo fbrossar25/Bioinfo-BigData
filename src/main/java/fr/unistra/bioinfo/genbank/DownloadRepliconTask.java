@@ -36,10 +36,16 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     private final String repliconsIds;
     private final Retryer<File> retryer;
     private final RepliconService repliconService;
-    private final String fileName = "replicons-"+SESSION_ID+"-"+fileCount.getAndIncrement()+".gb";
+    private final String fileName;
 
     public DownloadRepliconTask(@NonNull List<RepliconEntity> replicons, @NonNull RepliconService repliconService) {
         this.replicons = replicons;
+        if(this.replicons.size() == 1){
+            //En utilisant systématiquement le compteur atomique, on garantis que les threads concurrents n'écrivent pas dans le même fichier
+            this.fileName = replicons.get(0).getGenbankName()+"-"+SESSION_ID+"-"+fileCount.incrementAndGet()+".gb";
+        }else{
+            this.fileName = "replicons-"+SESSION_ID+"-"+fileCount.getAndIncrement()+".gb";
+        }
         this.repliconsIds = GenbankUtils.getRepliconsIdsString(replicons);
         this.retryer = RetryerBuilder.<File>newBuilder()
                 .retryIfExceptionOfType(IOException.class)

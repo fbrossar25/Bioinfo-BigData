@@ -56,10 +56,8 @@ class GenbankParserTest {
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
     private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get("src", "test", "resources", "replicons-batch-test.gb");
 
-    private static final String GENBANK_HUGE_FILE_REPLICON = "NC_011906";
-    private static final String GENBANK_HUGE_FILE_REPLICON_GB = "NC_011907";
-    private static final Path GENBANK_HUGE_FILE = Paths.get("src", "test", "resources", GENBANK_HUGE_FILE_REPLICON+".1.gb");
-    private static final Path GENBANK_HUGE_FILE_FASTA = Paths.get("src", "test", "resources", GENBANK_HUGE_FILE_REPLICON+".1.fasta");
+    private static final String NC_FELIS_CATUS = "NC_001700";
+    private static final Path COMPLEMENT_TEST_GB = Paths.get("src", "test", "resources", "complement-test.gb");
 
     @Autowired
     private RepliconService repliconService;
@@ -225,7 +223,7 @@ class GenbankParserTest {
         File f = GENBANK_TEST_FILE_PATH.toFile();
         long begin = System.currentTimeMillis();
         while(it.hasNext()){
-            GenbankParser.parseGenbankFile(f);
+            assertTrue(GenbankParser.parseGenbankFile(f));
             it.next();
         }
         long end = System.currentTimeMillis();
@@ -242,7 +240,7 @@ class GenbankParserTest {
         long begin = System.currentTimeMillis();
         IntStream.range(0, 10000).parallel().forEach(i -> {
             try{
-                GenbankParser.parseGenbankFile(f);
+                assertTrue(GenbankParser.parseGenbankFile(f));
             }catch(Exception e){
                 LOGGER.error("Erreur de parsing", e);
                 fail(e);
@@ -265,7 +263,7 @@ class GenbankParserTest {
             assertNotNull(files, "Pas de fichier trouvés");
             assertFalse(files.isEmpty(), "0 Fichiers trouvés");
             for(File f : files){
-                GenbankParser.parseGenbankFile(f);
+                assertTrue(GenbankParser.parseGenbankFile(f));
             }
             assertTrue(repliconService.count() > 0);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -295,23 +293,18 @@ class GenbankParserTest {
     }
 
     @Test
-    void fastaParsingTest(){
-        GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE.toFile());
-        GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE_FASTA.toFile());
-        RepliconEntity fastaReplicon = repliconService.getByName(GENBANK_HUGE_FILE_REPLICON);
-        RepliconEntity gbReplicon = repliconService.getByName(GENBANK_HUGE_FILE_REPLICON_GB);
-        assertNotNull(fastaReplicon);
-        assertNotNull(gbReplicon);
-        assertEquals(RepliconType.CHROMOSOME, gbReplicon.getType());
-        assertEquals(RepliconType.CHROMOSOME, fastaReplicon.getType());
-        assertNotNull(fastaReplicon.getHierarchyEntity());
-        assertNotNull(gbReplicon.getHierarchyEntity());
-        assertNotNull(fastaReplicon.getCounters());
-        assertNotNull(gbReplicon.getCounters());
-        assertEquals(fastaReplicon.getValidsCDS(), gbReplicon.getValidsCDS());
-        assertEquals(fastaReplicon.getInvalidsCDS(), gbReplicon.getInvalidsCDS());
-        assertEquals(0, fastaReplicon.getHierarchyEntity().compareTo(gbReplicon.getHierarchyEntity()));
-        assertTrue(fastaReplicon.getCounters().deepEquals(gbReplicon.getCounters()));
+    void complementJoinParsingTest(){
+        assertTrue(GenbankParser.parseGenbankFile(COMPLEMENT_TEST_GB.toFile()));
+        RepliconEntity r = repliconService.getByName(NC_FELIS_CATUS);
+        assertNotNull(r);
+        assertNotNull(r.getCounters());
+        assertEquals(2, r.getValidsCDS().intValue());
+        assertEquals(0, r.getInvalidsCDS().intValue());
+        assertEquals(2, r.getTrinucleotideCount("ATT", Phase.PHASE_0).intValue());
+        assertEquals(0, r.getTrinucleotideCount("ATT", Phase.PHASE_2).intValue());
+        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue());
+        assertEquals(2, r.getTrinucleotideCount("TAA", Phase.PHASE_2).intValue());
+        assertEquals(36, r.getTrinucleotideCount("AAA", Phase.PHASE_0).intValue());
     }
 
     @Test

@@ -29,24 +29,24 @@ public abstract class AbstractCustomReader {
         this.file = f;
     }
 
-    protected boolean checkCDSFeature(AbstractFeature f, int segLength, String repliconName){
+    protected boolean checkCDSFeature(AbstractFeature f, int seqLength, String repliconName){
         //Élimination des CDS invalides, conservation des CDS valides
         List<Location> checkedLocations = new ArrayList<>();
         if(!f.getLocations().getSubLocations().isEmpty()){
             //Si le CDS est composé
             for(Location subLocation : f.getLocations().getSubLocations()){
-                if(subLocation.getStart().getPosition() >= 0 && subLocation.getEnd().getPosition() < segLength){
+                if(subLocation.getStart().getPosition() > 0 && subLocation.getEnd().getPosition() <= seqLength){
                     checkedLocations.add(subLocation);
                 }else{
-                    LOGGER.debug("CDS invalides : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), subLocation, segLength);
+                    LOGGER.debug("CDS invalides : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), subLocation, seqLength);
                 }
             }
-        }else if(f.getLocations().getStart().getPosition() >= 0 && f.getLocations().getEnd().getPosition() < segLength){
+        }else if(f.getLocations().getStart().getPosition() >= 0 && f.getLocations().getEnd().getPosition() < seqLength){
             //Si le CDS n'est pas composé
             checkedLocations.add(f.getLocations());
         }else{
             //Si le CDS non composé est invalide
-            LOGGER.debug("CDS invalide : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), f.getLocations(), segLength);
+            LOGGER.debug("CDS invalide : replicon '{}' dans le fichier '{}' -> '{}' (taille sequence : {})", repliconName, file.getName(), f.getLocations(), seqLength);
         }
 
         if(checkedLocations.isEmpty()){

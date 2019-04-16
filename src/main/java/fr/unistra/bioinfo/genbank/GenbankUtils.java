@@ -55,7 +55,9 @@ public class GenbankUtils {
     private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
-    private static final Integer REPLICONS_BATCH_SIZE = 10;
+    private static final Integer REPLICONS_BATCH_SIZE = 1;
+    //Les fichiers étant volumineux on ne télécharge qu'un replicon à la fois
+    //private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
