@@ -46,6 +46,37 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         this.id = id;
     }
 
+    public List<Integer> getTrinucleotides() {
+        return trinucleotides;
+    }
+
+    public void setTrinucleotides(List<Integer> trinucleotides) {
+        this.trinucleotides = trinucleotides;
+    }
+
+    public List<Integer> getTrinucleotides_pref() {
+        return trinucleotides_pref;
+    }
+
+    public void setTrinucleotides_pref(List<Integer> trinucleotides_pref) {
+        this.trinucleotides_pref = trinucleotides_pref;
+    }
+
+    public List<Integer> getDinucleotides() {
+        return dinucleotides;
+    }
+
+    public void setDinucleotides(List<Integer> dinucleotides) {
+        this.dinucleotides = dinucleotides;
+    }
+
+    public List<Integer> getDinucleotides_pref() {
+        return dinucleotides_pref;
+    }
+
+    public void setDinucleotides_pref(List<Integer> dinucleotides_pref) {
+        this.dinucleotides_pref = dinucleotides_pref;
+    }
 
     void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
         Integer key = getNucleotidePhaseKey(din, ph);
@@ -202,7 +233,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         return idx == null ? null : (idx * nucleotide.length()) + phase.getIdx();
     }
 
-    private void resetCounters() {
+    public void resetCounters() {
         dinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.DINUCLEOTIDES.size() * 2, 0));
         dinucleotides_pref = new ArrayList<>(Collections.nCopies(dinucleotides.size(), 0));
         trinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.TRINUCLEOTIDES.size() * 3, 0));

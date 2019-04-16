@@ -30,6 +30,7 @@
 
     <logger name="fr.unistra.bioinfo" level="DEBUG"/>
     <logger name="fr.unistra.bioinfo.genbank" level="TRACE"/>
+    <logger name="fr.unistra.bioinfo.parsing" level="TRACE"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->

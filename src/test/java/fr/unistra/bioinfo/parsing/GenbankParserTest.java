@@ -277,6 +277,24 @@ class GenbankParserTest {
     }
 
     @Test
+    void testParseSameReplicon(){
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        RepliconEntity replicon = repliconService.getByName("NC_001700");
+        assertNotNull(replicon);
+        assertNotNull(replicon.getCounters());
+        ArrayList<Integer> trinucleotides = new ArrayList<>(replicon.getCounters().getTrinucleotides());
+        ArrayList<Integer> trinucleotides_pref = new ArrayList<>(replicon.getCounters().getTrinucleotides_pref());
+        ArrayList<Integer> dinucleotides = new ArrayList<>(replicon.getCounters().getDinucleotides());
+        ArrayList<Integer> dinucleotides_pref = new ArrayList<>(replicon.getCounters().getDinucleotides_pref());
+        GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile());
+        replicon = repliconService.getByName("NC_001700");
+        assertEquals(trinucleotides, replicon.getCounters().getTrinucleotides());
+        assertEquals(trinucleotides_pref, replicon.getCounters().getTrinucleotides_pref());
+        assertEquals(dinucleotides, replicon.getCounters().getDinucleotides());
+        assertEquals(dinucleotides_pref, replicon.getCounters().getDinucleotides_pref());
+    }
+
+    @Test
     void fastaParsingTest(){
         GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE.toFile());
         GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE_FASTA.toFile());

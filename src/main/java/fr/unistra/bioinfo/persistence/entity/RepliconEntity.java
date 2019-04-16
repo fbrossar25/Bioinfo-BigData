@@ -342,6 +342,10 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return result;
     }
 
+    public void resetCounters(){
+        getCounters().resetCounters();
+    }
+
     public RepliconEntity add(RepliconEntity r) {
         return RepliconEntity.add(this, r);
     }

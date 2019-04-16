@@ -83,10 +83,15 @@ public final class GenbankParser {
                 String repliconName = repliconNameMatcher.group(2);
                 if(!repliconName.equals(previousName)){
                     if(repliconEntity != null){
+                        //Sauvegarde du replicon avec la liste des cds
+                        countFrequencies(cdsList, repliconEntity);
+                        countPrefPhases(repliconEntity);
                         repliconEntity.setParsed(true);
                         synchronized(synchronizedObject){
                             repliconService.save(repliconEntity);
                         }
+                        cdsList.clear();
+                        //Passage au replicon suivant
                     }
                     repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
                     if(repliconEntity == null){
@@ -103,15 +108,24 @@ public final class GenbankParser {
                         // ignore
                     }
                     repliconEntity.setVersion(version);
-                    countFrequencies(cdsList, repliconEntity);
-                    countPrefPhases(repliconEntity);
                     synchronized(synchronizedObject){
                         repliconService.save(repliconEntity);
                     }
-                    cdsList.clear();
                 }
-                cdsList.addAll(extractCdsFromSequence(seq, repliconName));
+                cdsList.add(seq.getSequenceAsString()); //Un seule séquence à la fois, pas de feature dans les FASTA
                 previousName = repliconName;
+            }
+
+            if(repliconEntity != null && !repliconEntity.isParsed()){ //Il ne faut pas perdre le dernier replicon lu
+                //Sauvegarde du replicon avec la liste des cds
+                countFrequencies(cdsList, repliconEntity);
+                countPrefPhases(repliconEntity);
+                repliconEntity.setParsed(true);
+                synchronized(synchronizedObject){
+                    repliconService.save(repliconEntity);
+                }
+                cdsList.clear();
+                //Passage au replicon suivant
             }
         }catch(Exception e){
             LOGGER.error("Erreur de lecture du fichier '{}'", repliconFile.getPath(), e);
@@ -249,6 +263,7 @@ public final class GenbankParser {
 
     private static boolean countFrequencies(@NonNull List<String> cdsList, @NonNull final RepliconEntity repliconEntity){
         final AtomicBoolean result = new AtomicBoolean();
+        repliconEntity.resetCounters();
         cdsList.forEach(cds -> {
             if(!countFrequencies(cds, repliconEntity)){
                 result.set(false);
@@ -278,7 +293,7 @@ public final class GenbankParser {
             LOGGER.trace("La taille du CDS du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
             return false;
         }else if(!checkStartEndCodons(sequence)){
-            LOGGER.trace("Le CDS ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", sequence.substring(0,3), sequence.substring(sequence.length() - 3));
+            LOGGER.trace("Le CDS du replicon '{}' ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", repliconEntity.getName(), sequence.substring(0,3), sequence.substring(sequence.length() - 3));
             return false;
         }
         int iMax = sequence.length() - 3;
