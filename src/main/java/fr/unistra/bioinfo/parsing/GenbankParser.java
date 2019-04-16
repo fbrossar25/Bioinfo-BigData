@@ -83,13 +83,10 @@ public final class GenbankParser {
                 String repliconName = repliconNameMatcher.group(2);
                 if(!repliconName.equals(previousName)){
                     if(repliconEntity != null){
-                        countFrequencies(cdsList, repliconEntity);
-                        countPrefPhases(repliconEntity);
                         repliconEntity.setParsed(true);
                         synchronized(synchronizedObject){
                             repliconService.save(repliconEntity);
                         }
-                        cdsList.clear();
                     }
                     repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
                     if(repliconEntity == null){
@@ -106,11 +103,14 @@ public final class GenbankParser {
                         // ignore
                     }
                     repliconEntity.setVersion(version);
+                    countFrequencies(cdsList, repliconEntity);
+                    countPrefPhases(repliconEntity);
                     synchronized(synchronizedObject){
                         repliconService.save(repliconEntity);
                     }
-                    cdsList.addAll(extractCdsFromSequence(seq, repliconName));
+                    cdsList.clear();
                 }
+                cdsList.addAll(extractCdsFromSequence(seq, repliconName));
                 previousName = repliconName;
             }
         }catch(Exception e){
