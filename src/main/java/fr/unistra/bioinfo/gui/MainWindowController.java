@@ -72,8 +72,8 @@ public class MainWindowController {
     private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END){
             Platform.runLater(() -> {
-                this.getProgressBarTreeView().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
-                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+                this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
+                this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
             });
         }
     });
@@ -81,8 +81,8 @@ public class MainWindowController {
     private final EventUtils.EventListener GENBANK_DOWNLOAD_START = (event -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_BEGIN){
             Platform.runLater(() -> {
-                this.getProgressBarTreeView().setProgress(0.0);
-                this.getTreeViewLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
+                this.getProgressBar().setProgress(0.0);
+                this.getDownloadLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
             });
             numberOfFiles.set(Integer.parseInt(event.getEntityName()));
         }
