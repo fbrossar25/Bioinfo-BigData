@@ -246,9 +246,9 @@ class GenbankUtilsTest {
             assertEquals(3, files.size());
             duration = end - begin;
             long filesSizes = files.get(0).length() + files.get(1).length() + files.get(2).length();
-            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / files.size();
+            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / 1024;
             LOGGER.info("Temps de téléchargement pour 3 threads : {} secondes", duration/1000);
-            LOGGER.info("Vitesse moyenne pour 3 threads : {} ko/s ({} ko au total)", averageDownloadSpeed / 1024, filesSizes);
+            LOGGER.info("Vitesse moyenne pour 3 threads : {} ko/s, soit {} ko/s par thread ({} ko au total)", averageDownloadSpeed, averageDownloadSpeed / files.size(), filesSizes);
         } catch (InterruptedException |ExecutionException e) {
             fail(e);
         }
