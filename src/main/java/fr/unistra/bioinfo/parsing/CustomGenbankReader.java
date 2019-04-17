@@ -99,7 +99,13 @@ public class CustomGenbankReader extends AbstractCustomReader{
         while(true) {
             if(max>0 && i>=max) break;
             i++;
-            String seqString = genbankParser.getSequence(bufferedReader, 0);
+            String seqString;
+            try{
+                seqString = genbankParser.getSequence(bufferedReader, 0);
+            }catch (OutOfMemoryError e){
+                LOGGER.error("Le fichier '{}' est trop volumineux", file.getName());
+                continue;
+            }
             repliconName = getRepliconFromLocusOrLocus(genbankParser.getHeader());
             repliconsNames.add(repliconName);
             //reached end of file?

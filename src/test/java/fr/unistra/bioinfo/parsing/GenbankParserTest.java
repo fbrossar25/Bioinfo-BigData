@@ -55,6 +55,7 @@ class GenbankParserTest {
     private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get("src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
     private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get("src", "test", "resources", "replicons-batch-test.gb");
+    private static final Path GENBANK_HUGE_FILE = Paths.get("src", "test", "resources","huge.gb");
 
     private static final String NC_FELIS_CATUS = "NC_001700";
     private static final Path COMPLEMENT_TEST_GB = Paths.get("src", "test", "resources", "complement-test.gb");
@@ -80,6 +81,11 @@ class GenbankParserTest {
         hierarchyService.deleteAll();
         repliconService.deleteAll();
         CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testHugeFileParsing(){
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE.toFile()));
     }
 
     @Test

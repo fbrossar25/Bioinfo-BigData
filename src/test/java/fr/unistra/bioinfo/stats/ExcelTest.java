@@ -13,7 +13,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
@@ -267,9 +266,8 @@ public class ExcelTest {
     }
 
     @Test
-    @Disabled("Test à des fins de profiling")
     void parseAndGenerateStats(){
-        GenbankUtils.updateNCDatabase(100);
+        GenbankUtils.updateNCDatabase(10);
         CompletableFuture<List<File>> future = new CompletableFuture<>();
         long begin = System.currentTimeMillis();
         GenbankUtils.downloadAllReplicons(future);
@@ -310,7 +308,6 @@ public class ExcelTest {
     }
 
     @Test
-    @Disabled("Test à des fins de profiling")
     void generateStats(){
         GenbankUtils.updateNCDatabase(100);
         File dataDir = CommonUtils.DATAS_PATH.toFile();

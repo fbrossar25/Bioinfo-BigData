@@ -58,8 +58,9 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
 
     private File download() throws IOException{
         File f = CommonUtils.DATAS_PATH.resolve(fileName).toFile();
-        LOGGER.debug("Téléchargement des replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
         try(InputStream in = GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()) {
+            LOGGER.debug("Téléchargement des replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
+            GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
             FileUtils.copyToFile(in, f);
             for(RepliconEntity r : replicons){
                 r.setFileName(fileName);
@@ -89,7 +90,6 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
 
     @Override
     public File call() {
-        GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
         try {
             return this.retryer.call(this::download);
         } catch (ExecutionException | RetryException e) {

@@ -51,13 +51,12 @@ public class GenbankUtils {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final String NGRAM_BASE_URL = "https://www.ncbi.nlm.nih.gov/Structure/ngram";
     private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
+    private static final String DDL_BASE_URL = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi";
     /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
     private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
     private static final Integer REPLICONS_BATCH_SIZE = 1;
-    //Les fichiers étant volumineux on ne télécharge qu'un replicon à la fois
-    //private static final Integer REPLICONS_BATCH_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
@@ -66,8 +65,6 @@ public class GenbankUtils {
     private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_REPLICON_END && event.getReplicon() != null){
             repliconService.save(event.getReplicon());
-
-
         }
     };
 
@@ -76,7 +73,7 @@ public class GenbankUtils {
     }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
-        final ExecutorService ses = Executors.newFixedThreadPool(GenbankUtils.REQUEST_LIMIT);
+        final ExecutorService ses = Executors.newFixedThreadPool(10);
         List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(splittedRepliconsList.size());
 
@@ -117,16 +114,25 @@ public class GenbankUtils {
     }
 
     public static URI getEUtilsLink(String application, Map<String, String> params) throws URISyntaxException {
-        URIBuilder builder = new URIBuilder(EUTILS_BASE_URL+application);
+        URIBuilder builder = buildURL(EUTILS_BASE_URL+application, params);
+        if(!params.containsKey("api_key")){
+            builder.setParameter("api_key", EUTILS_API_KEY);
+        }
+        return builder.build();
+    }
+
+    public static URIBuilder buildURL(String baseURL, Map<String, String> params) throws URISyntaxException {
+        URIBuilder builder = new URIBuilder(baseURL);
         for(Map.Entry<String, String> param : params.entrySet()){
             if(StringUtils.isNotBlank(param.getKey())){
                 builder.setParameter(param.getKey(), param.getValue());
             }
         }
-        if(!params.containsKey("api_key")){
-            builder.setParameter("api_key", EUTILS_API_KEY);
-        }
-        return builder.build();
+        return builder;
+    }
+
+    public static URI getDownloadLink(Map<String, String> params) throws URISyntaxException {
+        return buildURL(DDL_BASE_URL, params).build();
     }
 
     /**
@@ -157,11 +163,13 @@ public class GenbankUtils {
         URI uri = null;
         Map<String, String> params = new HashMap<>();
         params.put("db", "nuccore");
-        params.put("rettype", "gbwithparts");
-        params.put("retmode", "txt");
+        params.put("basic_feat", "on");
+        params.put("withparts", "on");
+        params.put("retmode", "raw");
         params.put("id", ids);
         try{
-            uri = getEUtilsLink(EUTILS_EFETCH, params);
+            //uri = getEUtilsLink(EUTILS_EFETCH, params);
+            uri = getDownloadLink(params);
         }catch(URISyntaxException e){
             LOGGER.error("Syntaxe URI incorrecte", e);
         }
