@@ -20,4 +20,5 @@ public interface HierarchyService extends AbstractService<HierarchyEntity, Long>
     List<HierarchyEntity> getByIds(List<Long> ids);
 
     void deleteHierarchyWithoutReplicons();
+
 }
