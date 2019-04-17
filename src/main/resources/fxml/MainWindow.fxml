@@ -16,7 +16,6 @@
       <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
          <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
             <MenuItem fx:id="btnNettoyerDonnees" mnemonicParsing="false" onAction="#nettoyerDonnees" text="Nettoyer les données" />
-            <MenuItem fx:id="btnSupprimerFichiersGEnomes" mnemonicParsing="false" onAction="#supprimerFichiersGenomes" text="Supprimer les fichiers genomes" />
             <MenuItem fx:id="btnQuitter" mnemonicParsing="false" onAction="#quitter" text="Quitter" />
          </Menu>
          <Menu fx:id="menuEdition" mnemonicParsing="false" text="Edition">

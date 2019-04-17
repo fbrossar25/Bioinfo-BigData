@@ -129,7 +129,6 @@ public class CustomGenbankReader extends AbstractCustomReader{
                 LOGGER.warn("Erreur lors du parsing du fichier '{}', la séquence ADN du replicon '{}' n'est pas valide. {}", file.getName(), repliconName, e.getMessage());
                 continue;
             }
-            LOGGER.trace("Sequence complète du replicon '{}' : {}", repliconName, seqString);
             genbankParser.getSequenceHeaderParser().parseHeader(genbankParser.getHeader(), sequence);
 
             // add features to new sequence

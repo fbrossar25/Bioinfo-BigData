@@ -21,6 +21,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,8 @@ import org.springframework.stereotype.Controller;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
@@ -51,7 +54,6 @@ public class MainWindowController {
     @FXML private Menu menuFichier;
     @FXML private Button btnDemarrer;
     @FXML private MenuItem btnNettoyerDonnees;
-    @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
     @FXML private ProgressBar progressBar;
     @FXML private ProgressBar progressBarParsing;
@@ -180,14 +182,17 @@ public class MainWindowController {
             try {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
-                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), null);
-                File dir = CommonUtils.DATAS_PATH.toFile();
-                File[] listFiles = dir.listFiles();
-                if(listFiles != null) {
-                    for (File gb : listFiles) {
+                CompletableFuture<List<File>> future = new CompletableFuture<>();
+                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), future);
+                try {
+                    for (File gb : future.get()) {
                         LOGGER.debug("Parsing file '{}'", gb.getName());
-                        GenbankParser.parseGenbankFile(gb);
+                        if(GenbankParser.parseGenbankFile(gb)){
+                            FileUtils.deleteQuietly(gb);
+                        }
                     }
+                } catch (InterruptedException | ExecutionException e) {
+                    LOGGER.error("Une erreur est survenue", e);
                 }
                 LOGGER.info("Début de la génération des excels...");
                 List<HierarchyEntity> hierarchies = hierarchyService.getAll();
@@ -223,11 +228,6 @@ public class MainWindowController {
     @FXML
     public void nettoyerDonnees(ActionEvent actionEvent) {
         LOGGER.info("Nettoyage des données...");
-    }
-
-    @FXML
-    public void supprimerFichiersGenomes(ActionEvent actionEvent) {
-        LOGGER.info("Suppression des fichiers genomes...");
     }
 
     @FXML
