@@ -22,10 +22,7 @@ public class GenbankReader {
     private static final String END_TAG = "//";
     private static final Pattern SECTION_PATTERN = Pattern.compile("^\\s*(.+?)(\\s+(.+))?$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(NC_\\d+?).(\\d+)$");
-
-    enum Operator{
-        JOIN, COMPLEMENT, COMPLEMENT_JOIN, NONE
-    }
+    private static final Pattern CDS_PATTERN = Pattern.compile("^\\s*(join\\(|complement\\((join\\()?)?((,?[<>]*\\d+[<>]*\\.\\.[<>]*\\d+[<>]*)+)\\)*\\s*$");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
     /** Fichier à lire */
@@ -40,8 +37,16 @@ public class GenbankReader {
     private List<StringBuilder> processedCdsList = new ArrayList<>();
     /** Nom du replicon */
     private String name = null;
+    /** Liste de tous les CDS valides*/
+    private ArrayList<CDS> cdsValid = new ArrayList<>();
     /** Version du replicon */
     private int version = 0;
+    /** Nombre de cds invalides */
+    private int nbCdsInvalid = 0;
+    /** Nombre de cds valides */
+    private int nbCdsValid = 0;
+    /** Taille de la séquence */
+    private int sequenceLength = 17009;
 
     private GenbankReader(File file){
         this.file = file;
@@ -105,16 +110,71 @@ public class GenbankReader {
         //où si la chaine termine par une virgule, le CDS est multi-ligne
         //Les CDS doivent trié par ordre d'index de démarrage pour que la lecture du ORIGIN
         //soit optimale (càd sans devoir sauvegarder le ORIGIN en entier)
+        boolean endCds = false;
+        boolean complement = false;
+        boolean invalid = false;
+        ArrayList<CDS> listCds = new ArrayList<CDS>();
+        try {
+            if (sequenceLength > 0){
+                StringBuilder cdsEntier = new StringBuilder();
+                while (!endCds) {
+                    String cdsTrim = cdsValue.trim();
+                    cdsEntier.append(cdsTrim);
+                    if (cdsTrim.endsWith(",")) {
+                        cdsValue = reader.readLine();
+                    } else {
+                        endCds = true;
+                    }
+                }
+                Matcher cdsMatcher = CDS_PATTERN.matcher(cdsEntier);
+                if (cdsMatcher.matches()) {
+                    String operator = cdsMatcher.group(1);
+                    String content = cdsMatcher.group(3);
+                    if (operator != null) {
+                        if (operator.contains("complement")) {
+                            complement = true;
+                        }
+                    }
+
+                    String[] intervals = content.split(",");
+                    for (String interval : intervals) {
+                        String[] extremity = interval.split("\\.\\.");
+                        int start = Integer.parseInt(extremity[0].replaceAll("[<>]+",""));
+                        int end = Integer.parseInt(extremity[1].replaceAll("[<>]+",""));
+                        if ((start > end) || (end > sequenceLength)) {
+                            invalid = true;
+                            break;
+                        }
+
+                        listCds.add(new CDS(start, end, complement));
+                    }
+                }else{
+                    invalid = true;
+                }
+            }else{
+                throw new RuntimeException("Fichier invalide");
+            }
+            if(!invalid) {
+                cdsValid.addAll(listCds);
+                nbCdsValid++;
+            }else{
+                nbCdsInvalid++;
+            }
+            listCds.clear();
+
+        }catch(Exception e){
+
+        }
     }
 
-    private class CDS{
-        public int debut;
-        public int fin;
+    class CDS{
+        public int begin;
+        public int end;
         public boolean complement;
 
-        public CDS(int deb, int fin, boolean comp){
-            this.debut = deb;
-            this.fin = fin;
+        public CDS(int begin, int end, boolean comp){
+            this.begin = begin;
+            this.end = end;
             this.complement = comp;
         }
 
@@ -123,14 +183,14 @@ public class GenbankReader {
 
     /**
      * Parse la section ORIGIN du fichier.
-     * Utilise le reader pour avancer jusqu'à la fin du fichier ou jusqu'au tag de terminaison du replicon (//).
+     * Utilise le reader pour avancer jusqu'à la end du fichier ou jusqu'au tag de terminaison du replicon (//).
      */
     private void processORIGIN(){
         //TODO
         //A ce stade les CDS devraient être tous lus
         //Si la liste des CDS est vide -> ne pas lire cette section car inutile
         //Sinon, attendre d'être sur la ligne ou commence le premier CDS
-        //et commecner à enregistrer ce CDS jusqu'as arriver à la fin de ce CDS
+        //et commecner à enregistrer ce CDS jusqu'as arriver à la end de ce CDS
         //et passer au CDS suivants.
     }
 
@@ -139,11 +199,15 @@ public class GenbankReader {
     }
 
     public int getValidsCDS(){
-        return -1;
+        return this.nbCdsValid;
+    }
+
+    public List<CDS> getListCDSValid(){
+        return this.cdsValid;
     }
 
     public int getInvalidsCDS(){
-        return -1;
+        return this.nbCdsInvalid;
     }
 
     public String getName(){

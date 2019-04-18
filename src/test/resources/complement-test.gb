@@ -40,7 +40,9 @@ FEATURES             Location/Qualifiers
                      FVHWFPLFSGYTLDNTWAKIHFTIMFVGVNMTFFPQHFLGLSGMPRRYSDYPDAYTTW
                      NTISSMGSFISLTAVMLMVFMVWEAFASKREVAMVELTTTNLEWLHGCPPPYHTFEEP
                      TYVLLK"
-     CDS             complement(join(61..90,91..120))
+     CDS             complement(join(<61..90,
+  91..120>))
+
                      /gene="COX1"
                      /gene_synonym="COI"
                      /codon_start=1
