@@ -23,18 +23,16 @@ public class GenbankReader {
     private static final Pattern SECTION_PATTERN = Pattern.compile("^\\s*(.+?)(\\s+(.+))?$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(NC_\\d+?).(\\d+)$");
     private static final Pattern CDS_PATTERN = Pattern.compile("^\\s*(join\\(|complement\\((join\\()?)?((,?[<>]*\\d+[<>]*\\.\\.[<>]*\\d+[<>]*)+)\\)*\\s*$");
+    private static final Pattern INTERVAL_PATTERN = Pattern.compile("^(\\d+)\\.\\.(\\d+)$");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
+
     /** Fichier à lire */
     private File file;
     /** Reader du fichier */
     private BufferedReader reader;
-    /** Sequence complete */
-    private StringBuilder origin = new StringBuilder();
-    /** Liste des chaine représentant des cds */
-    private List<StringBuilder> cdsList = new ArrayList<>();
     /** Sous-séquences extraites correspondantes aux CDS (operateurs join et complement déjà appliqué si présent) */
-    private List<StringBuilder> processedCdsList = new ArrayList<>();
+    private StringBuilder processedSequence = new StringBuilder();
     /** Nom du replicon */
     private String name = null;
     /** Liste de tous les CDS valides*/
@@ -45,8 +43,8 @@ public class GenbankReader {
     private int nbCdsInvalid = 0;
     /** Nombre de cds valides */
     private int nbCdsValid = 0;
-    /** Taille de la séquence */
-    private int sequenceLength = 17009;
+    /** Taille du origin */
+    private int sequenceLength = -1;
 
     private GenbankReader(File file){
         this.file = file;
@@ -61,7 +59,7 @@ public class GenbankReader {
     }
 
     /** Lit une ligne et appelle processSection */
-    private void processLine(String line){
+    private void processLine(String line) throws IOException{
         Matcher sectionMatcher = SECTION_PATTERN.matcher(line);
         String sectionName;
         String sectionLine = null;
@@ -75,10 +73,15 @@ public class GenbankReader {
     }
 
     /** En fonction du nom de la section, redirige vers la méthode de parsing adéquate */
-    private void processSection(@NonNull String name, String value){
-        switch (name.toUpperCase()){
+    private void processSection(@NonNull String name, String value) throws IOException{
+        switch (name){
             case "VERSION":
                 processVersion(value);
+                break;
+            case "source":
+                if(sequenceLength < 1){
+                    processSource(value);
+                }
                 break;
             case "CDS":
                 processCDS(value);
@@ -87,6 +90,13 @@ public class GenbankReader {
                 processORIGIN();
                 break;
             default:
+        }
+    }
+
+    private void processSource(@NonNull String value){
+        Matcher m = INTERVAL_PATTERN.matcher(value);
+        if(m.matches()){
+            sequenceLength = Integer.parseInt(m.group(2));
         }
     }
 
@@ -104,7 +114,7 @@ public class GenbankReader {
      * Utilise reader pour avancer dans la lecture de fichier si le CDS est mutli-ligne.
      * @param cdsValue La valeur de la première ligne du CDS déjà lu par le reader à ce stade.
      */
-    private void processCDS(String cdsValue){
+    private void processCDS(String cdsValue) throws IOException{
         //TODO
         //Astuce : si le nombre de parathèse ouvrante et fermante de correspondent pas
         //où si la chaine termine par une virgule, le CDS est multi-ligne
@@ -113,58 +123,53 @@ public class GenbankReader {
         boolean endCds = false;
         boolean complement = false;
         boolean invalid = false;
-        ArrayList<CDS> listCds = new ArrayList<CDS>();
-        try {
-            if (sequenceLength > 0){
-                StringBuilder cdsEntier = new StringBuilder();
-                while (!endCds) {
-                    String cdsTrim = cdsValue.trim();
-                    cdsEntier.append(cdsTrim);
-                    if (cdsTrim.endsWith(",")) {
-                        cdsValue = reader.readLine();
-                    } else {
-                        endCds = true;
+        List<CDS> listCds = new ArrayList<>();
+        if (sequenceLength > 0){
+            StringBuilder cdsEntier = new StringBuilder();
+            while (!endCds) {
+                String cdsTrim = cdsValue.trim();
+                cdsEntier.append(cdsTrim);
+                if (cdsTrim.endsWith(",")) {
+                    cdsValue = reader.readLine();
+                } else {
+                    endCds = true;
+                }
+            }
+            Matcher cdsMatcher = CDS_PATTERN.matcher(cdsEntier);
+            if (cdsMatcher.matches()) {
+                String operator = cdsMatcher.group(1);
+                String content = cdsMatcher.group(3);
+                if (operator != null) {
+                    if (operator.contains("complement")) {
+                        complement = true;
                     }
                 }
-                Matcher cdsMatcher = CDS_PATTERN.matcher(cdsEntier);
-                if (cdsMatcher.matches()) {
-                    String operator = cdsMatcher.group(1);
-                    String content = cdsMatcher.group(3);
-                    if (operator != null) {
-                        if (operator.contains("complement")) {
-                            complement = true;
-                        }
+
+                String[] intervals = content.split(",");
+                for (String interval : intervals) {
+                    String[] extremity = interval.split("\\.\\.");
+                    int start = Integer.parseInt(extremity[0].replaceAll("[<>]+",""));
+                    int end = Integer.parseInt(extremity[1].replaceAll("[<>]+",""));
+                    if ((start > end) || (end > sequenceLength)) {
+                        invalid = true;
+                        break;
                     }
 
-                    String[] intervals = content.split(",");
-                    for (String interval : intervals) {
-                        String[] extremity = interval.split("\\.\\.");
-                        int start = Integer.parseInt(extremity[0].replaceAll("[<>]+",""));
-                        int end = Integer.parseInt(extremity[1].replaceAll("[<>]+",""));
-                        if ((start > end) || (end > sequenceLength)) {
-                            invalid = true;
-                            break;
-                        }
-
-                        listCds.add(new CDS(start, end, complement));
-                    }
-                }else{
-                    invalid = true;
+                    listCds.add(new CDS(start, end, complement));
                 }
             }else{
-                throw new RuntimeException("Fichier invalide");
+                invalid = true;
             }
-            if(!invalid) {
-                cdsValid.addAll(listCds);
-                nbCdsValid++;
-            }else{
-                nbCdsInvalid++;
-            }
-            listCds.clear();
-
-        }catch(Exception e){
-
+        }else{
+            throw new RuntimeException("Fichier invalide");
         }
+        if(!invalid) {
+            cdsValid.addAll(listCds);
+            nbCdsValid++;
+        }else{
+            nbCdsInvalid++;
+        }
+        listCds.clear();
     }
 
     class CDS{
@@ -172,13 +177,11 @@ public class GenbankReader {
         public int end;
         public boolean complement;
 
-        public CDS(int begin, int end, boolean comp){
+        CDS(int begin, int end, boolean comp){
             this.begin = begin;
             this.end = end;
             this.complement = comp;
         }
-
-
     }
 
     /**
@@ -194,8 +197,8 @@ public class GenbankReader {
         //et passer au CDS suivants.
     }
 
-    public List<StringBuilder> getProcessedCdsList(){
-        return processedCdsList;
+    public StringBuilder getProcessedSubsequence(){
+        return processedSequence;
     }
 
     public int getValidsCDS(){
@@ -216,6 +219,10 @@ public class GenbankReader {
 
     public int getVersion(){
         return version;
+    }
+
+    public int getSequenceLength(){
+        return sequenceLength;
     }
 
     /**

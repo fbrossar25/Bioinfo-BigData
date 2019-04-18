@@ -28,6 +28,29 @@ class GenbankReaderTest {
         }
     }
 
+    @Test
+    void shouldParseSource(){
+        try {
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            gbReader.process();
+            assertEquals(120, gbReader.getSequenceLength());
+        } catch (IOException e) {
+            fail("Erreur lors de la lecture du fichier",e);
+        }
+    }
+
+    @Test
+    void shouldParseCDSSubsequence(){
+        try {
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            gbReader.process();
+            StringBuilder subSeq = gbReader.getProcessedSubsequence();
+            assertEquals(120, subSeq.length());
+            assertEquals(subSeq.substring(0,60), subSeq.substring(61,120));
+        } catch (IOException e) {
+            fail("Erreur lors de la lecture du fichier",e);
+        }
+    }
 
     @Test
     void shouldParseCDS(){
