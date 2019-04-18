@@ -107,6 +107,20 @@ public class GenbankReader {
         //soit optimale (càd sans devoir sauvegarder le ORIGIN en entier)
     }
 
+    private class CDS{
+        public int debut;
+        public int fin;
+        public boolean complement;
+
+        public CDS(int deb, int fin, boolean comp){
+            this.debut = deb;
+            this.fin = fin;
+            this.complement = comp;
+        }
+
+
+    }
+
     /**
      * Parse la section ORIGIN du fichier.
      * Utilise le reader pour avancer jusqu'à la fin du fichier ou jusqu'au tag de terminaison du replicon (//).
