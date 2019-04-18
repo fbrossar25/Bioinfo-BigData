@@ -57,6 +57,8 @@ public class GenbankUtils {
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
     private static final Integer REPLICONS_BATCH_SIZE = 1;
+    // Jusqu'à 10 téléchargement concurrents, en respectant REQUEST_LIMIT
+    private static final Integer DOWNLOAD_THREAD_POOL_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
@@ -73,34 +75,29 @@ public class GenbankUtils {
     }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
-        final ExecutorService ses = Executors.newFixedThreadPool(10);
+        final ExecutorService ses = Executors.newFixedThreadPool(DOWNLOAD_THREAD_POOL_SIZE);
         List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(splittedRepliconsList.size());
 
         splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
-        try {
-            LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
-            EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
-            final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
-            if(callback != null){
-                new Thread(() -> {
-                    try {
-                        ses.shutdown();
-                        ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                        LOGGER.info("Fin des téléchargements");
-                        List<File> files = new ArrayList<>(replicons.size());
-                        for(Future<File> future : futuresFiles){
-                            files.add(future.get());
-                        }
-                        callback.complete(files);
-                    } catch (ExecutionException | InterruptedException e) {
-                        LOGGER.error("Erreur d'attente de terminaison des téléchargements",e);
+        LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
+        EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
+            new Thread(() -> {
+                try {
+                    final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
+                    ses.shutdown();
+                    ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                    LOGGER.info("Fin des téléchargements");
+                    List<File> files = new ArrayList<>(replicons.size());
+                    for(Future<File> future : futuresFiles){
+                        files.add(future.get());
                     }
-                }).start();
-            }
-        } catch (InterruptedException e) {
-            LOGGER.error("Erreur durant les téléchargements des replicons",e);
-        }
+                    callback.complete(files);
+                } catch (ExecutionException | InterruptedException e) {
+                    LOGGER.error("Erreur d'attente de terminaison des téléchargements",e);
+                    callback.completeExceptionally(e);
+                }
+            }).start();
     }
 
     /**
