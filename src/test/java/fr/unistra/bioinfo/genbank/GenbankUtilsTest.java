@@ -29,6 +29,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +80,25 @@ class GenbankUtilsTest {
         CommonUtils.disableHibernateLogging();
         hierarchyService.deleteAll();
         repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    @Disabled("Test pour la vitesse de dl")
+    void testDownloadNumerousFile(){
+        CommonUtils.disableHibernateLogging();
+        GenbankUtils.updateNCDatabase(50);
+        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        long begin = System.currentTimeMillis();
+        try {
+            GenbankUtils.downloadAllReplicons(future);
+            long totalSize = future.get().stream().mapToLong(f -> f.length()/1024).sum();
+            long end = System.currentTimeMillis();
+            LOGGER.info("Le téléchargement de {}Mo à pris {}.", totalSize/1024, LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Une erreur est survenue.", e);
+            fail(e);
+        }
         CommonUtils.enableHibernateLogging(true);
     }
 
