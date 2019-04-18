@@ -19,7 +19,8 @@ class GenbankReaderTest {
     @Test
     void shouldParseVersion(){
         try {
-            GenbankReader gbReader = GenbankReader.parse(TEST_FILE.toFile());
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            gbReader.process();
             assertEquals("NC_001700", gbReader.getName());
             assertEquals(1, gbReader.getVersion());
         } catch (IOException e) {
@@ -31,7 +32,8 @@ class GenbankReaderTest {
     @Test
     void shouldParseCDS(){
         try {
-            GenbankReader gbReader = GenbankReader.parse(TEST_FILE.toFile());
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            gbReader.process();
             assertEquals(2, gbReader.getValidsCDS());
             assertEquals(0, gbReader.getInvalidsCDS());
             List<StringBuilder> cdsList = gbReader.getProcessedCdsList();
