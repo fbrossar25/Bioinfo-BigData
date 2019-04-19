@@ -1,5 +1,7 @@
 package fr.unistra.bioinfo.parsing;
 
+import fr.unistra.bioinfo.common.CommonUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -30,6 +32,7 @@ public class GenbankReader {
         public int begin;
         public int end;
         public boolean complement;
+        public boolean processed = false;
         List<CDS> linkedCDS = new ArrayList<>();
         CDS(int begin, int end, boolean comp){
             this.begin = begin;
@@ -56,6 +59,7 @@ public class GenbankReader {
     private int nbCdsValid = 0;
     /** Taille du origin */
     private int sequenceLength = -1;
+    private boolean isTest = false;
 
     private GenbankReader(File file){
         this.file = file;
@@ -202,97 +206,45 @@ public class GenbankReader {
             return;
         }
         sortAndcheckCDSIntervalValidity();
-        CDS currentCDS = cdsValid.get(0);
-        int cdsIdx = 0;
         String originLine = reader.readLine();
-        //Index de la premiere lettre de la ligne courante
-        int currentLineBeginIdx;
-        //Index de la derniere lettre de la ligne courante
-        int currentLineEndIdx = 0;
-        //Index de lecture globale du ORIGIN
-        int currentReadIdx = 1;
         //Sous-séquence d'un seul CDS à la fois, ajouté à la liste processedSequences si valide
-        StringBuilder localSubSequence = new StringBuilder();
-        //Map des sous-séquences par CDS, permet de regrouper les CDS 'explosé' à la fin de l'algo
-        Map<Integer, List<StringBuilder>> cdsSequencesMap = new TreeMap<>();
-        boolean ended = false;
-        boolean preventResetCurrentReadIdx = false;
-
-        while(!ended && originLine != null && !END_TAG.equals(originLine.trim())){
+        StringBuilder fullOrigin = new StringBuilder(sequenceLength > 1 ? sequenceLength : 1000);
+        while(originLine != null && !END_TAG.equals(originLine.trim())){
             //Lecture des index de la ligne actuelle
             Matcher m = ORIGIN_LINE_PATTERN.matcher(originLine);
             if(!m.matches()){
                 break;
             }
-            currentLineBeginIdx = currentLineEndIdx + 1;
             originLine = m.group(2).trim().replaceAll("\\s+", "");
-            currentLineEndIdx = currentLineBeginIdx + originLine.length() - 1;
-
-            //Le CDS commence dans la ligne
-            while(!ended && (currentLineBeginIdx <= currentCDS.begin && currentCDS.begin <= currentLineEndIdx
-                    || currentLineBeginIdx <= currentCDS.end)){
-                int realReadIdx;
-                if(!(currentLineBeginIdx <= currentCDS.end && currentCDS.end <= currentLineEndIdx) && !preventResetCurrentReadIdx){
-                    currentReadIdx = currentCDS.begin;
-                    preventResetCurrentReadIdx = true;
-                }
-                realReadIdx = currentReadIdx - currentLineBeginIdx;
-                while(!ended && currentReadIdx <= currentLineEndIdx){
-
-                    char c = getChar(currentCDS.complement, originLine.charAt(realReadIdx));
-                    if(c == '?'){
-                        //CDS suivant si le CDS courant est invalide
-                        localSubSequence.setLength(0);
-                        nbCdsInvalid++;
-                        nbCdsValid--;
-                        cdsValid.removeAll(currentCDS.linkedCDS);
-                        cdsValid.sort(Comparator.comparingInt(cds -> cds.begin));
-                        //On avance pas l'index car, la liste étant trié, un autre cds viens à la place automatiquement
-                        if(cdsIdx >= cdsValid.size()){
-                            return;
-                        }
-                        currentCDS = cdsValid.get(cdsIdx);
-                        preventResetCurrentReadIdx = false;
-                        break;
-                    }
-                    localSubSequence.append(c);
-                    currentReadIdx++;
-                    realReadIdx++;
-
-                    if(currentReadIdx > currentCDS.end){
-                        int currentMapKey = currentCDS.linkedCDS.get(0).begin;
-                        if(!cdsSequencesMap.containsKey(currentMapKey)){
-                            cdsSequencesMap.put(currentMapKey, new ArrayList<>(currentCDS.linkedCDS.size()));
-                        }
-                        cdsSequencesMap.get(currentMapKey).add(localSubSequence);
-                        localSubSequence = new StringBuilder();
-                        //CDS suivant si l'on à terminé
-                        cdsIdx++;
-                        if(cdsIdx >= cdsValid.size()){
-                            //Plus de CDS à lire -> on passe au regroupement des sous-séquences
-                            ended = true;
-                        }else{
-                            currentCDS = cdsValid.get(cdsIdx);
-                            preventResetCurrentReadIdx = false;
-                        }
-                    }
-                }
-                if(currentReadIdx >= currentLineEndIdx){
-                    //Le CDS continue à la ligne suivante
-                    break;
-                }
-            }
-            //Ligne suivante
+            fullOrigin.append(originLine);
             originLine = reader.readLine();
         }
 
-        //Regroupement des sous-séquences par CDS
-        for(List<StringBuilder> entry: cdsSequencesMap.values()){
-            localSubSequence = new StringBuilder();
-            for(StringBuilder subSeq : entry){
-                localSubSequence.append(subSeq);
+        Map<Integer, StringBuilder> localCDSMap = new TreeMap<>();
+        for(CDS cds : cdsValid){
+            if(cds.processed){
+                continue;
             }
-            processedSequences.add(localSubSequence);
+            int key = cds.linkedCDS.get(0).begin;
+            if(!localCDSMap.containsKey(key)){
+                localCDSMap.put(key , new StringBuilder(getSubsequenceLength(cds)));
+                processedSequences.add(localCDSMap.get(key));
+            }
+            String s = fullOrigin.substring(cds.begin-1, cds.end);
+            StringBuilder sRef = localCDSMap.get(key);
+            for(int i=0; i<s.length(); i++){
+                sRef.append(getChar(cds.complement, s.charAt(i)));
+            }
+        }
+        localCDSMap.clear();
+        if(!isTest){
+            List<StringBuilder> toDelete = new ArrayList<>();
+            for(StringBuilder subSeq : processedSequences){
+                if(!processedSubsequenceIsValid(subSeq)){
+                    toDelete.add(subSeq);
+                }
+            }
+            processedSequences.removeAll(toDelete);
         }
     }
 
@@ -325,6 +277,14 @@ public class GenbankReader {
         }
     }
 
+    private int getSubsequenceLength(CDS cds){
+        int len = 0;
+        for(CDS subCDS : cds.linkedCDS){
+            len += subCDS.end - subCDS.begin;
+        }
+        return len;
+    }
+
     private char getChar(boolean complement, char c) {
         if(complement){
             switch (c){
@@ -350,6 +310,43 @@ public class GenbankReader {
             case 'G': return 'G';
             default : return '?';
         }
+    }
+
+    public boolean processedSubsequenceIsValid(StringBuilder subSeq){
+        if(StringUtils.isBlank(subSeq)){
+            LOGGER.trace("Le CDS du replicon '{}' est vide", name);
+            return false;
+        }if(subSeq.length() % 3 != 0){
+            LOGGER.trace("La taille du CDS du replicon '{}' ({}) n'est pas multiple de 3", name, subSeq.length());
+            return false;
+        }else if(!checkStartEndCodons(subSeq)){
+            LOGGER.trace("Le CDS du replicon '{}' ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", name, subSeq.subSequence(0,3), subSeq.subSequence(subSeq.length() - 3, subSeq.length()));
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean checkStartEndCodons(@NonNull CharSequence sequence) {
+        boolean check = false;
+        for(String start : CommonUtils.TRINUCLEOTIDES_INIT){
+            if(start.contentEquals(sequence.subSequence(0, 3))){
+                check = true;
+                break;
+            }
+        }
+        if(!check){
+            return false;
+        }
+        check = false;
+        int end_start = sequence.length() - 3;
+        int end_stop = sequence.length();
+        for(String end : CommonUtils.TRINUCLEOTIDES_STOP){
+            if(end.contentEquals(sequence.subSequence(end_start, end_stop))){
+                check = true;
+                break;
+            }
+        }
+        return check;
     }
 
     public List<StringBuilder> getProcessedSubsequences(){
@@ -387,5 +384,11 @@ public class GenbankReader {
      */
     public static GenbankReader createInstance(@NonNull File file){
         return new GenbankReader(file);
+    }
+
+    static GenbankReader createInstance(@NonNull File file, boolean isTest){
+        GenbankReader gbReader =  new GenbankReader(file);
+        gbReader.isTest = true;
+        return  gbReader;
     }
 }

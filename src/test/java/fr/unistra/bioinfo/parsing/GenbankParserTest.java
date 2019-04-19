@@ -54,7 +54,6 @@ class GenbankParserTest {
     private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get("src", "test", "resources", "void.gb");
     private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get("src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
-    private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get("src", "test", "resources", "replicons-batch-test.gb");
     private static final Path GENBANK_HUGE_FILE = Paths.get("src", "test", "resources","huge.gb");
 
     private static final String NC_FELIS_CATUS = "NC_001700";
@@ -100,8 +99,8 @@ class GenbankParserTest {
         for(RepliconEntity r : replicons){
             assertTrue(r.isParsed());
             if(invalidsReplicons.contains(r.getName())){
-                assertEquals(1, r.getValidsCDS().intValue());
-                assertEquals(28, r.getInvalidsCDS().intValue());
+                assertEquals(29, r.getValidsCDS().intValue());
+                assertEquals(4, r.getInvalidsCDS().intValue());
             }
         }
         CommonUtils.enableHibernateLogging(true);
@@ -287,21 +286,6 @@ class GenbankParserTest {
         assertEquals(trinucleotides_pref, replicon.getCounters().getTrinucleotides_pref());
         assertEquals(dinucleotides, replicon.getCounters().getDinucleotides());
         assertEquals(dinucleotides_pref, replicon.getCounters().getDinucleotides_pref());
-    }
-
-    @Test
-    void complementJoinParsingTest(){
-        assertTrue(GenbankParser.parseGenbankFile(COMPLEMENT_TEST_GB.toFile()));
-        RepliconEntity r = repliconService.getByName(NC_FELIS_CATUS);
-        assertNotNull(r);
-        assertNotNull(r.getCounters());
-        assertEquals(2, r.getValidsCDS().intValue());
-        assertEquals(0, r.getInvalidsCDS().intValue());
-        assertEquals(2, r.getTrinucleotideCount("ATT", Phase.PHASE_0).intValue());
-        assertEquals(0, r.getTrinucleotideCount("ATT", Phase.PHASE_2).intValue());
-        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue());
-        assertEquals(2, r.getTrinucleotideCount("TAA", Phase.PHASE_2).intValue());
-        assertEquals(36, r.getTrinucleotideCount("AAA", Phase.PHASE_0).intValue());
     }
 
     @Test

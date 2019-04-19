@@ -346,8 +346,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     }
 
     public void resetCounters(){
-        setValidsCDS(0);
-        setInvalidsCDS(0);
         getCounters().resetCounters();
     }
 

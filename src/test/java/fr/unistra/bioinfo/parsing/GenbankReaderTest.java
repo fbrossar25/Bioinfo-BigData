@@ -26,7 +26,7 @@ class GenbankReaderTest {
     @Test
     void shouldParseMultilineOfDoom(){
         try {
-            GenbankReader gbReader = GenbankReader.createInstance(TEST_MULTILINE.toFile());
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_MULTILINE.toFile(), true);
             gbReader.process();
             List<StringBuilder> subSeqs = gbReader.getProcessedSubsequences();
             assertNotNull(subSeqs);
@@ -66,7 +66,7 @@ class GenbankReaderTest {
     @Test
     void shouldParseCDSSubsequence(){
         try {
-            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile(), true);
             gbReader.process();
             List<StringBuilder> subSeqs = gbReader.getProcessedSubsequences();
             assertNotNull(subSeqs);
@@ -83,7 +83,7 @@ class GenbankReaderTest {
     @Test
     void shouldParseCDS(){
         try {
-            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile());
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile(), true);
             gbReader.process();
             assertEquals(VALIDS_CDS, gbReader.getValidsCDS());
             assertEquals(INVALIDS_CDS, gbReader.getInvalidsCDS());

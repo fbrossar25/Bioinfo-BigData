@@ -71,9 +71,8 @@ public final class GenbankParser {
         try{
             GenbankReader gbReader = GenbankReader.createInstance(repliconFile);
             gbReader.process();
-            RepliconEntity repliconEntity;
             String repliconName = gbReader.getName();
-            repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
+            RepliconEntity repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
             if(repliconEntity == null){
                 LOGGER.warn("replicons '{}' introuvable", repliconName);
                 return false;
@@ -151,11 +150,10 @@ public final class GenbankParser {
         final AtomicBoolean result = new AtomicBoolean();
         repliconEntity.resetCounters();
         cdsList.forEach(cds -> {
-            if(countFrequencies(cds, repliconEntity)){
-                repliconEntity.incrementValidsCDS();
-            }else{
+            if(!countFrequencies(cds, repliconEntity)){
                 result.set(false);
                 repliconEntity.incrementInvalidsCDS();
+                repliconEntity.decrementValidsCDS();
             }
         });
         return result.get();
@@ -169,19 +167,6 @@ public final class GenbankParser {
      * @return true si le cds est valide et pris en compte, false sinon
      */
     private static boolean countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
-        if(StringUtils.isBlank(sequence)){
-            LOGGER.trace("Le CDS du replicon '{}' est vide", repliconEntity.getName());
-            return false;
-        }else if(!ACGT_PATTERN.matcher(sequence).matches()){
-            LOGGER.trace("Le CDS du replicon '{}' n'est pas uniquement constitué des lettres ACGT", repliconEntity.getName());
-            return false;
-        }else if(sequence.length() % 3 != 0){
-            LOGGER.trace("La taille du CDS du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
-            return false;
-        }else if(!checkStartEndCodons(sequence)){
-            LOGGER.trace("Le CDS du replicon '{}' ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", repliconEntity.getName(), sequence.subSequence(0,3), sequence.subSequence(sequence.length() - 3, sequence.length()));
-            return false;
-        }
         int iMax = sequence.length() - 3;
         for(int i=0; i<iMax; i+=3){
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i, i+3).toString(), Phase.PHASE_0);
@@ -194,29 +179,6 @@ public final class GenbankParser {
             repliconEntity.incrementDinucleotideCount(sequence.subSequence(i+1, i+3).toString(), Phase.PHASE_1);
         }
         return true;
-    }
-
-    private static boolean checkStartEndCodons(@NonNull CharSequence sequence) {
-        boolean check = false;
-        for(String start : CommonUtils.TRINUCLEOTIDES_INIT){
-            if(start.contentEquals(sequence.subSequence(0, 3))){
-                check = true;
-                break;
-            }
-        }
-        if(!check){
-            return false;
-        }
-        check = false;
-        int end_start = sequence.length() - 3;
-        int end_stop = sequence.length();
-        for(String end : CommonUtils.TRINUCLEOTIDES_STOP){
-            if(end.contentEquals(sequence.subSequence(end_start, end_stop))){
-                check = true;
-                break;
-            }
-        }
-        return check;
     }
 
     /**
