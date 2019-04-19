@@ -9,13 +9,6 @@ import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
-import org.biojava.nbio.core.sequence.DNASequence;
-import org.biojava.nbio.core.sequence.Strand;
-import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
-import org.biojava.nbio.core.sequence.features.FeatureInterface;
-import org.biojava.nbio.core.sequence.features.Qualifier;
-import org.biojava.nbio.core.sequence.location.template.Location;
-import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -24,7 +17,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,8 +34,6 @@ public final class GenbankParser {
 
     private static final Pattern ACCESSION_PATTERN = Pattern.compile("^([\\s]+)?ACCESSION([\\s]+)(.+)([\\s]+)?$");
     private static final Pattern ACGT_PATTERN = Pattern.compile("^[ACGT]+$");
-    private static final Pattern REPLICON_ACCESSION_PATTERN = Pattern.compile("((NC_\\d+?)\\.(\\d))");
-    private static final Pattern REPLICON_NAME_PATTERN_ONLY = Pattern.compile("^(NC_\\d+?)$");
 
     public static void setHierarchyService(@NonNull HierarchyService hierarchySerice){
         GenbankParser.hierarchyService = hierarchySerice;
@@ -77,93 +69,38 @@ public final class GenbankParser {
             return false;
         }
         try{
-            Map<String, DNASequence> dnaSequences = bioJAVAReadDNASequences(repliconFile);
-            LOGGER.debug("{} séquences dans '{}'", dnaSequences.size(), repliconFile.getAbsolutePath());
-            if(dnaSequences.size() == 0){
+            GenbankReader gbReader = GenbankReader.createInstance(repliconFile);
+            gbReader.process();
+            RepliconEntity repliconEntity;
+            String repliconName = gbReader.getName();
+            repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
+            if(repliconEntity == null){
+                LOGGER.warn("replicons '{}' introuvable", repliconName);
                 return false;
             }
-            for(DNASequence seq : dnaSequences.values()){
-                RepliconEntity repliconEntity;
-                String repliconName;
-                LOGGER.trace("DNA header : "+seq.getOriginalHeader());
-                repliconName = seq.getAccession().getID();
-                repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
-                if(repliconEntity == null){
-                    LOGGER.warn("replicons '{}' introuvable", repliconName);
-                    continue;
-                }
-                repliconEntity.setFileName(repliconFile.getName());
-                repliconEntity.setComputed(false);
-                repliconEntity.setParsed(false);
-                repliconEntity.setVersion(seq.getAccession().getVersion());
-                synchronized(synchronizedObject){
-                    repliconService.save(repliconEntity);
-                }
-                List<String> cdsList = extractCdsFromSequence(seq, repliconName);
-                if(seq.getFeaturesByType("source").size() > 0){
-                    FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> source = seq.getFeaturesByType("source").get(0);
-                    for (Map.Entry<String, List<Qualifier>> entry : source.getQualifiers().entrySet()) {
-                        switch(entry.getKey()){
-                            case "organelle":
-                                List<Qualifier> qualifiers = entry.getValue();
-                                if(!qualifiers.isEmpty() && "plastid".equals(entry.getValue().get(0).getValue())){
-                                    repliconEntity.setType(RepliconType.PLAST);
-                                } else {
-                                    repliconEntity.setType(RepliconType.MITOCHONDRION);
-                                }
-                                break;
-                            case "chromosome": repliconEntity.setType(RepliconType.CHROMOSOME); break;
-                            case "linkage_group": repliconEntity.setType(RepliconType.LINKAGE); break;
-                            case "plasmid": repliconEntity.setType(RepliconType.PLASMID); break;
-                            default:
-                        }
-                    }
-                }
-                countFrequencies(cdsList, repliconEntity);
-                countPrefPhases(repliconEntity);
-                repliconEntity.setParsed(true);
-                synchronized(synchronizedObject){
-                    repliconService.save(repliconEntity);
-                }
+            repliconEntity.setFileName(repliconFile.getName());
+            repliconEntity.setComputed(false);
+            repliconEntity.setParsed(false);
+            repliconEntity.setVersion(gbReader.getVersion());
+            repliconEntity.setValidsCDS(gbReader.getValidsCDS());
+            repliconEntity.setInvalidsCDS(gbReader.getInvalidsCDS());
+            synchronized(synchronizedObject){
+                repliconService.save(repliconEntity);
+            }
+            if(RepliconType.DNA.equals(repliconEntity.getType())){
+                repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
+            }
+            countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);
+            countPrefPhases(repliconEntity);
+            repliconEntity.setParsed(true);
+            synchronized(synchronizedObject){
+                repliconService.save(repliconEntity);
             }
         }catch(Exception e){
             LOGGER.error("Erreur de lecture du fichier '{}'", repliconFile.getPath(), e);
             return false;
         }
         return true;
-    }
-
-    private static String extractSubSequence(DNASequence seq, Location location){
-        if(Strand.NEGATIVE.equals(location.getStrand())){
-            //Par défaut BioJAVA renvoie le reverse complement à la place du complement simple
-            List<NucleotideCompound> compounds = seq.getSubSequence(location.getStart().getPosition(), location.getEnd().getPosition()).getAsList();
-            StringBuilder builder = new StringBuilder(compounds.size());
-            for(NucleotideCompound c : compounds){
-                builder.append(c.getComplement().toString());
-            }
-            return builder.toString();
-        }
-        return location.getSubSequence(seq).getSequenceAsString();
-    }
-
-    private static List<String> extractCdsFromSequence(DNASequence seq, String repliconName) {
-        List<String> cdsList = new ArrayList<>();
-        for(FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeaturesByType("CDS")){
-            try{
-                if(feature.getLocations().getSubLocations().isEmpty()){
-                    cdsList.add(extractSubSequence(seq, feature.getLocations()));
-                }else{
-                    StringBuilder cdsBuilder = new StringBuilder();
-                    for(Location loc : feature.getLocations().getSubLocations()){
-                        cdsBuilder.append(extractSubSequence(seq, loc));
-                    }
-                    cdsList.add(cdsBuilder.toString());
-                }
-            }catch(NullPointerException e){
-                LOGGER.error("Erreur lors de la lecture du cds '{}' du replicon '{}'", feature.getLocations(), repliconName, e);
-            }
-        }
-        return cdsList;
     }
 
     private static void countPrefPhases(RepliconEntity replicon){
@@ -210,15 +147,15 @@ public final class GenbankParser {
         }
     }
 
-    private static boolean countFrequencies(@NonNull List<String> cdsList, @NonNull final RepliconEntity repliconEntity){
+    private static boolean countFrequencies(@NonNull List<StringBuilder> cdsList, @NonNull final RepliconEntity repliconEntity){
         final AtomicBoolean result = new AtomicBoolean();
         repliconEntity.resetCounters();
         cdsList.forEach(cds -> {
-            if(!countFrequencies(cds, repliconEntity)){
+            if(countFrequencies(cds, repliconEntity)){
+                repliconEntity.incrementValidsCDS();
+            }else{
                 result.set(false);
                 repliconEntity.incrementInvalidsCDS();
-            }else{
-                repliconEntity.incrementValidsCDS();
             }
         });
         return result.get();
@@ -231,8 +168,7 @@ public final class GenbankParser {
      * @param repliconEntity le replicon qui seras mis à jour si le cds est correct
      * @return true si le cds est valide et pris en compte, false sinon
      */
-    private static boolean countFrequencies(@NonNull String sequence, @NonNull final RepliconEntity repliconEntity) {
-        LOGGER.trace("CDS du replicon '{}' : {}", repliconEntity.getName(), sequence);
+    private static boolean countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
         if(StringUtils.isBlank(sequence)){
             LOGGER.trace("Le CDS du replicon '{}' est vide", repliconEntity.getName());
             return false;
@@ -243,27 +179,27 @@ public final class GenbankParser {
             LOGGER.trace("La taille du CDS du replicon '{}' ({}) n'est pas multiple de 3", repliconEntity.getName(), sequence.length());
             return false;
         }else if(!checkStartEndCodons(sequence)){
-            LOGGER.trace("Le CDS du replicon '{}' ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", repliconEntity.getName(), sequence.substring(0,3), sequence.substring(sequence.length() - 3));
+            LOGGER.trace("Le CDS du replicon '{}' ne commence et/ou ne finis pas par des codons START et END (start : {}, end : {})", repliconEntity.getName(), sequence.subSequence(0,3), sequence.subSequence(sequence.length() - 3, sequence.length()));
             return false;
         }
         int iMax = sequence.length() - 3;
         for(int i=0; i<iMax; i+=3){
-            repliconEntity.incrementTrinucleotideCount(sequence.substring(i, i+3), Phase.PHASE_0);
-            repliconEntity.incrementTrinucleotideCount(sequence.substring(i+1, i+4), Phase.PHASE_1);
-            repliconEntity.incrementTrinucleotideCount(sequence.substring(i+2, i+5), Phase.PHASE_2);
+            repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i, i+3).toString(), Phase.PHASE_0);
+            repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i+1, i+4).toString(), Phase.PHASE_1);
+            repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i+2, i+5).toString(), Phase.PHASE_2);
         }
         iMax = ((sequence.length() % 2) == 0) ? sequence.length() - 4 : sequence.length() - 3;
         for(int i=0; i<iMax; i+=3){
-            repliconEntity.incrementDinucleotideCount(sequence.substring(i, i+2), Phase.PHASE_0);
-            repliconEntity.incrementDinucleotideCount(sequence.substring(i+1, i+3), Phase.PHASE_1);
+            repliconEntity.incrementDinucleotideCount(sequence.subSequence(i, i+2).toString(), Phase.PHASE_0);
+            repliconEntity.incrementDinucleotideCount(sequence.subSequence(i+1, i+3).toString(), Phase.PHASE_1);
         }
         return true;
     }
 
-    private static boolean checkStartEndCodons(String sequence) {
+    private static boolean checkStartEndCodons(@NonNull CharSequence sequence) {
         boolean check = false;
         for(String start : CommonUtils.TRINUCLEOTIDES_INIT){
-            if(sequence.startsWith(start)){
+            if(start.contentEquals(sequence.subSequence(0, 3))){
                 check = true;
                 break;
             }
@@ -272,8 +208,10 @@ public final class GenbankParser {
             return false;
         }
         check = false;
+        int end_start = sequence.length() - 3;
+        int end_stop = sequence.length();
         for(String end : CommonUtils.TRINUCLEOTIDES_STOP){
-            if(sequence.endsWith(end)){
+            if(end.contentEquals(sequence.subSequence(end_start, end_stop))){
                 check = true;
                 break;
             }
@@ -347,14 +285,5 @@ public final class GenbankParser {
             }
         }
         return null;
-    }
-
-    private static Map<String, DNASequence> bioJAVAReadDNASequences(@NonNull File file){
-        try{
-            return new CustomGenbankReader(file).process();
-        }catch(IOException e) {
-            LOGGER.error("Erreur lors du parsing du fichier '{}'", file.getAbsolutePath(), e);
-            return new HashMap<>();
-        }
     }
 }

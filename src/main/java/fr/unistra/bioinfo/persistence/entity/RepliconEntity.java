@@ -283,6 +283,9 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         validsCDS++;
     }
 
+    public void decrementValidsCDS() {
+        validsCDS--;
+    }
 
     public static RepliconEntity add(RepliconEntity e, RepliconEntity ee) {
         if (e.getType() != ee.getType()) {

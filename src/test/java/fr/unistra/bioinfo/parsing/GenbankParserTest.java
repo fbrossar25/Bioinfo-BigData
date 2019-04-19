@@ -84,6 +84,7 @@ class GenbankParserTest {
     }
 
     @Test
+    @Disabled
     void testHugeFileParsing(){
         assertTrue(GenbankParser.parseGenbankFile(GENBANK_HUGE_FILE.toFile()));
     }
@@ -94,13 +95,13 @@ class GenbankParserTest {
         File f = GENBANK_BATCH_REAL_FILE_PATH.toFile();
         assertTrue(GenbankParser.parseGenbankFile(f));
         List<RepliconEntity> replicons = repliconService.getAll();
-        assertEquals(6, replicons.size());
-        List<String> invalidsReplicons = Arrays.asList("NC_003071", "NC_003074", "NC_003075", "NC_003076");
+        assertEquals(1, replicons.size());
+        List<String> invalidsReplicons = Collections.singletonList("NC_037304");
         for(RepliconEntity r : replicons){
             assertTrue(r.isParsed());
             if(invalidsReplicons.contains(r.getName())){
-                assertEquals(0, r.getValidsCDS().intValue());
-                assertEquals(0, r.getInvalidsCDS().intValue());
+                assertEquals(1, r.getValidsCDS().intValue());
+                assertEquals(28, r.getInvalidsCDS().intValue());
             }
         }
         CommonUtils.enableHibernateLogging(true);
@@ -164,16 +165,6 @@ class GenbankParserTest {
         assertEquals(6, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0, "Comptage dinucleotides KO");
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0), "Comptage dinucleotides sensible à la casse");
-    }
-
-    @Test
-    void parseGenbankBatchFile() {
-        assertTrue(GenbankParser.parseGenbankFile(GENBANK_BACTH_TEST_FILE_PATH.toFile()));
-        assertEquals(5, repliconService.count().intValue());
-        List<RepliconEntity> replicons = repliconService.getAll();
-        for(RepliconEntity r : replicons){
-            checkReplicon(r);
-        }
     }
 
     @Test

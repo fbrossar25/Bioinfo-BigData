@@ -22,7 +22,7 @@ FEATURES             Location/Qualifiers
                      /cell_type="lymphocyte"
                      /tissue_type="blood"
                      /dev_stage="adult"
-     CDS             31..65
+     CDS             31..60
      CDS             2..3,3..4
      CDS             1..15
      CDS             16..30
@@ -43,7 +43,7 @@ FEATURES             Location/Qualifiers
                      FVHWFPLFSGYTLDNTWAKIHFTIMFVGVNMTFFPQHFLGLSGMPRRYSDYPDAYTTW
                      NTISSMGSFISLTAVMLMVFMVWEAFASKREVAMVELTTTNLEWLHGCPPPYHTFEEP
                      TYVLLK"
-     CDS             complement(join(<66..90,
+     CDS             complement(join(<61..90,
   91..120>))
 
                      /gene="COX1"
@@ -65,7 +65,7 @@ FEATURES             Location/Qualifiers
                      TYVLLK"
 ORIGIN      
         1 attaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaataa
-       61 attaattttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttatt
+       61 taattttttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttatt
       121 xxxxxxnnnx
 //
 

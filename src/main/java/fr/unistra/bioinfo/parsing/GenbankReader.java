@@ -8,9 +8,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +31,6 @@ public class GenbankReader {
         public int end;
         public boolean complement;
         List<CDS> linkedCDS = new ArrayList<>();
-
         CDS(int begin, int end, boolean comp){
             this.begin = begin;
             this.end = end;
@@ -46,7 +43,7 @@ public class GenbankReader {
     /** Reader du fichier */
     private BufferedReader reader;
     /** Sous-séquences extraites correspondantes aux CDS (operateurs join et complement déjà appliqué si présent) */
-    private StringBuilder processedSequence = new StringBuilder();
+    private List<StringBuilder> processedSequences = new ArrayList<>();
     /** Nom du replicon */
     private String name = null;
     /** Liste de tous les CDS valides*/
@@ -178,6 +175,7 @@ public class GenbankReader {
             throw new RuntimeException("Fichier invalide");
         }
         if(!invalid) {
+            listCds.sort(Comparator.comparingInt(cds -> cds.begin));
             cdsValid.addAll(listCds);
             for(CDS cds : listCds){
                 cds.linkedCDS.addAll(listCds);
@@ -208,13 +206,19 @@ public class GenbankReader {
         int cdsIdx = 0;
         String originLine = reader.readLine();
         //Index de la premiere lettre de la ligne courante
-        int currentLineBeginIdx = 0;
+        int currentLineBeginIdx;
         //Index de la derniere lettre de la ligne courante
         int currentLineEndIdx = 0;
-        int currentReadIdx = 0;
+        //Index de lecture globale du ORIGIN
+        int currentReadIdx = 1;
+        //Sous-séquence d'un seul CDS à la fois, ajouté à la liste processedSequences si valide
         StringBuilder localSubSequence = new StringBuilder();
+        //Map des sous-séquences par CDS, permet de regrouper les CDS 'explosé' à la fin de l'algo
+        Map<Integer, List<StringBuilder>> cdsSequencesMap = new TreeMap<>();
+        boolean ended = false;
+        boolean preventResetCurrentReadIdx = false;
 
-        while(originLine != null && !END_TAG.equals(originLine.trim())){
+        while(!ended && originLine != null && !END_TAG.equals(originLine.trim())){
             //Lecture des index de la ligne actuelle
             Matcher m = ORIGIN_LINE_PATTERN.matcher(originLine);
             if(!m.matches()){
@@ -225,10 +229,15 @@ public class GenbankReader {
             currentLineEndIdx = currentLineBeginIdx + originLine.length() - 1;
 
             //Le CDS commence dans la ligne
-            while(currentLineBeginIdx <= currentCDS.begin && currentCDS.begin <= currentLineEndIdx){
-                currentReadIdx = currentCDS.begin;
-                int realReadIdx = currentReadIdx - currentLineBeginIdx;
-                while(currentReadIdx <= currentLineEndIdx){
+            while(!ended && (currentLineBeginIdx <= currentCDS.begin && currentCDS.begin <= currentLineEndIdx
+                    || currentLineBeginIdx <= currentCDS.end)){
+                int realReadIdx;
+                if(!(currentLineBeginIdx <= currentCDS.end && currentCDS.end <= currentLineEndIdx) && !preventResetCurrentReadIdx){
+                    currentReadIdx = currentCDS.begin;
+                    preventResetCurrentReadIdx = true;
+                }
+                realReadIdx = currentReadIdx - currentLineBeginIdx;
+                while(!ended && currentReadIdx <= currentLineEndIdx){
 
                     char c = getChar(currentCDS.complement, originLine.charAt(realReadIdx));
                     if(c == '?'){
@@ -243,6 +252,7 @@ public class GenbankReader {
                             return;
                         }
                         currentCDS = cdsValid.get(cdsIdx);
+                        preventResetCurrentReadIdx = false;
                         break;
                     }
                     localSubSequence.append(c);
@@ -250,24 +260,39 @@ public class GenbankReader {
                     realReadIdx++;
 
                     if(currentReadIdx > currentCDS.end){
-                        processedSequence.append(localSubSequence);
-                        localSubSequence.setLength(0);
+                        int currentMapKey = currentCDS.linkedCDS.get(0).begin;
+                        if(!cdsSequencesMap.containsKey(currentMapKey)){
+                            cdsSequencesMap.put(currentMapKey, new ArrayList<>(currentCDS.linkedCDS.size()));
+                        }
+                        cdsSequencesMap.get(currentMapKey).add(localSubSequence);
+                        localSubSequence = new StringBuilder();
                         //CDS suivant si l'on à terminé
                         cdsIdx++;
                         if(cdsIdx >= cdsValid.size()){
-                            return;
+                            //Plus de CDS à lire -> on passe au regroupement des sous-séquences
+                            ended = true;
+                        }else{
+                            currentCDS = cdsValid.get(cdsIdx);
+                            preventResetCurrentReadIdx = false;
                         }
-                        currentCDS = cdsValid.get(cdsIdx);
                     }
                 }
-                if(realReadIdx >= originLine.length()){
+                if(currentReadIdx >= currentLineEndIdx){
                     //Le CDS continue à la ligne suivante
                     break;
                 }
             }
-
             //Ligne suivante
             originLine = reader.readLine();
+        }
+
+        //Regroupement des sous-séquences par CDS
+        for(List<StringBuilder> entry: cdsSequencesMap.values()){
+            localSubSequence = new StringBuilder();
+            for(StringBuilder subSeq : entry){
+                localSubSequence.append(subSeq);
+            }
+            processedSequences.add(localSubSequence);
         }
     }
 
@@ -327,8 +352,8 @@ public class GenbankReader {
         }
     }
 
-    public StringBuilder getProcessedSubsequence(){
-        return processedSequence;
+    public List<StringBuilder> getProcessedSubsequences(){
+        return processedSequences;
     }
 
     public int getValidsCDS(){
