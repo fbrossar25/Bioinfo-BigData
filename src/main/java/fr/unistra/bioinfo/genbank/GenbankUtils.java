@@ -90,7 +90,10 @@ public class GenbankUtils {
                     LOGGER.info("Fin des téléchargements");
                     List<File> files = new ArrayList<>(replicons.size());
                     for(Future<File> future : futuresFiles){
-                        files.add(future.get());
+                        File f = future.get();
+                        if(f != null){
+                            files.add(f);
+                        }
                     }
                     callback.complete(files);
                 } catch (ExecutionException | InterruptedException e) {
@@ -253,7 +256,7 @@ public class GenbankUtils {
      * @throws GenbankException si un problème interviens lors de la requête à genbank
      */
     public static void updateNCDatabase() throws GenbankException {
-        GenbankUtils.updateNCDatabase(2);
+        GenbankUtils.updateNCDatabase(0);
     }
 
     /**

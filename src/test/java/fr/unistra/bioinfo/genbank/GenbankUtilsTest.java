@@ -87,14 +87,17 @@ class GenbankUtilsTest {
     @Disabled("Test pour la vitesse de dl")
     void testDownloadNumerousFile(){
         CommonUtils.disableHibernateLogging();
-        GenbankUtils.updateNCDatabase(50);
+        GenbankUtils.updateNCDatabase(0);
         CompletableFuture<List<File>> future = new CompletableFuture<>();
         long begin = System.currentTimeMillis();
         try {
             GenbankUtils.downloadAllReplicons(future);
-            long totalSize = future.get().stream().mapToLong(f -> f.length()/1024).sum();
+            //long totalSize = future.get().stream().mapToLong(f -> f.length()/1000).sum();
+            future.get();
+            long totalSizeMo = DownloadRepliconTask.getTotalReaded() / 1000;
             long end = System.currentTimeMillis();
-            LOGGER.info("Le téléchargement de {}Mo à pris {}.", totalSize/1024, LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
+            LOGGER.info("Le téléchargement de {}Mo à pris {}.", totalSizeMo, LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
+            LOGGER.info("Vitesse moyenne : {}Mo/s", totalSizeMo/((end-begin)/1000));
         } catch (InterruptedException | ExecutionException e) {
             LOGGER.error("Une erreur est survenue.", e);
             fail(e);
@@ -242,8 +245,8 @@ class GenbankUtilsTest {
 
     @Test
     void testMultiThreadsDownloadSpeed(){
-        GenbankUtils.updateNCDatabase(1);
-        RepliconEntity r = repliconService.getAll().get(0);
+        GenbankUtils.updateNCDatabase(0);
+        RepliconEntity r = repliconService.getByName("NC_016088");
         assertNotNull(r);
         try {
             CompletableFuture<List<File>> future = new CompletableFuture<>();
@@ -255,7 +258,7 @@ class GenbankUtilsTest {
             long duration = end - begin;
             double averageDownloadSpeed = ((double)files.get(0).length()) / ((double)duration / 1000); //bytes/s
             LOGGER.info("Temps de téléchargement pour 1 thread : {} secondes", duration/1000);
-            LOGGER.info("Vitesse moyenne pour 1 thread : {} ko/s ({} ko)", averageDownloadSpeed / 1024, files.get(0).length() / 1024);
+            LOGGER.info("Vitesse moyenne pour 1 thread : {} ko/s ({} ko)", averageDownloadSpeed / 1000, files.get(0).length() / 1000);
 
             future = new CompletableFuture<>();
             begin = System.currentTimeMillis();
@@ -265,7 +268,7 @@ class GenbankUtilsTest {
             assertEquals(3, files.size());
             duration = end - begin;
             long filesSizes = files.get(0).length() + files.get(1).length() + files.get(2).length();
-            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / 1024;
+            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / 1000;
             LOGGER.info("Temps de téléchargement pour 3 threads : {} secondes", duration/1000);
             LOGGER.info("Vitesse moyenne pour 3 threads : {} ko/s, soit {} ko/s par thread ({} ko au total)", averageDownloadSpeed, averageDownloadSpeed / files.size(), filesSizes);
         } catch (InterruptedException |ExecutionException e) {

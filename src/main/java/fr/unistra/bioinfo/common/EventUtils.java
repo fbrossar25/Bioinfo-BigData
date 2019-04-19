@@ -36,7 +36,10 @@ public final class EventUtils {
         /** Téléchargement de toutes les méta-données terminés */
         METADATA_END,
         /** Fin du téléchargement d'un fichier */
-        DOWNLOAD_FILE_END}
+        DOWNLOAD_FILE_END,
+        /** Échec du téléchargement d'un fichier malgré les retrys */
+        DOWNLOAD_FILE_FAILED;
+    }
 
     /**
      * Décris un événement avec un type et pour un replicon
