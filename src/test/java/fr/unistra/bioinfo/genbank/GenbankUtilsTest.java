@@ -92,12 +92,9 @@ class GenbankUtilsTest {
         long begin = System.currentTimeMillis();
         try {
             GenbankUtils.downloadAllReplicons(future);
-            //long totalSize = future.get().stream().mapToLong(f -> f.length()/1000).sum();
             future.get();
-            long totalSizeMo = DownloadRepliconTask.getTotalReaded() / 1000;
             long end = System.currentTimeMillis();
-            LOGGER.info("Le téléchargement de {}Mo à pris {}.", totalSizeMo, LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
-            LOGGER.info("Vitesse moyenne : {}Mo/s", totalSizeMo/((end-begin)/1000));
+            LOGGER.info("Le téléchargement pris {}.", LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
         } catch (InterruptedException | ExecutionException e) {
             LOGGER.error("Une erreur est survenue.", e);
             fail(e);

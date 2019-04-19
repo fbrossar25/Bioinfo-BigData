@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.genbank;
 import com.github.rholder.retry.*;
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.common.EventUtils;
+import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.concurrent.Task;
@@ -11,8 +12,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.lang.NonNull;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -59,7 +62,6 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
     }
 
     private File download() throws IOException{
-        long localReadCount = 0;
         File f = CommonUtils.DATAS_PATH.resolve(fileName).toFile();
         if(!f.exists()){
             FileUtils.forceMkdirParent(f);
@@ -68,21 +70,18 @@ public class DownloadRepliconTask extends Task<File> implements Callable<File> {
                 throw new IOException("Le fichier"+f.getPath()+" n'as pas pu être créé");
             }
         }
-        try(BufferedReader in = new BufferedReader(new InputStreamReader(GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()));
-                FileOutputStream out = new FileOutputStream(f)) {
+        for(RepliconEntity r : replicons){
+            r.setFileName(fileName);
+            synchronized(synchronizedObject){
+                repliconService.save(r);
+            }
+        }
+        try(BufferedReader in = new BufferedReader(new InputStreamReader(GenbankUtils.getGBDownloadURL(replicons).toURL().openStream()))) {
             LOGGER.debug("Téléchargement du replicons '{}' -> '{}' débuté",repliconsIds, f.getPath());
             GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
-            String line = null;
-            while((line = in.readLine()) != null){
-                localReadCount += line.length();
-                out.write(line.getBytes(StandardCharsets.UTF_8));
-            }
-            readCount.addAndGet(localReadCount/1024);
-            //FileUtils.copyToFile(in, f);
+            GenbankParser.parseGenbankFile(in);
             for(RepliconEntity r : replicons){
                 r.setFileName(fileName);
-                r.setParsed(false);
-                r.setComputed(false);
                 synchronized(synchronizedObject){
                     repliconService.save(r);
                 }

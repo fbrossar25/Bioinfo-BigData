@@ -35,10 +35,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,6 +76,22 @@ class GenbankParserTest {
         CommonUtils.disableHibernateLogging();
         hierarchyService.deleteAll();
         repliconService.deleteAll();
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testFileWithCDSKeywordInComment(){
+        CommonUtils.disableHibernateLogging();
+        GenbankUtils.updateNCDatabase();
+        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        GenbankUtils.downloadReplicons(Collections.singletonList(repliconService.getByName("NC_001700")),future);
+        try {
+            assertNotNull(future.get());
+            assertTrue(repliconService.getByName("NC_001700").isParsed());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            fail(e);
+        }
         CommonUtils.enableHibernateLogging(true);
     }
 

@@ -39,12 +39,19 @@ public class GenbankReader {
             this.end = end;
             this.complement = comp;
         }
+        @Override
+        public String toString(){
+            if(complement){
+                return "complement("+begin+".."+end+")";
+            }
+            return begin+".."+end;
+        }
     }
 
     /** Fichier à lire */
     private File file;
     /** Reader du fichier */
-    private BufferedReader reader;
+    private BufferedReader reader = null;
     /** Sous-séquences extraites correspondantes aux CDS (operateurs join et complement déjà appliqué si présent) */
     private List<StringBuilder> processedSequences = new ArrayList<>();
     /** Nom du replicon */
@@ -57,16 +64,28 @@ public class GenbankReader {
     private int nbCdsInvalid = 0;
     /** Nombre de cds valides */
     private int nbCdsValid = 0;
+    /** Organisme du replicon */
+    private String organism;
     /** Taille du origin */
     private int sequenceLength = -1;
     private boolean isTest = false;
+    /** Indique que le mot clé FEATURES à été lu */
+    private boolean features = false;
 
     private GenbankReader(File file){
         this.file = file;
     }
+    private GenbankReader(BufferedReader reader){
+        this.reader = reader;
+    }
 
     public void process() throws IOException {
-        reader = new BufferedReader(new FileReader(file));
+        if(reader == null){
+            if(file == null){
+                throw new IOException("Le fichier n'est pas définis");
+            }
+            reader = new BufferedReader(new FileReader(file));
+        }
         String line;
         while((line = reader.readLine()) != null){
             processLine(line);
@@ -98,12 +117,23 @@ public class GenbankReader {
                     processSource(value);
                 }
                 break;
+            case "FEATURES":
+                features = true;
+                break;
             case "CDS":
-                processCDS(value);
+                if(features){
+                    processCDS(value);
+                }
                 break;
             case "ORIGIN":
-                processORIGIN();
+                if(features){
+                    processORIGIN();
+                }
                 break;
+            case "ORGANISM":
+                if(StringUtils.isNotBlank(value)){
+                    organism = value.trim();
+                }
             default:
         }
     }
@@ -130,11 +160,6 @@ public class GenbankReader {
      * @param cdsValue La valeur de la première ligne du CDS déjà lu par le reader à ce stade.
      */
     private void processCDS(String cdsValue) throws IOException{
-        //TODO
-        //Astuce : si le nombre de parathèse ouvrante et fermante de correspondent pas
-        //où si la chaine termine par une virgule, le CDS est multi-ligne
-        //Les CDS doivent trié par ordre d'index de démarrage pour que la lecture du ORIGIN
-        //soit optimale (càd sans devoir sauvegarder le ORIGIN en entier)
         boolean endCds = false;
         boolean complement = false;
         boolean invalid = false;
@@ -176,7 +201,7 @@ public class GenbankReader {
                 invalid = true;
             }
         }else{
-            throw new RuntimeException("Fichier invalide");
+            throw new RuntimeException("Fichier invalide : La taille de la séquence n'as pas pu être déterminé");
         }
         if(!invalid) {
             listCds.sort(Comparator.comparingInt(cds -> cds.begin));
@@ -196,12 +221,6 @@ public class GenbankReader {
      * Utilise le reader pour avancer jusqu'à la end du fichier ou jusqu'au tag de terminaison du replicon (//).
      */
     private void processORIGIN() throws IOException{
-        //TODO
-        //A ce stade les CDS devraient être tous lus
-        //Si la liste des CDS est vide -> ne pas lire cette section car inutile
-        //Sinon, attendre d'être sur la ligne ou commence le premier CDS
-        //et commecner à enregistrer ce CDS jusqu'as arriver à la end de ce CDS
-        //et passer au CDS suivants.
         if(cdsValid.isEmpty()){
             return;
         }
@@ -221,6 +240,7 @@ public class GenbankReader {
         }
 
         Map<Integer, StringBuilder> localCDSMap = new TreeMap<>();
+        List<CDS> invalidsCDSContent = new ArrayList<>();
         for(CDS cds : cdsValid){
             if(cds.processed){
                 continue;
@@ -228,14 +248,30 @@ public class GenbankReader {
             int key = cds.linkedCDS.get(0).begin;
             if(!localCDSMap.containsKey(key)){
                 localCDSMap.put(key , new StringBuilder(getSubsequenceLength(cds)));
-                processedSequences.add(localCDSMap.get(key));
             }
             String s = fullOrigin.substring(cds.begin-1, cds.end);
             StringBuilder sRef = localCDSMap.get(key);
             for(int i=0; i<s.length(); i++){
-                sRef.append(getChar(cds.complement, s.charAt(i)));
+                char c = getChar(cds.complement, s.charAt(i));
+                if(c == '?'){
+                    LOGGER.debug("Caractère invalide pour le replicon '{}' dans le CDS '{}' : '{}'", name, cds, s.charAt(i));
+                    localCDSMap.remove(key);
+                    nbCdsValid--;
+                    nbCdsInvalid++;
+                    invalidsCDSContent.addAll(cds.linkedCDS);
+                    for(CDS linked : cds.linkedCDS){
+                        linked.processed = true;
+                    }
+                    break;
+                }else{
+                    sRef.append(c);
+                }
             }
+            cds.processed = true;
         }
+        cdsValid.removeAll(invalidsCDSContent);
+        processedSequences.addAll(localCDSMap.values());
+        invalidsCDSContent.clear();
         localCDSMap.clear();
         if(!isTest){
             List<StringBuilder> toDelete = new ArrayList<>();
@@ -373,6 +409,10 @@ public class GenbankReader {
         return version;
     }
 
+    public String getOrganism(){
+        return organism;
+    }
+
     public int getSequenceLength(){
         return sequenceLength;
     }
@@ -384,6 +424,15 @@ public class GenbankReader {
      */
     public static GenbankReader createInstance(@NonNull File file){
         return new GenbankReader(file);
+    }
+
+    /**
+     * Instancier un lecteur de fichier genbank
+     * @param reader Le buefer à lire
+     * @return Une instance permettant de lire le fichier en paramètre
+     */
+    public static GenbankReader createInstance(@NonNull BufferedReader reader){
+        return new GenbankReader(reader);
     }
 
     static GenbankReader createInstance(@NonNull File file, boolean isTest){

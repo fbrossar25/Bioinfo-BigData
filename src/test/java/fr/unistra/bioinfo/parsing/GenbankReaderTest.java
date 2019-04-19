@@ -24,6 +24,17 @@ class GenbankReaderTest {
     private static final int SEQUENCE_LENGTH = EXPECTED_SUBSEQUENCE.length();
 
     @Test
+    void shouldParseOrganism(){
+        try {
+            GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile(), true);
+            gbReader.process();
+            assertEquals("Felis catus", gbReader.getOrganism());
+        } catch (IOException e) {
+            fail("Erreur lors de la lecture du fichier",e);
+        }
+    }
+
+    @Test
     void shouldParseMultilineOfDoom(){
         try {
             GenbankReader gbReader = GenbankReader.createInstance(TEST_MULTILINE.toFile(), true);

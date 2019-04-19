@@ -29,11 +29,8 @@ public final class GenbankParser {
 
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
-
     private static final Pattern ORGANISM_PATTERN = Pattern.compile("^([\\s]+)?ORGANISM([\\s]+)(.+)([\\s]+)?$");
-
     private static final Pattern ACCESSION_PATTERN = Pattern.compile("^([\\s]+)?ACCESSION([\\s]+)(.+)([\\s]+)?$");
-    private static final Pattern ACGT_PATTERN = Pattern.compile("^[ACGT]+$");
 
     public static void setHierarchyService(@NonNull HierarchyService hierarchySerice){
         GenbankParser.hierarchyService = hierarchySerice;
@@ -45,16 +42,45 @@ public final class GenbankParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankParser.class);
 
-    private synchronized static RepliconEntity getOrCreateRepliconEntity(String repliconName, File repliconFile){
+    private synchronized static RepliconEntity getOrCreateRepliconEntity(String repliconName, GenbankReader gbReader){
         RepliconEntity repliconEntity = repliconService.getByName(repliconName);
         if(repliconEntity == null) {
             try {
-                repliconEntity = createReplicon(repliconFile, repliconName);
+                repliconEntity = createReplicon(gbReader, repliconName);
             } catch (IOException e) {
-                LOGGER.error("Création du replicon '{}' à partir du fichier '{}' impossible.", repliconName, repliconFile.getName(), e);
+                LOGGER.error("Création du replicon '{}' impossible.", repliconName, e);
             }
         }
         return repliconEntity;
+    }
+
+    public static boolean parseGenbankFile(@NonNull BufferedReader reader) throws IOException{
+        GenbankReader gbReader = GenbankReader.createInstance(reader);
+        gbReader.process();
+        String repliconName = gbReader.getName();
+        RepliconEntity repliconEntity = getOrCreateRepliconEntity(repliconName, gbReader);
+        if(repliconEntity == null){
+            LOGGER.warn("replicons '{}' introuvable", repliconName);
+            return false;
+        }
+        repliconEntity.setComputed(false);
+        repliconEntity.setParsed(false);
+        repliconEntity.setVersion(gbReader.getVersion());
+        repliconEntity.setValidsCDS(gbReader.getValidsCDS());
+        repliconEntity.setInvalidsCDS(gbReader.getInvalidsCDS());
+        synchronized(synchronizedObject){
+            repliconService.save(repliconEntity);
+        }
+        if(RepliconType.DNA.equals(repliconEntity.getType())){
+            repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
+        }
+        countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);
+        countPrefPhases(repliconEntity);
+        repliconEntity.setParsed(true);
+        synchronized(synchronizedObject){
+            repliconService.save(repliconEntity);
+        }
+        return true;
     }
 
     /**
@@ -68,38 +94,12 @@ public final class GenbankParser {
             LOGGER.error("Fichier '"+repliconFile.getAbsolutePath()+"' introuvable ou droits insuffisants");
             return false;
         }
-        try{
-            GenbankReader gbReader = GenbankReader.createInstance(repliconFile);
-            gbReader.process();
-            String repliconName = gbReader.getName();
-            RepliconEntity repliconEntity = getOrCreateRepliconEntity(repliconName, repliconFile);
-            if(repliconEntity == null){
-                LOGGER.warn("replicons '{}' introuvable", repliconName);
-                return false;
-            }
-            repliconEntity.setFileName(repliconFile.getName());
-            repliconEntity.setComputed(false);
-            repliconEntity.setParsed(false);
-            repliconEntity.setVersion(gbReader.getVersion());
-            repliconEntity.setValidsCDS(gbReader.getValidsCDS());
-            repliconEntity.setInvalidsCDS(gbReader.getInvalidsCDS());
-            synchronized(synchronizedObject){
-                repliconService.save(repliconEntity);
-            }
-            if(RepliconType.DNA.equals(repliconEntity.getType())){
-                repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
-            }
-            countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);
-            countPrefPhases(repliconEntity);
-            repliconEntity.setParsed(true);
-            synchronized(synchronizedObject){
-                repliconService.save(repliconEntity);
-            }
-        }catch(Exception e){
-            LOGGER.error("Erreur de lecture du fichier '{}'", repliconFile.getPath(), e);
+        try(BufferedReader reader = new BufferedReader(new FileReader(repliconFile))){
+            return parseGenbankFile(reader);
+        }catch (Exception e){
+            LOGGER.error("Erreur lors du parsing du fichier {}", repliconFile, e);
             return false;
         }
-        return true;
     }
 
     private static void countPrefPhases(RepliconEntity replicon){
@@ -183,18 +183,16 @@ public final class GenbankParser {
 
     /**
      * Créé et sauvegarde le replicon à partir du fichier fournis et de son nom. Créer également le HierarchyEntity associé s'il n'existe pas.
-     * @param repliconFile Le fichier genbank
      * @param repliconName Le nom du replicon
      * @return Le repliconEntity créé où null
      * @throws IOException Si une erreur arrive lors de la lecture du fichier
      */
-    static RepliconEntity createReplicon(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
+    static RepliconEntity createReplicon(@NonNull GenbankReader gbReader, @NonNull String repliconName) throws IOException{
         RepliconEntity repliconEntity = new RepliconEntity();
         repliconEntity.setName(repliconName);
-        repliconEntity.setFileName(repliconFile.getName());
-        HierarchyEntity h = readHierarchy(repliconFile, repliconEntity.getName());
+        HierarchyEntity h = readHierarchy(gbReader, repliconEntity.getName());
         if(h == null){
-            LOGGER.warn("Impossible de déterminer l'organisme représenté par le fichier '{}', abandon du parsing",repliconFile.getAbsolutePath());
+            LOGGER.warn("Impossible de déterminer l'organisme du replicon '{}', abandon du parsing",repliconName);
             return null;
         }
         synchronized(synchronizedObject){
@@ -209,14 +207,13 @@ public final class GenbankParser {
     /**
      * Retourne le Hierarchy correspondant au fichier donné en lisant la section ORGANISM du fichier si elle existe.<br/>
      * Si elle n'existe pas, null est renvoyé, sinon le Hierarchy est soit pris dans la BDD, soit créé et sauvegardé s'il n'y est pas.
-     * @param repliconFile le fichier à lire
      * @return Le hierarchy correspondant, null si non trouvé
      * @throws IOException En cas de problème de lecture du fichier
      */
-    private static HierarchyEntity readHierarchy(@NonNull File repliconFile, @NonNull String repliconName) throws IOException{
-        String organism = readOrganism(repliconFile, repliconName);
+    private static HierarchyEntity readHierarchy(@NonNull GenbankReader gbReader, @NonNull String repliconName) throws IOException{
+        String organism = gbReader.getOrganism();
         if(StringUtils.isBlank(organism)){
-            LOGGER.warn("le fichier '{}' ne contient pas de section ORGANISM", repliconFile.getName());
+            LOGGER.warn("Le replicon '{}' ne contient pas de section ORGANISM", repliconName);
             return null;
         }
         return hierarchyService.getByOrganism(organism, true);
