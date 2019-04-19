@@ -22,7 +22,9 @@ FEATURES             Location/Qualifiers
                      /cell_type="lymphocyte"
                      /tissue_type="blood"
                      /dev_stage="adult"
-     CDS             1..60
+     CDS             31..60
+     CDS             2..3,3..4
+     CDS             1..30
                      /gene="COX1"
                      /gene_synonym="COI"
                      /codon_start=1

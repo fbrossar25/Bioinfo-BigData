@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,8 +25,21 @@ public class GenbankReader {
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(NC_\\d+?).(\\d+)$");
     private static final Pattern CDS_PATTERN = Pattern.compile("^\\s*(join\\(|complement\\((join\\()?)?((,?[<>]*\\d+[<>]*\\.\\.[<>]*\\d+[<>]*)+)\\)*\\s*$");
     private static final Pattern INTERVAL_PATTERN = Pattern.compile("^(\\d+)\\.\\.(\\d+)$");
-
+    private static final Pattern ORIGIN_LINE_PATTERN = Pattern.compile("^\\s*(\\d+)\\s*(.+?)\\s*$");
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
+
+    class CDS{
+        public int begin;
+        public int end;
+        public boolean complement;
+        List<CDS> linkedCDS = new ArrayList<>();
+
+        CDS(int begin, int end, boolean comp){
+            this.begin = begin;
+            this.end = end;
+            this.complement = comp;
+        }
+    }
 
     /** Fichier à lire */
     private File file;
@@ -36,7 +50,7 @@ public class GenbankReader {
     /** Nom du replicon */
     private String name = null;
     /** Liste de tous les CDS valides*/
-    private ArrayList<CDS> cdsValid = new ArrayList<>();
+    private List<CDS> cdsValid = new ArrayList<>();
     /** Version du replicon */
     private int version = 0;
     /** Nombre de cds invalides */
@@ -165,6 +179,9 @@ public class GenbankReader {
         }
         if(!invalid) {
             cdsValid.addAll(listCds);
+            for(CDS cds : listCds){
+                cds.linkedCDS.addAll(listCds);
+            }
             nbCdsValid++;
         }else{
             nbCdsInvalid++;
@@ -172,29 +189,142 @@ public class GenbankReader {
         listCds.clear();
     }
 
-    class CDS{
-        public int begin;
-        public int end;
-        public boolean complement;
-
-        CDS(int begin, int end, boolean comp){
-            this.begin = begin;
-            this.end = end;
-            this.complement = comp;
-        }
-    }
-
     /**
      * Parse la section ORIGIN du fichier.
      * Utilise le reader pour avancer jusqu'à la end du fichier ou jusqu'au tag de terminaison du replicon (//).
      */
-    private void processORIGIN(){
+    private void processORIGIN() throws IOException{
         //TODO
         //A ce stade les CDS devraient être tous lus
         //Si la liste des CDS est vide -> ne pas lire cette section car inutile
         //Sinon, attendre d'être sur la ligne ou commence le premier CDS
         //et commecner à enregistrer ce CDS jusqu'as arriver à la end de ce CDS
         //et passer au CDS suivants.
+        if(cdsValid.isEmpty()){
+            return;
+        }
+        sortAndcheckCDSIntervalValidity();
+        CDS currentCDS = cdsValid.get(0);
+        int cdsIdx = 0;
+        String originLine = reader.readLine();
+        //Index de la premiere lettre de la ligne courante
+        int currentLineBeginIdx = 0;
+        //Index de la derniere lettre de la ligne courante
+        int currentLineEndIdx = 0;
+        int currentReadIdx = 0;
+        StringBuilder localSubSequence = new StringBuilder();
+
+        while(originLine != null && !END_TAG.equals(originLine.trim())){
+            //Lecture des index de la ligne actuelle
+            Matcher m = ORIGIN_LINE_PATTERN.matcher(originLine);
+            if(!m.matches()){
+                break;
+            }
+            currentLineBeginIdx = currentLineEndIdx + 1;
+            originLine = m.group(2).trim().replaceAll("\\s+", "");
+            currentLineEndIdx = currentLineBeginIdx + originLine.length() - 1;
+
+            //Le CDS commence dans la ligne
+            while(currentLineBeginIdx <= currentCDS.begin && currentCDS.begin <= currentLineEndIdx){
+                currentReadIdx = currentCDS.begin;
+                int realReadIdx = currentReadIdx - currentLineBeginIdx;
+                while(currentReadIdx <= currentLineEndIdx){
+
+                    char c = getChar(currentCDS.complement, originLine.charAt(realReadIdx));
+                    if(c == '?'){
+                        //CDS suivant si le CDS courant est invalide
+                        localSubSequence.setLength(0);
+                        nbCdsInvalid++;
+                        nbCdsValid--;
+                        cdsValid.removeAll(currentCDS.linkedCDS);
+                        cdsValid.sort(Comparator.comparingInt(cds -> cds.begin));
+                        //On avance pas l'index car, la liste étant trié, un autre cds viens à la place automatiquement
+                        if(cdsIdx >= cdsValid.size()){
+                            return;
+                        }
+                        currentCDS = cdsValid.get(cdsIdx);
+                        break;
+                    }
+                    localSubSequence.append(c);
+                    currentReadIdx++;
+                    realReadIdx++;
+
+                    if(currentReadIdx > currentCDS.end){
+                        processedSequence.append(localSubSequence);
+                        localSubSequence.setLength(0);
+                        //CDS suivant si l'on à terminé
+                        cdsIdx++;
+                        if(cdsIdx >= cdsValid.size()){
+                            return;
+                        }
+                        currentCDS = cdsValid.get(cdsIdx);
+                    }
+                }
+                if(realReadIdx >= originLine.length()){
+                    //Le CDS continue à la ligne suivante
+                    break;
+                }
+            }
+
+            //Ligne suivante
+            originLine = reader.readLine();
+        }
+    }
+
+    /**
+     * Trie la liste de cds par ordre croissant des débuts des CDS et supprime les CDS qui démarre ou termine en même qu'un autre
+     */
+    private void sortAndcheckCDSIntervalValidity(){
+        cdsValid.sort(Comparator.comparingInt(cds -> cds.begin));
+        if(cdsValid.size() > 1){
+            List<CDS> checkedCDSList = new ArrayList<>(cdsValid);
+            CDS cds;
+            for(int i=1; i<cdsValid.size(); i++){
+                cds = cdsValid.get(i);
+                if(!checkedCDSList.contains(cds)){
+                    continue;
+                }
+                if(i + 1 < cdsValid.size() && cds.end >= cdsValid.get(i+1).begin){
+                    //Si ce CDS termine après que le cds suivant aient démarré
+                    nbCdsInvalid++;
+                    nbCdsValid--;
+                    checkedCDSList.removeAll(cds.linkedCDS);
+                }else if(cds.begin <= cdsValid.get(i - 1).end){
+                    //Si le  CDS commence avant que le cds précédent n'ais terminé
+                    nbCdsInvalid++;
+                    nbCdsValid--;
+                    checkedCDSList.removeAll(cds.linkedCDS);
+                }
+            }
+            cdsValid = checkedCDSList;
+        }
+    }
+
+    private char getChar(boolean complement, char c) {
+        if(complement){
+            switch (c){
+                case 'a':
+                case 'A': return 'T';
+                case 't':
+                case 'T': return 'A';
+                case 'c':
+                case 'C': return 'G';
+                case 'g':
+                case 'G': return 'C';
+                default : return '?';
+            }
+        }
+        switch (c){
+            case 'a':
+            case 'A': return 'A';
+            case 't':
+            case 'T': return 'T';
+            case 'c':
+            case 'C': return 'C';
+            case 'g':
+            case 'G': return 'G';
+            default : return '?';
+        }
     }
 
     public StringBuilder getProcessedSubsequence(){
