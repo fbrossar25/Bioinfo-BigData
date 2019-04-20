@@ -19,9 +19,8 @@ class GenbankReaderTest {
     private static final int INVALIDS_CDS = 1;
     private static final int VALIDS_CDS = 4;
     private static final int ORIGIN_LENGTH = 130;
-    private static final String EXPECTED_SUBSEQUENCE = "ATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAAATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAA";
+    private static final String EXPECTED_SUBSEQUENCE = "ATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATTT";
     private static final String EXPECTED_SUBSEQUENCE_OF_DOOM = "CGTACGTACGTAC";
-    private static final int SEQUENCE_LENGTH = EXPECTED_SUBSEQUENCE.length();
 
     @Test
     void shouldParseOrganism(){
@@ -84,7 +83,6 @@ class GenbankReaderTest {
             assertEquals(VALIDS_CDS, subSeqs.size());
             assertEquals(VALIDS_CDS, gbReader.getValidsCDS());
             assertEquals(INVALIDS_CDS, gbReader.getInvalidsCDS());
-            assertEquals(SEQUENCE_LENGTH, subSeqs.stream().mapToInt(StringBuilder::length).sum());
             assertEquals(EXPECTED_SUBSEQUENCE, String.join("", subSeqs));
         } catch (IOException e) {
             fail("Erreur lors de la lecture du fichier",e);

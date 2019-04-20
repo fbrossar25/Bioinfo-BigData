@@ -46,9 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ExcelTest {
     private static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static String TEST_PATH = "test_results";
-
     public static final String ORGA_NAME = "Felis catus";
-
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get(".","src", "test", "resources", "NC_001700.1.gb");
     private static final Path GENBANK_TEST_FILE_PATH_2 = Paths.get(".","src", "test", "resources", "NC_001701.1.gb");
     private static final Path GENBANK_TEST_FILE_PATH_3 = Paths.get(".","src", "test", "resources", "NC_001702.1.gb");

@@ -190,7 +190,7 @@ FEATURES             Location/Qualifiers
                      /translation="MNENLFASFTTPTMMGLPIVILIIMFPSILFPSPNRLINNRLVS
                      LQQWLVQLTSKQMLAIHNHKGQTWALMLMSLILFIGSTNLLGLLPHSFTPTTQLSMNL
                      GMAIPLWAGTVITGFRHKTKASLAHFLPQGTPVPLIPMLVVIETISLFIQPMALAVRL
-                     TANITAGHLLMHLIGGAALALMNISTSIALITFTILILLTILEFAVALIQAYVFTLLV
+                     TANITAGHLLMHLIGGAALALMNqISTSIALITFTILILLTILEFAVALIQAYVFTLLV
                      SLYLHDNT"
      gene            9499..10282
                      /gene="COX3"
@@ -334,8 +334,8 @@ FEATURES             Location/Qualifiers
                      /product="tRNA-Thr"
      tRNA            complement(16248..16314)
                      /product="tRNA-Pro"
-ORIGIN      
-        1 nnnnnnnnnn nnnnnnnnnn nnnnnnnnnn nnnnnnnnnn nnnnnnnnnn nnnnnnnnnn
+ORIGIN
+        1 xnuvron?z5 ctaatcagcc catgatcaca cataactgtg gtgtcatgca tttggtattt
        61 tttattttta gggggtcgaa cttgctatga ctcagctatg acctaaaggt cctgactcag
       121 tcaaatatat tgttgctggg cttattctct atgcggggtc tccacacgca cagacagtca
       181 gggtgctatt cagtcaatgg tcacaggaca tatacttaaa ttcctattgt tccacaggac
@@ -585,7 +585,7 @@ ORIGIN
     14821 ccccaaaatt caacacaata ccacaaccag taccaccagc cacaattaaa ccaaacccac
     14881 cataaattgg agaaggcttt gaagaaaaac ttacaaagct cactacaaaa actgtactta
     14941 aaataaatac aatgtatgtt atcattattc tcacatggaa tttaaccatg actaatgata
-    15001 tgaaaaacca tcgttgtatt tcaactataa gaacttaatg nnnaacattc gaaaatcaca
+    15001 tgaaaaacca tcgttgtatt tcaactataa gaacttaatg accaacattc gaaaatcaca
     15061 cccccttatc aaaattatta atcactcatt catcgatcta cccgccccat ctaacatctc
     15121 agcatgatga aacttcggct cccttctagg agtctgccta accttacaaa tcctcaccgg
     15181 cctctttttg gccatacact acacatcaga cacaataacc gccttttcat cagttaccca

@@ -241,6 +241,7 @@ public class GenbankReader {
 
         Map<Integer, StringBuilder> localCDSMap = new TreeMap<>();
         List<CDS> invalidsCDSContent = new ArrayList<>();
+        List<StringBuilder> subSequencesToComplement = new ArrayList<>();
         for(CDS cds : cdsValid){
             if(cds.processed){
                 continue;
@@ -251,6 +252,9 @@ public class GenbankReader {
             }
             String s = fullOrigin.substring(cds.begin-1, cds.end);
             StringBuilder sRef = localCDSMap.get(key);
+            if(cds.complement && !subSequencesToComplement.contains(sRef)){
+                subSequencesToComplement.add(sRef);
+            }
             for(int i=0; i<s.length(); i++){
                 char c = getChar(cds.complement, s.charAt(i));
                 if(c == '?'){
@@ -273,6 +277,10 @@ public class GenbankReader {
         processedSequences.addAll(localCDSMap.values());
         invalidsCDSContent.clear();
         localCDSMap.clear();
+        for(StringBuilder toComplement : subSequencesToComplement){
+            toComplement.reverse();
+        }
+        subSequencesToComplement.clear();
         if(!isTest){
             List<StringBuilder> toDelete = new ArrayList<>();
             for(StringBuilder subSeq : processedSequences){
