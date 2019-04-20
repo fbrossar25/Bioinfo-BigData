@@ -83,11 +83,12 @@ class GenbankParserTest {
     void testFileWithCDSKeywordInComment(){
         CommonUtils.disableHibernateLogging();
         GenbankUtils.updateNCDatabase();
-        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
         GenbankUtils.downloadReplicons(Collections.singletonList(repliconService.getByName("NC_001700")),future);
         try {
             assertNotNull(future.get());
-            assertTrue(repliconService.getByName("NC_001700").isParsed());
+            assertFalse(future.get().isEmpty());
+            assertTrue(future.get().get(0).isParsed());
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             fail(e);
@@ -264,16 +265,13 @@ class GenbankParserTest {
     @Disabled("Tests à des fins de debuggage")
     void parseDatas(){
         GenbankUtils.updateNCDatabase(50);
-        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
         GenbankUtils.downloadAllReplicons(future);
-        List<File> files;
+        List<RepliconEntity> replicons;
         try {
-            files = future.get(20, TimeUnit.MINUTES);
-            assertNotNull(files, "Pas de fichier trouvés");
-            assertFalse(files.isEmpty(), "0 Fichiers trouvés");
-            for(File f : files){
-                assertTrue(GenbankParser.parseGenbankFile(f));
-            }
+            replicons = future.get(20, TimeUnit.MINUTES);
+            assertNotNull(replicons, "Pas de replicons trouvés");
+            assertFalse(replicons.isEmpty(), "0 replicons trouvés");
             assertTrue(repliconService.count() > 0);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             fail("Erreur lors du téléchargement", e);

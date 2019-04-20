@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -267,11 +268,11 @@ public class ExcelTest {
 
     @Test
     void parseAndGenerateStats(){
-        GenbankUtils.updateNCDatabase(10);
-        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        GenbankUtils.updateNCDatabase(1);
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
         long begin = System.currentTimeMillis();
         GenbankUtils.downloadAllReplicons(future);
-        List<File> files = null;
+        List<RepliconEntity> files = null;
         try {
             files = future.get(1, TimeUnit.HOURS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -281,30 +282,14 @@ public class ExcelTest {
         assertFalse(files.isEmpty(), "Pas de fichier trouvés");
 
         long end = System.currentTimeMillis();
-        long elapsedSeconds = (end - begin)/1000;
-        LOGGER.info("Elapsed time for downloading {} replicons: {}s", repliconService.count(), elapsedSeconds);
-        long prediction = (long)((((double) elapsedSeconds) / repliconService.count()) * 13000);
-        LOGGER.info("Downloading all replicons (~13000) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
-
-        begin = System.currentTimeMillis();
-        for(File f : files){
-            GenbankParser.parseGenbankFile(f);
-        }
-        end = System.currentTimeMillis();
-        elapsedSeconds = (end - begin) / 1000;
-        LOGGER.info("Elapsed time for parsing {} files: {}s", files.size(), elapsedSeconds);
-        prediction = (long)((((double) elapsedSeconds) / files.size()) * 1300);
-        LOGGER.info("Parsing all replicons (~1300 files) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+        LOGGER.info("Elapsed time for downloading and parsing {} replicons: {}s", repliconService.count(), LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
 
         begin = System.currentTimeMillis();
         for(HierarchyEntity entity : hierarchyService.getAll()){
             new OrganismExcelGenerator(entity, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel();
         }
         end = System.currentTimeMillis();
-        elapsedSeconds = (end - begin) / 1000;
-        LOGGER.info("Elapsed time for generating excels for {} organisms: {}s", hierarchyService.count(), elapsedSeconds);
-        prediction = (long)((((double) elapsedSeconds) / hierarchyService.count()) * 5000);
-        LOGGER.info("Generating all organism's Excels (~5000 organisms) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+        LOGGER.info("Elapsed time for generating excels for {} organisms: {}s", hierarchyService.count(), LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
     }
 
     @Test

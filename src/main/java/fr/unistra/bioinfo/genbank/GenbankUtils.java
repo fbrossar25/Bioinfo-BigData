@@ -16,7 +16,6 @@ import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import javafx.application.Platform;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +26,6 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.lang.NonNull;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -35,10 +33,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,9 +51,8 @@ public class GenbankUtils {
     private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
-    private static final Integer REPLICONS_BATCH_SIZE = 1;
     // Jusqu'à 10 téléchargement concurrents, en respectant REQUEST_LIMIT
-    private static final Integer DOWNLOAD_THREAD_POOL_SIZE = 10;
+    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = 10;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
@@ -74,23 +68,22 @@ public class GenbankUtils {
         EventUtils.subscribe(DOWNLOAD_END_LISTENER);
     }
 
-    public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<File>> callback) {
+    public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<RepliconEntity>> callback) {
         final ExecutorService ses = Executors.newFixedThreadPool(DOWNLOAD_THREAD_POOL_SIZE);
-        List<List<RepliconEntity>> splittedRepliconsList = ListUtils.partition(replicons, REPLICONS_BATCH_SIZE);
-        final List<DownloadRepliconTask> tasks = new ArrayList<>(splittedRepliconsList.size());
+        final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
 
-        splittedRepliconsList.forEach(repliconsSubList -> tasks.add(new DownloadRepliconTask(repliconsSubList, repliconService)));
-        LOGGER.info("Débuts des téléchargements ({} fichiers)", tasks.size());
+        replicons.stream().filter(Objects::nonNull).forEach(r -> tasks.add(new DownloadRepliconTask(r, repliconService)));
+        LOGGER.info("Débuts des téléchargements ({} replicons)", tasks.size());
         EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
             new Thread(() -> {
                 try {
-                    final List<Future<File>> futuresFiles = ses.invokeAll(tasks);
+                    final List<Future<RepliconEntity>> futuresFiles = ses.invokeAll(tasks);
                     ses.shutdown();
                     ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
                     LOGGER.info("Fin des téléchargements");
-                    List<File> files = new ArrayList<>(replicons.size());
-                    for(Future<File> future : futuresFiles){
-                        File f = future.get();
+                    List<RepliconEntity> files = new ArrayList<>(replicons.size());
+                    for(Future<RepliconEntity> future : futuresFiles){
+                        RepliconEntity f = future.get();
                         if(f != null){
                             files.add(f);
                         }
@@ -109,7 +102,7 @@ public class GenbankUtils {
      * @throws IOException En cas d'erreurs pendant le téléchargement
      * @see GenbankUtils#updateNCDatabase
      */
-    public static void downloadAllReplicons(CompletableFuture<List<File>> callback){
+    public static void downloadAllReplicons(CompletableFuture<List<RepliconEntity>> callback){
         downloadReplicons(repliconService.getAll(), callback);
     }
 

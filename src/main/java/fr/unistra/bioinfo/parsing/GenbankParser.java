@@ -54,11 +54,16 @@ public final class GenbankParser {
         return repliconEntity;
     }
 
-    public static boolean parseGenbankFile(@NonNull BufferedReader reader) throws IOException{
+    public static boolean parseGenbankFile(@NonNull BufferedReader reader, RepliconEntity replicon) throws IOException{
         GenbankReader gbReader = GenbankReader.createInstance(reader);
         gbReader.process();
         String repliconName = gbReader.getName();
-        RepliconEntity repliconEntity = getOrCreateRepliconEntity(repliconName, gbReader);
+        RepliconEntity repliconEntity;
+        if(replicon != null){
+            repliconEntity = replicon;
+        }else{
+            repliconEntity = getOrCreateRepliconEntity(repliconName, gbReader);
+        }
         if(repliconEntity == null){
             LOGGER.warn("replicons '{}' introuvable", repliconName);
             return false;
@@ -95,7 +100,7 @@ public final class GenbankParser {
             return false;
         }
         try(BufferedReader reader = new BufferedReader(new FileReader(repliconFile))){
-            return parseGenbankFile(reader);
+            return parseGenbankFile(reader, null);
         }catch (Exception e){
             LOGGER.error("Erreur lors du parsing du fichier {}", repliconFile, e);
             return false;
