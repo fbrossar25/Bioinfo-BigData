@@ -195,7 +195,7 @@ public class MainWindowController {
                     this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
                 });
                 final AtomicInteger atomicCount = new AtomicInteger(0);
-                for(HierarchyEntity entity : hierarchyService.getAll()){
+                for(HierarchyEntity entity : hierarchies){
                     new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
                     atomicCount.incrementAndGet();
                     if(atomicCount.get() % 100 == 0){
