@@ -286,6 +286,8 @@ public class GenbankReader {
             for(StringBuilder subSeq : processedSequences){
                 if(!processedSubsequenceIsValid(subSeq)){
                     toDelete.add(subSeq);
+                    nbCdsInvalid++;
+                    nbCdsValid--;
                 }
             }
             processedSequences.removeAll(toDelete);
