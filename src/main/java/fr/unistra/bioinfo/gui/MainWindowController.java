@@ -69,7 +69,18 @@ public class MainWindowController {
     private AtomicInteger numberOfFiles = new AtomicInteger(0);
 
     private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
-        if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END){
+        if((event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END)){
+            Platform.runLater(() -> {
+                this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
+                this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+                this.getProgressBarTreeView().setProgress(countDownload.get()/(double)numberOfFiles.get());
+                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers parsés");
+            });
+        }
+    });
+
+    private final EventUtils.EventListener GENBANK_DOWNLOAD_FAILED = (event -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_FAILED){
             Platform.runLater(() -> {
                 this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
                 this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
@@ -82,6 +93,7 @@ public class MainWindowController {
             Platform.runLater(() -> {
                 this.getProgressBar().setProgress(0.0);
                 this.getDownloadLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
+                this.getTreeViewLabel().setText("0/"+event.getEntityName()+" fichiers parsés");
             });
             numberOfFiles.set(Integer.parseInt(event.getEntityName()));
         }
@@ -169,6 +181,7 @@ public class MainWindowController {
         EventUtils.subscribe(STATS_END_LISTENER);
         EventUtils.subscribe(GENBANK_DOWNLOAD_END);
         EventUtils.subscribe(GENBANK_DOWNLOAD_START);
+        EventUtils.subscribe(GENBANK_DOWNLOAD_FAILED);
         updateFullTreeView();
     }
 
