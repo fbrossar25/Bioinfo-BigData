@@ -19,7 +19,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,7 +106,7 @@ public final class GenbankParser {
         }
     }
 
-    private static void countPrefPhases(RepliconEntity replicon){
+    static void countPrefPhases(RepliconEntity replicon){
         for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
             int p0 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
             int p1 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
@@ -151,17 +150,11 @@ public final class GenbankParser {
         }
     }
 
-    private static boolean countFrequencies(@NonNull List<StringBuilder> cdsList, @NonNull final RepliconEntity repliconEntity){
-        final AtomicBoolean result = new AtomicBoolean();
+    private static void countFrequencies(@NonNull List<StringBuilder> cdsList, @NonNull final RepliconEntity repliconEntity){
         repliconEntity.resetCounters();
-        cdsList.forEach(cds -> {
-            if(!countFrequencies(cds, repliconEntity)){
-                result.set(false);
-                repliconEntity.incrementInvalidsCDS();
-                repliconEntity.decrementValidsCDS();
-            }
-        });
-        return result.get();
+        for(StringBuilder cds : cdsList){
+            countFrequencies(cds, repliconEntity);
+        }
     }
 
     /**
@@ -171,7 +164,8 @@ public final class GenbankParser {
      * @param repliconEntity le replicon qui seras mis à jour si le cds est correct
      * @return true si le cds est valide et pris en compte, false sinon
      */
-    private static boolean countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
+    static void countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
+        LOGGER.trace("CDS Replicon '{}' : {}", repliconEntity.getGenbankName(), sequence);
         int iMax = sequence.length() - 3;
         for(int i=0; i<iMax; i+=3){
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i, i+3).toString(), Phase.PHASE_0);
@@ -179,11 +173,10 @@ public final class GenbankParser {
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i+2, i+5).toString(), Phase.PHASE_2);
         }
         iMax = ((sequence.length() % 2) == 0) ? sequence.length() - 4 : sequence.length() - 3;
-        for(int i=0; i<iMax; i+=3){
+        for(int i=0; i<iMax; i+=2){
             repliconEntity.incrementDinucleotideCount(sequence.subSequence(i, i+2).toString(), Phase.PHASE_0);
             repliconEntity.incrementDinucleotideCount(sequence.subSequence(i+1, i+3).toString(), Phase.PHASE_1);
         }
-        return true;
     }
 
     /**

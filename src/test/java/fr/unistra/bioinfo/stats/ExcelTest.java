@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
@@ -255,8 +256,45 @@ public class ExcelTest {
     }
 
     @Test
+    @Disabled
+    void testShouldGenerateExcelForFelisCatus(){
+        FileUtils.deleteQuietly(Paths.get(TEST_PATH).toFile());
+        afterEach();
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        RepliconEntity r = this.repliconService.getByName("NC_001700");
+        assertNotNull(r);
+        HierarchyEntity h = r.getHierarchyEntity();
+        assertNotNull(h);
+        assertEquals("Felis catus", h.getOrganism());
+        assertTrue(new OrganismExcelGenerator(h, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel());
+    }
+
+    @Test
+    @Disabled
+    void testShouldGenerateExcelForDifferentOrganism(){
+        FileUtils.deleteQuietly(Paths.get(TEST_PATH).toFile());
+        afterEach();
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile()));
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH_2.toFile()));
+        assertTrue(GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH_3.toFile()));
+        RepliconEntity r = this.repliconService.getByName("NC_001700");
+        assertNotNull(r);
+        HierarchyEntity h = r.getHierarchyEntity();
+        assertNotNull(h);
+        assertEquals("Felis catus", h.getOrganism());
+        assertTrue(new OrganismExcelGenerator(h, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel());
+        r = this.repliconService.getByName("NC_001702");
+        assertNotNull(r);
+        h = r.getHierarchyEntity();
+        assertNotNull(h);
+        assertEquals("Bos taurus", h.getOrganism());
+        assertTrue(new OrganismExcelGenerator(h, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel());
+    }
+
+    @Test
     void test_generateExcel()
     {
+        assertEquals(3, this.repliconService.count().longValue());
         OrganismExcelGenerator o = new OrganismExcelGenerator(this.orga, TEST_PATH, this.hierarchyService, this.repliconService);
         o.generateExcel();
 

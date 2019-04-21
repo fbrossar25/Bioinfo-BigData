@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GenbankReaderTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReaderTest.class);
 
+    private static final Path FELIS_CATUS_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
     private static final Path TEST_FILE = Paths.get("src", "test", "resources", "complement-test.gb");
     private static final Path TEST_MULTILINE = Paths.get("src", "test", "resources", "multiline-of-doom.gb");
     private static final int INVALIDS_CDS = 1;
@@ -21,6 +22,18 @@ class GenbankReaderTest {
     private static final int ORIGIN_LENGTH = 130;
     private static final String EXPECTED_SUBSEQUENCE = "ATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAATTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATTT";
     private static final String EXPECTED_SUBSEQUENCE_OF_DOOM = "CGTACGTACGTAC";
+
+    @Test
+    void shouldHaveSameNumberOfSubsequencesAndValidsCDS(){
+        try {
+            GenbankReader gbReader = GenbankReader.createInstance(FELIS_CATUS_PATH.toFile(), true);
+            gbReader.process();
+            assertEquals(6, gbReader.getValidsCDS());
+            assertEquals(6, gbReader.getProcessedSubsequences().size());
+        } catch (IOException e) {
+            fail("Erreur lors de la lecture du fichier",e);
+        }
+    }
 
     @Test
     void shouldParseOrganism(){

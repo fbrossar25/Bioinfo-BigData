@@ -35,7 +35,10 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,6 +76,56 @@ class GenbankParserTest {
         hierarchyService.deleteAll();
         repliconService.deleteAll();
         CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
+    void testShouldCountDinucleotidesCorrectly(){
+        RepliconEntity r = new RepliconEntity("test", null);
+        GenbankParser.countFrequencies("ACGTCCTAA", r);
+        GenbankParser.countFrequencies("ACCATATAA", r);
+        assertEquals(2, r.getDinucleotideCount("AC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("GT", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("TA", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("CA", Phase.PHASE_0).intValue());
+
+
+        assertEquals(1, r.getDinucleotideCount("CG", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("TC", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("CT", Phase.PHASE_1).intValue());
+        assertEquals(0, r.getDinucleotideCount("AA", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_1).intValue());
+        assertEquals(2, r.getDinucleotideCount("AT", Phase.PHASE_1).intValue());
+
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_0).intValue());
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_1).intValue());
+    }
+
+    @Test
+    void testShouldCountTrinucleotidesCorrectly(){
+        RepliconEntity r = new RepliconEntity("test", null);
+        GenbankParser.countFrequencies("ACGTCCTAA", r);
+        GenbankParser.countFrequencies("ACCATATAA", r);
+        assertEquals(1, r.getTrinucleotideCount("ACG", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("TCC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ACC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_0).intValue());
+        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue(), "Les trinucleotides STOP ne doivent pas être comptés");
+
+        assertEquals(1, r.getTrinucleotideCount("CGT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CCT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CCA", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("TAT", Phase.PHASE_1).intValue());
+
+
+        assertEquals(1, r.getTrinucleotideCount("GTC", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CTA", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CAT", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_2).intValue());
+
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_0).intValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_1).intValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_2).intValue());
     }
 
     @Test
