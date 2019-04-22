@@ -35,7 +35,7 @@ public class GeneralInformationSheet {
             "Last update",
             "",
             "",
-            "",
+            "# Chromosome",
             "# Mitochondrion",
             "# Plast",
             "# Plasmid",
@@ -196,6 +196,11 @@ public class GeneralInformationSheet {
 
         // TYPE
         HashMap<RepliconType, Integer> types_count = this.CDS_types_count();
+
+        row = this.sheet.getRow(3);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.CHROMOSOME));
+        cell.setCellStyle(this.styles.get("value"));
 
         row = this.sheet.getRow(4);
         cell = row.createCell(4);
