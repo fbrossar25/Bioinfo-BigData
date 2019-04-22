@@ -50,9 +50,9 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
         synchronized(synchronizedObject){
             repliconService.save(replicon);
         }
+        GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
         try(BufferedReader in = new BufferedReader(new InputStreamReader(GenbankUtils.getGBDownloadURL(replicon).toURL().openStream()))) {
             LOGGER.debug("Téléchargement et parsing du replicons '{}' débuté",repliconsIds);
-            GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
             GenbankParser.parseGenbankFile(in, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_REPLICON_END, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);
