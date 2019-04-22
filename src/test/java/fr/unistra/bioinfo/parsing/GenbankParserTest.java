@@ -54,10 +54,6 @@ class GenbankParserTest {
     private static final Path GENBANK_BATCH_VOID_FILE_PATH = Paths.get("src", "test", "resources", "void.gb");
     private static final Path GENBANK_BATCH_ONLY_END_TAGS_FILE_PATH = Paths.get("src", "test", "resources", "only-end-tags.gb");
     private static final Path GENBANK_TEST_FILE_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
-    private static final Path GENBANK_BACTH_TEST_FILE_PATH = Paths.get("src", "test", "resources", "replicons-batch-test.gb");
-
-    private static final String NC_FELIS_CATUS = "NC_001700";
-    private static final Path COMPLEMENT_TEST_GB = Paths.get("src", "test", "resources", "complement-test.gb");
 
     @Autowired
     private RepliconService repliconService;
@@ -83,18 +79,85 @@ class GenbankParserTest {
     }
 
     @Test
+    void testShouldCountDinucleotidesCorrectly(){
+        RepliconEntity r = new RepliconEntity("test", null);
+        GenbankParser.countFrequencies("ACGTCCTAA", r);
+        GenbankParser.countFrequencies("ACCATATAA", r);
+        assertEquals(2, r.getDinucleotideCount("AC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("GT", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("TA", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getDinucleotideCount("CA", Phase.PHASE_0).intValue());
+
+
+        assertEquals(1, r.getDinucleotideCount("CG", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("TC", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("CT", Phase.PHASE_1).intValue());
+        assertEquals(0, r.getDinucleotideCount("AA", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_1).intValue());
+        assertEquals(2, r.getDinucleotideCount("AT", Phase.PHASE_1).intValue());
+
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_0).intValue());
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_1).intValue());
+    }
+
+    @Test
+    void testShouldCountTrinucleotidesCorrectly(){
+        RepliconEntity r = new RepliconEntity("test", null);
+        GenbankParser.countFrequencies("ACGTCCTAA", r);
+        GenbankParser.countFrequencies("ACCATATAA", r);
+        assertEquals(1, r.getTrinucleotideCount("ACG", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("TCC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ACC", Phase.PHASE_0).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_0).intValue());
+        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue(), "Les trinucleotides STOP ne doivent pas être comptés");
+
+        assertEquals(1, r.getTrinucleotideCount("CGT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CCT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CCA", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("TAT", Phase.PHASE_1).intValue());
+
+
+        assertEquals(1, r.getTrinucleotideCount("GTC", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CTA", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CAT", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_2).intValue());
+
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_0).intValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_1).intValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_2).intValue());
+    }
+
+    @Test
+    void testFileWithCDSKeywordInComment(){
+        CommonUtils.disableHibernateLogging();
+        GenbankUtils.updateNCDatabase();
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
+        GenbankUtils.downloadReplicons(Collections.singletonList(repliconService.getByName("NC_001700")),future);
+        try {
+            assertNotNull(future.get());
+            assertFalse(future.get().isEmpty());
+            assertTrue(future.get().get(0).isParsed());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            fail(e);
+        }
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
     void testParseFuckedUpButRealBatchFile(){
         CommonUtils.disableHibernateLogging();
         File f = GENBANK_BATCH_REAL_FILE_PATH.toFile();
         assertTrue(GenbankParser.parseGenbankFile(f));
         List<RepliconEntity> replicons = repliconService.getAll();
-        assertEquals(6, replicons.size());
-        List<String> invalidsReplicons = Arrays.asList("NC_003071", "NC_003074", "NC_003075", "NC_003076");
+        assertEquals(1, replicons.size());
+        List<String> invalidsReplicons = Collections.singletonList("NC_037304");
         for(RepliconEntity r : replicons){
             assertTrue(r.isParsed());
             if(invalidsReplicons.contains(r.getName())){
-                assertEquals(0, r.getValidsCDS().intValue());
-                assertEquals(0, r.getInvalidsCDS().intValue());
+                assertEquals(27, r.getValidsCDS().intValue());
+                assertEquals(6, r.getInvalidsCDS().intValue());
             }
         }
         CommonUtils.enableHibernateLogging(true);
@@ -154,20 +217,10 @@ class GenbankParserTest {
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
-        assertEquals(7, r.getInvalidsCDS().intValue(), "Comptages CDS invalides KO");
-        assertEquals(6, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
+        assertEquals(11, r.getInvalidsCDS().intValue(), "Comptages CDS invalides KO");
+        assertEquals(2, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0, "Comptage dinucleotides KO");
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0), "Comptage dinucleotides sensible à la casse");
-    }
-
-    @Test
-    void parseGenbankBatchFile() {
-        assertTrue(GenbankParser.parseGenbankFile(GENBANK_BACTH_TEST_FILE_PATH.toFile()));
-        assertEquals(5, repliconService.count().intValue());
-        List<RepliconEntity> replicons = repliconService.getAll();
-        for(RepliconEntity r : replicons){
-            checkReplicon(r);
-        }
     }
 
     @Test
@@ -255,16 +308,13 @@ class GenbankParserTest {
     @Disabled("Tests à des fins de debuggage")
     void parseDatas(){
         GenbankUtils.updateNCDatabase(50);
-        CompletableFuture<List<File>> future = new CompletableFuture<>();
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
         GenbankUtils.downloadAllReplicons(future);
-        List<File> files;
+        List<RepliconEntity> replicons;
         try {
-            files = future.get(20, TimeUnit.MINUTES);
-            assertNotNull(files, "Pas de fichier trouvés");
-            assertFalse(files.isEmpty(), "0 Fichiers trouvés");
-            for(File f : files){
-                assertTrue(GenbankParser.parseGenbankFile(f));
-            }
+            replicons = future.get(20, TimeUnit.MINUTES);
+            assertNotNull(replicons, "Pas de replicons trouvés");
+            assertFalse(replicons.isEmpty(), "0 replicons trouvés");
             assertTrue(repliconService.count() > 0);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             fail("Erreur lors du téléchargement", e);
@@ -290,21 +340,6 @@ class GenbankParserTest {
         assertEquals(trinucleotides_pref, replicon.getCounters().getTrinucleotides_pref());
         assertEquals(dinucleotides, replicon.getCounters().getDinucleotides());
         assertEquals(dinucleotides_pref, replicon.getCounters().getDinucleotides_pref());
-    }
-
-    @Test
-    void complementJoinParsingTest(){
-        assertTrue(GenbankParser.parseGenbankFile(COMPLEMENT_TEST_GB.toFile()));
-        RepliconEntity r = repliconService.getByName(NC_FELIS_CATUS);
-        assertNotNull(r);
-        assertNotNull(r.getCounters());
-        assertEquals(2, r.getValidsCDS().intValue());
-        assertEquals(0, r.getInvalidsCDS().intValue());
-        assertEquals(2, r.getTrinucleotideCount("ATT", Phase.PHASE_0).intValue());
-        assertEquals(0, r.getTrinucleotideCount("ATT", Phase.PHASE_2).intValue());
-        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue());
-        assertEquals(2, r.getTrinucleotideCount("TAA", Phase.PHASE_2).intValue());
-        assertEquals(36, r.getTrinucleotideCount("AAA", Phase.PHASE_0).intValue());
     }
 
     @Test

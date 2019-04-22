@@ -29,6 +29,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,7 +84,25 @@ class GenbankUtilsTest {
     }
 
     @Test
-    @Disabled("C'est un poil long")
+    @Disabled("Test pour la vitesse de dl")
+    void testDownloadNumerousFile(){
+        CommonUtils.disableHibernateLogging();
+        GenbankUtils.updateNCDatabase(0);
+        CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
+        long begin = System.currentTimeMillis();
+        try {
+            GenbankUtils.downloadAllReplicons(future);
+            future.get();
+            long end = System.currentTimeMillis();
+            LOGGER.info("Le téléchargement pris {}.", LocalTime.MIN.plus(end-begin, ChronoUnit.MILLIS).toString());
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.error("Une erreur est survenue.", e);
+            fail(e);
+        }
+        CommonUtils.enableHibernateLogging(true);
+    }
+
+    @Test
     void testRateLimiter(){
         int n = 45;
         try{
@@ -149,23 +169,16 @@ class GenbankUtilsTest {
     }
 
     @Test
-    @Disabled("C'est un poil long")
     void downloadReplicons(){
         int PAGE_SIZE = 16;
         try {
             GenbankUtils.updateNCDatabase(PAGE_SIZE);
             List<RepliconEntity> replicons = repliconService.getAll(PageRequest.of(0, PAGE_SIZE)).getContent();
             assertEquals(PAGE_SIZE, replicons.size());
-            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
             GenbankUtils.downloadReplicons(replicons, future);
             assertFalse(future.get().isEmpty());
-            for(File f : future.get()){
-                assertTrue(f.exists(), "Les fichier '"+f.getAbsolutePath()+"' n'existe pas");
-                assertTrue(f.canRead());
-                assertTrue(CollectionUtils.isNotEmpty(FileUtils.readLines(f, StandardCharsets.UTF_8)));
-                FileUtils.deleteQuietly(f);
-            }
-        } catch (IOException | InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             fail(e);
         }
     }
@@ -223,32 +236,27 @@ class GenbankUtilsTest {
 
     @Test
     void testMultiThreadsDownloadSpeed(){
-        GenbankUtils.updateNCDatabase(1);
-        RepliconEntity r = repliconService.getAll().get(0);
+        GenbankUtils.updateNCDatabase(0);
+        RepliconEntity r = repliconService.getByName("NC_016088");
         assertNotNull(r);
         try {
-            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
             long begin = System.currentTimeMillis();
             GenbankUtils.downloadReplicons(Collections.singletonList(r), future);
-            List<File> files = future.get();
+            List<RepliconEntity> replicons = future.get();
             long end = System.currentTimeMillis();
-            assertEquals(1, files.size());
+            assertEquals(1, replicons.size());
             long duration = end - begin;
-            double averageDownloadSpeed = ((double)files.get(0).length()) / ((double)duration / 1000); //bytes/s
-            LOGGER.info("Temps de téléchargement pour 1 thread : {} secondes", duration/1000);
-            LOGGER.info("Vitesse moyenne pour 1 thread : {} ko/s ({} ko)", averageDownloadSpeed / 1024, files.get(0).length() / 1024);
+            LOGGER.info("Temps de téléchargement pour 1 fichier : {} secondes", duration/1000);
 
             future = new CompletableFuture<>();
             begin = System.currentTimeMillis();
-            GenbankUtils.downloadReplicons(Arrays.asList(r,r,r), future);
-            files = future.get();
+            GenbankUtils.downloadReplicons(Arrays.asList(r,r,r,r,r,r,r,r,r,r), future);
+            replicons = future.get();
             end = System.currentTimeMillis();
-            assertEquals(3, files.size());
+            assertEquals(3, replicons.size());
             duration = end - begin;
-            long filesSizes = files.get(0).length() + files.get(1).length() + files.get(2).length();
-            averageDownloadSpeed = (((double)filesSizes) / ((double)duration / 1000)) / files.size();
-            LOGGER.info("Temps de téléchargement pour 3 threads : {} secondes", duration/1000);
-            LOGGER.info("Vitesse moyenne pour 3 threads : {} ko/s ({} ko au total)", averageDownloadSpeed / 1024, filesSizes);
+            LOGGER.info("Temps de téléchargement pour {} fichier : {} secondes",replicons.size(), duration/1000);
         } catch (InterruptedException |ExecutionException e) {
             fail(e);
         }
@@ -262,7 +270,7 @@ class GenbankUtilsTest {
             assertNotNull(r);
             List<RepliconEntity> entities = new ArrayList<>(1);
             entities.add(r);
-            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
             GenbankUtils.downloadReplicons(entities, future);
             future.get();
             assertTrue(repliconService.count() > 0);
@@ -282,15 +290,12 @@ class GenbankUtilsTest {
     }
 
     @Test
-    @Disabled("C'est un poil long")
     void testDownloadThenDeleteRepliconsFile(){
         try {
             GenbankUtils.updateNCDatabase(1);
-            CompletableFuture<List<File>> future = new CompletableFuture<>();
+            CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
             GenbankUtils.downloadAllReplicons(future);
-            for(File f : future.get()){
-                FileUtils.deleteQuietly(f);
-            }
+            future.get();
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);

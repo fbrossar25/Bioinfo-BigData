@@ -11,7 +11,7 @@ SOURCE      mitochondrion Felis catus (domestic cat)
             Mammalia; Eutheria; Laurasiatheria; Carnivora; Feliformia; Felidae;
             Felinae; Felis.
 FEATURES             Location/Qualifiers
-     source          1..17009
+     source          1..130
                      /organism="Felis catus"
                      /organelle="mitochondrion"
                      /mol_type="genomic DNA"
@@ -22,7 +22,10 @@ FEATURES             Location/Qualifiers
                      /cell_type="lymphocyte"
                      /tissue_type="blood"
                      /dev_stage="adult"
-     CDS             1..60
+     CDS             31..64
+     CDS             2..3,3..4
+     CDS             1..15
+     CDS             16..30
                      /gene="COX1"
                      /gene_synonym="COI"
                      /codon_start=1
@@ -40,7 +43,9 @@ FEATURES             Location/Qualifiers
                      FVHWFPLFSGYTLDNTWAKIHFTIMFVGVNMTFFPQHFLGLSGMPRRYSDYPDAYTTW
                      NTISSMGSFISLTAVMLMVFMVWEAFASKREVAMVELTTTNLEWLHGCPPPYHTFEEP
                      TYVLLK"
-     CDS             complement(join(61..90,91..120))
+     CDS             complement(join(<65..90,
+  91..120>))
+
                      /gene="COX1"
                      /gene_synonym="COI"
                      /codon_start=1
@@ -59,7 +64,8 @@ FEATURES             Location/Qualifiers
                      NTISSMGSFISLTAVMLMVFMVWEAFASKREVAMVELTTTNLEWLHGCPPPYHTFEEP
                      TYVLLK"
 ORIGIN      
-        1 attaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaataa
-       61 taattttttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttatt
+        1 attaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
+       61 aataaaattt tttttttttt tttttttttt tttttttttt tttttttttt tttttttaat
+      121 xxxxxxnnnx
 //
 

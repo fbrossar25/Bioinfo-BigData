@@ -1,7 +1,6 @@
 package fr.unistra.bioinfo.configuration;
 
 import fr.unistra.bioinfo.genbank.GenbankUtils;
-import fr.unistra.bioinfo.parsing.AbstractCustomReader;
 import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
@@ -37,7 +36,6 @@ public class StaticInitializer {
         }
         GenbankUtils.setRepliconService(repliconService);
         GenbankParser.setRepliconService(repliconService);
-        AbstractCustomReader.setRepliconService(repliconService);
         LOGGER.debug("Initialisation statique OK");
     }
 }

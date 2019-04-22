@@ -1,0 +1,22 @@
+LOCUS       NC_001700              17009 bp    DNA     circular MAM 21-APR-2009
+DEFINITION  Felis catus mitochondrion, complete genome.
+ACCESSION   NC_001700
+VERSION     NC_001700.1
+  ORGANISM  Felis catus
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Laurasiatheria; Carnivora; Feliformia; Felidae;
+            Felinae; Felis.
+COMMENTS
+    CDS  qui ne devraient pas être là
+    CDS  !!!
+FEATURES             Location/Qualifiers
+     source          1..15
+     CDS             2..14
+ORIGIN
+       1 acg
+       4 tac
+       7 gta
+      10 cgt
+      13 acg
+//
+

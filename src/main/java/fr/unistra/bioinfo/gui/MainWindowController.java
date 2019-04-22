@@ -8,7 +8,6 @@ import fr.unistra.bioinfo.genbank.GenbankException;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.tree.RepliconView;
 import fr.unistra.bioinfo.gui.tree.RepliconViewNode;
-import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
@@ -27,8 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
-import java.io.File;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
@@ -51,7 +51,6 @@ public class MainWindowController {
     @FXML private Menu menuFichier;
     @FXML private Button btnDemarrer;
     @FXML private MenuItem btnNettoyerDonnees;
-    @FXML private MenuItem btnSupprimerFichiersGEnomes;
     @FXML private MenuItem btnQuitter;
     @FXML private ProgressBar progressBar;
     @FXML private ProgressBar progressBarParsing;
@@ -70,10 +69,21 @@ public class MainWindowController {
     private AtomicInteger numberOfFiles = new AtomicInteger(0);
 
     private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
-        if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END){
+        if((event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END)){
             Platform.runLater(() -> {
-                this.getProgressBarTreeView().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
-                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+                this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
+                this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+                this.getProgressBarTreeView().setProgress(countDownload.get()/(double)numberOfFiles.get());
+                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers parsés");
+            });
+        }
+    });
+
+    private final EventUtils.EventListener GENBANK_DOWNLOAD_FAILED = (event -> {
+        if(event.getType() == EventUtils.EventType.DOWNLOAD_FILE_FAILED){
+            Platform.runLater(() -> {
+                this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
+                this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
             });
         }
     });
@@ -81,8 +91,9 @@ public class MainWindowController {
     private final EventUtils.EventListener GENBANK_DOWNLOAD_START = (event -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_BEGIN){
             Platform.runLater(() -> {
-                this.getProgressBarTreeView().setProgress(0.0);
-                this.getTreeViewLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
+                this.getProgressBar().setProgress(0.0);
+                this.getDownloadLabel().setText("0/" + event.getEntityName() + " fichiers téléchargés ");
+                this.getTreeViewLabel().setText("0/"+event.getEntityName()+" fichiers parsés");
             });
             numberOfFiles.set(Integer.parseInt(event.getEntityName()));
         }
@@ -170,6 +181,7 @@ public class MainWindowController {
         EventUtils.subscribe(STATS_END_LISTENER);
         EventUtils.subscribe(GENBANK_DOWNLOAD_END);
         EventUtils.subscribe(GENBANK_DOWNLOAD_START);
+        EventUtils.subscribe(GENBANK_DOWNLOAD_FAILED);
         updateFullTreeView();
     }
 
@@ -180,14 +192,13 @@ public class MainWindowController {
             try {
                 LOGGER.info("Mise à jour de la base de données");
                 GenbankUtils.updateNCDatabase();
-                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), null);
-                File dir = CommonUtils.DATAS_PATH.toFile();
-                File[] listFiles = dir.listFiles();
-                if(listFiles != null) {
-                    for (File gb : listFiles) {
-                        LOGGER.debug("Parsing file '{}'", gb.getName());
-                        GenbankParser.parseGenbankFile(gb);
-                    }
+                CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
+                GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), future);
+                try {
+                    //Bloquage de ce thread jusqu'à la fin des téléchargements / parsing
+                    future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    LOGGER.error("Une erreur est survenue", e);
                 }
                 LOGGER.info("Début de la génération des excels...");
                 List<HierarchyEntity> hierarchies = hierarchyService.getAll();
@@ -197,7 +208,7 @@ public class MainWindowController {
                     this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
                 });
                 final AtomicInteger atomicCount = new AtomicInteger(0);
-                for(HierarchyEntity entity : hierarchyService.getAll()){
+                for(HierarchyEntity entity : hierarchies){
                     new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
                     atomicCount.incrementAndGet();
                     if(atomicCount.get() % 100 == 0){
@@ -223,11 +234,6 @@ public class MainWindowController {
     @FXML
     public void nettoyerDonnees(ActionEvent actionEvent) {
         LOGGER.info("Nettoyage des données...");
-    }
-
-    @FXML
-    public void supprimerFichiersGenomes(ActionEvent actionEvent) {
-        LOGGER.info("Suppression des fichiers genomes...");
     }
 
     @FXML

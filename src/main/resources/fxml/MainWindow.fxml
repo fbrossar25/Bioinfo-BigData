@@ -16,7 +16,6 @@
       <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
          <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
             <MenuItem fx:id="btnNettoyerDonnees" mnemonicParsing="false" onAction="#nettoyerDonnees" text="Nettoyer les données" />
-            <MenuItem fx:id="btnSupprimerFichiersGEnomes" mnemonicParsing="false" onAction="#supprimerFichiersGenomes" text="Supprimer les fichiers genomes" />
             <MenuItem fx:id="btnQuitter" mnemonicParsing="false" onAction="#quitter" text="Quitter" />
          </Menu>
          <Menu fx:id="menuEdition" mnemonicParsing="false" text="Edition">
@@ -41,7 +40,7 @@
                <Button fx:id="btnDemarrer" layoutX="326.0" layoutY="100.0" mnemonicParsing="false" onAction="#demarrer" text="Démarrer" />
                <ProgressBar fx:id="progressBar" layoutX="60.0" layoutY="77.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
                <ProgressBar fx:id="progressBarParsing" layoutX="60.0" layoutY="240.0" prefHeight="23.0" prefWidth="330.0" progress="0.0" />
-               <Label fx:id="parsingLabel" layoutX="429.0" layoutY="243.0" text="0/0 Fichiers téléchargés" />
+               <Label fx:id="parsingLabel" layoutX="429.0" layoutY="243.0" text="0/0 fichiers parsés" />
             </Pane>
          </center>
          <bottom>
