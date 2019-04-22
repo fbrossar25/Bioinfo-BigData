@@ -28,8 +28,8 @@ class GenbankReaderTest {
         try {
             GenbankReader gbReader = GenbankReader.createInstance(FELIS_CATUS_PATH.toFile(), true);
             gbReader.process();
-            assertEquals(6, gbReader.getValidsCDS());
-            assertEquals(6, gbReader.getProcessedSubsequences().size());
+            assertEquals(7, gbReader.getValidsCDS());
+            assertEquals(7, gbReader.getProcessedSubsequences().size());
         } catch (IOException e) {
             fail("Erreur lors de la lecture du fichier",e);
         }

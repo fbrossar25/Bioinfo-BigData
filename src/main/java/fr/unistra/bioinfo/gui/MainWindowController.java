@@ -84,6 +84,8 @@ public class MainWindowController {
             Platform.runLater(() -> {
                 this.getProgressBar().setProgress(countDownload.incrementAndGet()/(double)numberOfFiles.get());
                 this.getDownloadLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers téléchargés ");
+                this.getProgressBarTreeView().setProgress(countDownload.get()/(double)numberOfFiles.get());
+                this.getTreeViewLabel().setText(countDownload.get() + "/" + numberOfFiles.get() + " fichiers parsés");
             });
         }
     });

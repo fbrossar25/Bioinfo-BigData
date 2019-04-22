@@ -36,8 +36,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     @JoinColumn(nullable = false)
     private CountersEntity counters;
 
-    @Column
-    private String fileName;
 
     @Column(nullable = false)
     private boolean computed = false;
@@ -101,27 +99,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
 
     public void setVersion(Integer version) {
         this.version = version;
-    }
-
-    /**
-     * Indique si le fichier du replicon à été téléchargé
-     * @return true si le fichier à été téléchargé, false sinon
-     */
-    public boolean isDownloaded() {
-        return StringUtils.isNotBlank(fileName) && Files.exists(CommonUtils.DATAS_PATH.resolve(fileName));
-    }
-
-    /**
-     * Le nom du fichier où est téléchargé ce replicon. Relatif au dossier CommonUtils.DATAS_PATH
-     * @return Le nom du fichier
-     * @see CommonUtils#DATAS_PATH
-     */
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 
     /**
@@ -410,7 +387,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return new CompareToBuilder()
                 .append(getGenbankName(), o.getGenbankName())
                 .append(isComputed(), o.isComputed())
-                .append(isDownloaded(), o.isDownloaded())
                 .build();
     }
 }

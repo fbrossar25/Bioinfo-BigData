@@ -302,11 +302,12 @@ public class GenbankReader {
         if(cdsValid.size() > 1){
             List<CDS> checkedCDSList = new ArrayList<>(cdsValid);
             CDS cds;
-            for(int i=1; i<cdsValid.size(); i++){
+            for(int i=0; i<cdsValid.size(); i++){
                 cds = cdsValid.get(i);
                 if(!checkedCDSList.contains(cds)){
                     continue;
                 }
+                /**
                 if(i + 1 < cdsValid.size() && cds.end >= cdsValid.get(i+1).begin){
                     //Si ce CDS termine après que le cds suivant aient démarré
                     nbCdsInvalid++;
@@ -314,6 +315,10 @@ public class GenbankReader {
                     checkedCDSList.removeAll(cds.linkedCDS);
                 }else if(cds.begin <= cdsValid.get(i - 1).end){
                     //Si le  CDS commence avant que le cds précédent n'ais terminé
+                    nbCdsInvalid++;
+                    nbCdsValid--;
+                    checkedCDSList.removeAll(cds.linkedCDS);
+                }else */if(((cds.end - cds.begin)+1)%3 != 0){
                     nbCdsInvalid++;
                     nbCdsValid--;
                     checkedCDSList.removeAll(cds.linkedCDS);
@@ -326,7 +331,7 @@ public class GenbankReader {
     private int getSubsequenceLength(CDS cds){
         int len = 0;
         for(CDS subCDS : cds.linkedCDS){
-            len += subCDS.end - subCDS.begin;
+            len += subCDS.end - subCDS.begin +1;
         }
         return len;
     }

@@ -17,16 +17,13 @@ import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DownloadRepliconTask extends Task<RepliconEntity> implements Callable<RepliconEntity> {
     private static Logger LOGGER = LogManager.getLogger();
 
     private static final AtomicInteger downloadCount = new AtomicInteger(0);
-    private static final String SESSION_ID = CommonUtils.dateToInt(new Date());
-    static{
-        LOGGER.info("ID de session : '{}'", SESSION_ID);
-    }
 
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
@@ -35,19 +32,16 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
     private final String repliconsIds;
     private final Retryer<RepliconEntity> retryer;
     private final RepliconService repliconService;
-    private final String fileName;
-    private final Boolean failed = Boolean.FALSE;
 
     public DownloadRepliconTask(@NonNull RepliconEntity replicon, @NonNull RepliconService repliconService) {
         this.replicon = replicon;
         //En utilisant systématiquement le compteur atomique, on garantis que les threads concurrents n'écrivent pas dans le même fichier
-        this.fileName = replicon.getGenbankName()+"-"+SESSION_ID+"-"+downloadCount.incrementAndGet()+".gb";
         this.repliconsIds = replicon.getGenbankName();
         this.retryer = RetryerBuilder.<RepliconEntity>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(8))
-                .withWaitStrategy(WaitStrategies.fibonacciWait())
+                .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                .withWaitStrategy(WaitStrategies.fixedWait(10, TimeUnit.SECONDS))
                 .build();
         this.repliconService = repliconService;
     }
@@ -64,7 +58,6 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);
             LOGGER.info("Téléchargement et parsing du replicon '{}' terminé",replicon.getGenbankName());
         }catch (IOException e){
-            replicon.setFileName(null);
             replicon.setParsed(false);
             replicon.setComputed(false);
             synchronized(synchronizedObject){
@@ -72,6 +65,10 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
             }
             LOGGER.error("Erreur lors du téléchargement du replicon '{}'", replicon.getGenbankName(), e);
             throw new IOException("Erreur lors du téléchargement du replicon '"+replicon.getGenbankName()+"'", e);
+        }catch(OutOfMemoryError e){
+            EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_FAILED, replicon);
+            LOGGER.error("Erreur lors du téléchargement du replicon '{}'", replicon.getGenbankName(), e);
+            return null;
         }
         return replicon;
     }

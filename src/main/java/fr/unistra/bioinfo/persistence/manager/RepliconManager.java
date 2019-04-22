@@ -25,7 +25,7 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
 
     List<RepliconEntity> getAllByParsed(boolean parsed);
 
-    @Query("from RepliconEntity where fileName is null or fileName not like '%_.gb'")
+    @Query("from RepliconEntity where parsed = FALSE")
     List<RepliconEntity> getAllNotDownloaded();
 
     List<RepliconEntity> getAllByNameIn(List<String> repliconsNames);

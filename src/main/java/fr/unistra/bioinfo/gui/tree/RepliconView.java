@@ -60,7 +60,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
                 RepliconEntity r = this.son.getValue().getReplicon();
                 if(r.isComputed()){
                     this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.OK);
-                }else if(!r.isDownloaded() && !r.isParsed()){
+                }else if(!r.isParsed()){
                     this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.NOK);
                 }else{
                     this.son.getValue().setState(RepliconViewNode.RepliconViewNodeState.INTERMEDIARY);

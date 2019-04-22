@@ -386,7 +386,6 @@ public class GenbankUtils {
                 }else{
                     //Mise à jour du replicon
                     if(replicon.getVersion() < version){
-                        replicon.setFileName(null);
                         replicon.setComputed(false);
                         replicon.setParsed(false);
                         replicon.setVersion(version);

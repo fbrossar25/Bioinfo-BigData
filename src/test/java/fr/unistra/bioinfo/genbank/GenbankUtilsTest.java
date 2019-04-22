@@ -276,14 +276,12 @@ class GenbankUtilsTest {
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);
-            assertTrue(replicon.isDownloaded());
             replicon.setVersion(0);
             repliconService.save(replicon);
             GenbankUtils.updateNCDatabase(1);
             replicon = repliconService.getByName(replicon.getName());
             assertTrue(replicon.getVersion() > 0);
             assertFalse(replicon.isParsed());
-            assertFalse(replicon.isDownloaded());
         } catch (GenbankException | InterruptedException | ExecutionException e) {
             fail(e);
         }
@@ -299,7 +297,6 @@ class GenbankUtilsTest {
             assertTrue(repliconService.count() > 0);
             RepliconEntity replicon = repliconService.getAll().get(0);
             assertNotNull(replicon);
-            assertFalse(replicon.isDownloaded(), "Le replicon est considéré comme téléchargé même si le fichier n'est plus présent");
         } catch (GenbankException | InterruptedException | ExecutionException e) {
             fail(e);
         }
