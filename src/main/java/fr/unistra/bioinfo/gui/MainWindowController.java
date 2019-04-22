@@ -119,7 +119,6 @@ public class MainWindowController {
                 break;
             case STATS_END_ORGANISM:
                 replicon = treeView.getOrganismNode(entityName);
-                nextState = RepliconViewNode.RepliconViewNodeState.OK;
                 break;
             case STATS_END_SUBGROUP:
                 replicon = treeView.getSubgroupNode(entityName);

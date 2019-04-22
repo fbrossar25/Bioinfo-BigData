@@ -13,7 +13,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import sun.font.TrueTypeFont;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -277,7 +276,9 @@ public class OrganismExcelGenerator {
         if (this.generate_excel_organism(replicons)) {
             LOGGER.info("Organisme '{}' mis à jour", this.organism.getOrganism());
             for(RepliconEntity r : replicons){
-                EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
+                if(r.isParsed()) {
+                    EventUtils.sendEvent(EventUtils.EventType.STATS_END_REPLICON, r);
+                }
             }
             EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
             return true;

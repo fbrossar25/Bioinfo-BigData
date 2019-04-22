@@ -40,7 +40,7 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
         this.retryer = RetryerBuilder.<RepliconEntity>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(2))
                 .withWaitStrategy(WaitStrategies.fixedWait(10, TimeUnit.SECONDS))
                 .build();
         this.repliconService = repliconService;
@@ -66,6 +66,11 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
             LOGGER.error("Erreur lors du téléchargement du replicon '{}'", replicon.getGenbankName(), e);
             throw new IOException("Erreur lors du téléchargement du replicon '"+replicon.getGenbankName()+"'", e);
         }catch(OutOfMemoryError e){
+            replicon.setParsed(false);
+            replicon.setComputed(false);
+            synchronized(synchronizedObject){
+                repliconService.save(replicon);
+            }
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_FAILED, replicon);
             LOGGER.error("Erreur lors du téléchargement du replicon '{}'", replicon.getGenbankName(), e);
             return null;
@@ -78,6 +83,11 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
         try {
             return this.retryer.call(this::download);
         } catch (ExecutionException | RetryException e) {
+            replicon.setParsed(false);
+            replicon.setComputed(false);
+            synchronized(synchronizedObject){
+                repliconService.save(replicon);
+            }
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_FAILED, replicon);
             LOGGER.error("Erreur du téléchargement du replicon '{}'", repliconsIds, e);
         }
