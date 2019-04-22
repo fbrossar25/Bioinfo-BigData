@@ -13,6 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import sun.font.TrueTypeFont;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -102,6 +103,10 @@ public class OrganismExcelGenerator {
     }
 
 
+    /**
+     * Write every
+     * @return
+     */
     private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, RepliconType t) {
         List<RepliconEntity> results = new ArrayList<>();
 
@@ -212,51 +217,141 @@ public class OrganismExcelGenerator {
         return true;
     }
 
+    /**
+     * Write all Excels (orga, ss group, group, kingdom)
+     * @return
+     */
     public boolean generateExcel() {
+
+        // Get replicon list and write organism
         List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+        this.write_organism(replicons);
+
+        // Set replicon to computed
+        this.setOrganismComputed(replicons);
+
+        // Write sub excel
+        if ( !this.writeSubExcel())
+        {
+            return false;
+        }
+        EventUtils.sendEvent( EventUtils.EventType.STATS_END);
+        return true;
+    }
+
+    /**
+     * Write organism only
+     * @return
+     */
+    public boolean generateExcelOrganismOnly() {
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+
+        // Get replicon list and write organism
+        this.write_organism(replicons);
+
+        // Set replicon to computed
+        this.setOrganismComputed(replicons);
+
+        EventUtils.sendEvent( EventUtils.EventType.STATS_END);
+        return true;
+    }
+
+    /**
+     * Set all organism replicons to COMPUTED
+     * @param replicons
+     */
+    private void setOrganismComputed( List<RepliconEntity> replicons ) {
+        // Set replicon to computed
+        for (RepliconEntity r : replicons) {
+            r.setComputed(true);
+        }
+        this.repliconService.saveAll(replicons);
+    }
+
+    /**
+     * Write Excel organism
+     * @param replicons
+     * @return
+     */
+    public boolean write_organism( List<RepliconEntity> replicons ) {
         if (this.generate_excel_organism(replicons)) {
             LOGGER.info("Organisme '{}' mis à jour", this.organism.getOrganism());
             for(RepliconEntity r : replicons){
                 EventUtils.sendEvent( EventUtils.EventType.STATS_END_REPLICON,r);
             }
             EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
-
+            return true;
         } else {
             LOGGER.warn("Échec mise à jour organisme '{}'", this.organism.getOrganism());
             return false;
         }
+    }
 
 
-        if (this.genetate_excel_sub_group()) {
-            LOGGER.info("Sous-groupe '{}' mis à jour", this.organism.getSubgroup());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
-        } else {
-            LOGGER.warn("Échec mise à jour sous-groupe '{}'", this.organism.getSubgroup());
+    public boolean writeSubExcel() {
+
+        // write wub group
+        if ( !this.repliconService.hasRepliconToProceedForSubgroup(this.organism.getSubgroup()) ) {
+            if (this.genetate_excel_sub_group()) {
+                LOGGER.info("Sous-groupe '{}' mis à jour", this.organism.getSubgroup());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
+            } else {
+                LOGGER.warn("Échec mise à jour sous-groupe '{}'", this.organism.getSubgroup());
+                return false;
+            }
+//            LOGGER.warn("MAJ SUB GROUP '{}'", this.organism.getSubgroup());
+        }
+
+        // write group
+        if ( !this.repliconService.hasRepliconToProceedForGroup(this.organism.getGroup()) ) {
+            if (this.genetate_excel_group()) {
+                LOGGER.info("Groupe '{}' mis à jour", this.organism.getGroup());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
+            } else {
+                LOGGER.warn("Échec mise à jour groupe '{}'", this.organism.getGroup());
+                return false;
+            }
+//            LOGGER.warn("MAJ GROUP '{}'", this.organism.getGroup());
+        }
+
+        // Write kingdom
+        if ( !this.repliconService.hasRepliconToProceedForKingdom(this.organism.getKingdom()) ) {
+            if (this.generate_excel_kingdom()) {
+                LOGGER.info("Royaume '{}' mis à jour", this.organism.getKingdom());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
+            } else {
+                LOGGER.warn("Échec mise à jour royaume '{}'", this.organism.getKingdom());
+                return false;
+            }
+//            LOGGER.warn("MAJ KINGDOM '{}'", this.organism.getKingdom());
+        }
+
+        return true;
+    }
+
+
+
+    /**
+     * Write all Excels (orga, ss group, group, kingdom)
+     * @return
+     */
+    public boolean generateExcell() {
+
+        // Get replicon list and write organism
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+
+        if ( this.write_organism(replicons) )
+        {
             return false;
         }
 
-
-        if (this.genetate_excel_group()) {
-            LOGGER.info("Groupe '{}' mis à jour", this.organism.getGroup());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
-        } else {
-            LOGGER.warn("Échec mise à jour groupe '{}'", this.organism.getGroup());
+        if ( !this.writeSubExcel())
+        {
             return false;
         }
 
-
-        if (this.generate_excel_kingdom()) {
-            LOGGER.info("Royaume '{}' mis à jour", this.organism.getKingdom());
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
-        } else {
-            LOGGER.warn("Échec mise à jour royaume '{}'", this.organism.getKingdom());
-            return false;
-        }
-
-        for (RepliconEntity r : replicons) {
-            r.setComputed(true);
-        }
-        this.repliconService.saveAll(replicons);
+        // Set replicon to computed
+        this.setOrganismComputed(replicons);
 
         EventUtils.sendEvent( EventUtils.EventType.STATS_END);
         return true;

@@ -7,6 +7,7 @@ import fr.unistra.bioinfo.persistence.manager.CountersManager;
 import fr.unistra.bioinfo.persistence.manager.HierarchyManager;
 import fr.unistra.bioinfo.persistence.manager.RepliconManager;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
+import fr.unistra.bioinfo.stats.GeneralInformationSheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,5 +91,18 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     @Override
     public List<RepliconEntity> getByNameIn(@NonNull List<String> repliconsNames){
         return repliconManager.getAllByNameIn(repliconsNames);
+    }
+
+    @Override
+    public Boolean hasRepliconToProceedForSubgroup(String ss_group) {
+        return repliconManager.getAllByComputedFalseAndHierarchyEntitySubgroup(ss_group).size() > 0;
+    }
+    @Override
+    public Boolean hasRepliconToProceedForGroup(String group) {
+        return repliconManager.getAllByComputedFalseAndHierarchyEntityGroup(group).size() > 0;
+    }
+    @Override
+    public Boolean hasRepliconToProceedForKingdom(String kingdom) {
+        return repliconManager.getAllByComputedFalseAndHierarchyEntityKingdom(kingdom).size() > 0;
     }
 }

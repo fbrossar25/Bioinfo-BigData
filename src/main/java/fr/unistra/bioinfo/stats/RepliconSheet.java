@@ -128,7 +128,7 @@ public class RepliconSheet {
         style.setBorderLeft(BorderStyle.DASHED);
         style.setBorderRight(BorderStyle.DASHED);
 
-        style.setDataFormat(wb.createDataFormat().getFormat("0.00%"));
+        style.setDataFormat(wb.createDataFormat().getFormat("0.0000"));
 
         return style;
     }
@@ -141,7 +141,7 @@ public class RepliconSheet {
         style.setBorderTop(BorderStyle.DASHED);
         style.setBorderLeft(BorderStyle.DASHED);
         style.setBorderRight(BorderStyle.DASHED);
-        style.setDataFormat(wb.createDataFormat().getFormat("0.00%"));
+        style.setDataFormat(wb.createDataFormat().getFormat("0.0000"));
 
         return style;
     }
@@ -174,7 +174,7 @@ public class RepliconSheet {
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setFillForegroundColor(new XSSFColor(new java.awt.Color(75, 86, 96)));
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setDataFormat(wb.createDataFormat().getFormat("0.00%"));
+        style.setDataFormat(wb.createDataFormat().getFormat("0.0000"));
         style.setFont(font);
 
         return style;
@@ -341,13 +341,23 @@ public class RepliconSheet {
         }
     }
 
-    private void write_freq_trin() {
-        String value = null;
-        String tri = null;
+    private double getFrequency(int n, int total) {
+        if ( total == 0 || n == 0 ) {
+            return 0.0;
+        } else {
+            return (((double)n) / ((double)total));
+        }
+    }
+    private void write_freq_trin(RepliconEntity r, List<Integer> total) {
+        String tri = "";
         Row row = null;
         Cell cell = null;
         Integer col_num = 4;
         Integer row_number = 1;
+        List<Double> total_sum = new ArrayList<Double>();
+        total_sum.add(0.0);
+        total_sum.add(0.0);
+        total_sum.add(0.0);
 
         for (char c : "ACGT".toCharArray()) {
             for (char cc : "ACGT".toCharArray()) {
@@ -356,21 +366,25 @@ public class RepliconSheet {
                     row = this.sheet.getRow(row_number);
 
                     for (Phase ph : Phase.values()) {
+                        double freq = 0.0;
                         switch (ph) {
                             case PHASE_0:
-                                value = "B" + (row_number + 1) + "/" + "B66";
+                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_0),total.get(0));
+                                total_sum.set(0, total_sum.get(0) + freq);
                                 break;
                             case PHASE_1:
-                                value = "C" + (row_number + 1) + "/" + "C66";
+                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_1),total.get(1));
+                                total_sum.set(1, total_sum.get(1) + freq);
                                 break;
                             case PHASE_2:
-                                value = "D" + (row_number + 1) + "/" + "D66";
+                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_2),total.get(2));
+                                total_sum.set(2, total_sum.get(2) + freq);
                                 break;
                         }
 
                         cell = row.createCell(col_num + ph.ordinal());
-                        cell.setCellType(CellType.FORMULA);
-                        cell.setCellFormula(value);
+                        cell.setCellType(CellType.NUMERIC);
+                        cell.setCellValue(freq);
                         if (row_number % 2 == 0) {
                             cell.setCellStyle(this.styles.get("even perc"));
                         } else {
@@ -386,33 +400,38 @@ public class RepliconSheet {
         row = this.sheet.getRow(64 + 1);
 
         for (Phase ph : Phase.values()) {
+            double n = 0.1337;
             switch (ph) {
                 case PHASE_0:
-                    value = "SUM(E2:E" + row_number + ")";
+                    n = total_sum.get(0);
                     break;
                 case PHASE_1:
-                    value = "SUM(F2:F" + row_number + ")";
+                    n = total_sum.get(1);
                     break;
                 case PHASE_2:
-                    value = "SUM(G2:G" + row_number + ")";
+                    n = total_sum.get(2);
                     break;
             }
 
             cell = row.createCell(col_num + ph.ordinal());
-            cell.setCellFormula(value);
+            cell.setCellType(CellType.NUMERIC);
+            cell.setCellValue(n);
             cell.setCellStyle(this.styles.get("perc total"));
         }
 
 
     }
 
-    private void write_freq_din() {
-        String value = null;
-        String din = null;
+    private void write_freq_din(RepliconEntity r, List<Integer> total) {
+        String value = "";
+        String din = "";
         Row row = null;
         Cell cell = null;
         Integer col_num = 14;
         Integer row_number = 1;
+        List<Double> sum_total = new ArrayList<Double>();
+        sum_total.add(0.0);
+        sum_total.add(0.0);
 
         for (char c : "ACGT".toCharArray()) {
             for (char cc : "ACGT".toCharArray()) {
@@ -420,18 +439,21 @@ public class RepliconSheet {
                 row = this.sheet.getRow(row_number);
 
                 for (int ph = 0; ph < 2; ph++) {
+                    double freq = 0.0;
                     switch (ph) {
                         case 0:
-                            value = "M" + (row_number + 1) + "/" + "M18";
+                            freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_0), total.get(0));
+                            sum_total.set(0, sum_total.get(0) + freq);
                             break;
                         case 1:
-                            value = "N" + (row_number + 1) + "/" + "N18";
+                            freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_1), total.get(1));
+                            sum_total.set(1, sum_total.get(1) + freq);
                             break;
                     }
 
                     cell = row.createCell(col_num + ph);
-                    cell.setCellType(CellType.FORMULA);
-                    cell.setCellFormula(value);
+                    cell.setCellType(CellType.NUMERIC);
+                    cell.setCellValue(freq);
 
                     if (row_number % 2 == 0) {
                         cell.setCellStyle(this.styles.get("even perc"));
@@ -447,17 +469,8 @@ public class RepliconSheet {
         row = this.sheet.getRow(16 + 1);
 
         for (int ph = 0; ph < 2; ph++) {
-            switch (ph) {
-                case 0:
-                    value = "SUM(O2:O" + row_number + ")";
-                    break;
-                case 1:
-                    value = "SUM(P2:p" + row_number + ")";
-                    break;
-            }
-
             cell = row.createCell(col_num + ph);
-            cell.setCellFormula(value);
+            cell.setCellValue(sum_total.get(ph));
             cell.setCellStyle(this.styles.get("perc total"));
         }
 
@@ -547,8 +560,8 @@ public class RepliconSheet {
         this.write_total(r, total_trin, true);
         this.write_total(r, total_din, false);
 
-        this.write_freq_trin();
-        this.write_freq_din();
+        this.write_freq_trin(r, total_trin);
+        this.write_freq_din(r, total_din);
 
         this.write_pref_trin(r, Phase.PHASE_0);
         this.write_pref_trin(r, Phase.PHASE_1);
