@@ -51,13 +51,14 @@ public class GenbankUtils {
     private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
-    // Jusqu'à 10 téléchargement concurrents, en respectant REQUEST_LIMIT
-    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = 10;
+    // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT
+    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = 16;
     private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
 
-    public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT);
+    /** Pour éviter le ban, on s'octroie une marge de 5% du nombre de requetes par secondes max */
+    public static final RateLimiter GENBANK_REQUEST_LIMITER = RateLimiter.create(GenbankUtils.REQUEST_LIMIT * 0.95);
     private static final EventUtils.EventListener DOWNLOAD_END_LISTENER = (event) -> {
         if(event.getType() == EventUtils.EventType.DOWNLOAD_REPLICON_END && event.getReplicon() != null){
             repliconService.save(event.getReplicon());
@@ -232,16 +233,6 @@ public class GenbankUtils {
         return CommonUtils.RESULTS_PATH.resolve(Paths.get(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
     }
 
-    /**
-     * Retourne le chemin  du replicon à l'intérieur de l'arborescence des organismes avec le nom du fichier *.gb.</br>
-     * Le replicon doit avoir un organism non-null.
-     * @param r le replicon
-     * @return le chemin du fichier *.gb
-     */
-    static Path getPathOfReplicon(RepliconEntity r){
-        return getPathOfOrganism(r.getHierarchyEntity()).resolve(r.getName()+".gb");
-    }
-
 
     /**
      * Lit le fichier JSON CommonUtils.DATABASE_PATH s'il existe et le met en jour avec les données téléchargées depuis genbank.</br>
@@ -319,7 +310,7 @@ public class GenbankUtils {
             if(++organismCount % 100 == 0){
                 repliconService.saveAll(replicons);
                 //sauvegarde régulière pour éviter un pic de mémoire trop élevé
-                repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+                repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).collect(Collectors.toList()));
                 replicons.clear();
                 LOGGER.info("{}/{} organismes traités", organismCount, numberOfOrganisms);
             }
@@ -333,7 +324,7 @@ public class GenbankUtils {
         if(!replicons.isEmpty()){
             repliconService.saveAll(replicons);
             //sauvegarde des réplicons restants
-            repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).distinct().collect(Collectors.toList()));
+            repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).collect(Collectors.toList()));
             replicons.clear();
         }
         if(controller != null){
@@ -341,7 +332,7 @@ public class GenbankUtils {
             controller.getProgressBar().setProgress(1.0F);
         }
         //On supprime la différence entre genbank et la base de données
-        repliconService.deleteWhereNameIsNotIn(repliconsNames);
+        repliconService.deleteWhereNameIsNotIn(repliconsNames.stream().distinct().collect(Collectors.toList()));
         hierarchyService.deleteHierarchyWithoutReplicons();
         CommonUtils.enableHibernateLogging(true);
         EventUtils.sendEvent(EventUtils.EventType.METADATA_END);

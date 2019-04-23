@@ -38,11 +38,13 @@ public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
             }
             Platform.runLater(() -> {
                 textAera.setText(buffer.toString());
+                textAera.deselect();
                 textAera.selectPositionCaret(textAera.getLength());
             });
         }else{
             Platform.runLater(() -> {
                 textAera.appendText(s);
+                textAera.deselect();
                 textAera.selectPositionCaret(textAera.getLength());
             });
         }

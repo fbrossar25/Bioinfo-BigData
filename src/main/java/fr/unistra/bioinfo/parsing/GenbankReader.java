@@ -291,6 +291,7 @@ public class GenbankReader {
                 }
             }
             processedSequences.removeAll(toDelete);
+            toDelete.clear();
         }
     }
 

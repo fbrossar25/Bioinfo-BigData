@@ -1,7 +1,7 @@
 package fr.unistra.bioinfo.genbank;
 
 import com.github.rholder.retry.*;
-import fr.unistra.bioinfo.common.CommonUtils;
+import com.google.common.util.concurrent.RateLimiter;
 import fr.unistra.bioinfo.common.EventUtils;
 import fr.unistra.bioinfo.parsing.GenbankParser;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -14,16 +14,12 @@ import org.springframework.lang.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class DownloadRepliconTask extends Task<RepliconEntity> implements Callable<RepliconEntity> {
     private static Logger LOGGER = LogManager.getLogger();
-
-    private static final AtomicInteger downloadCount = new AtomicInteger(0);
 
     /** Objet utilisé pour synchroniser le parsing */
     private static final Object synchronizedObject = new Object();
@@ -32,6 +28,7 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
     private final String repliconsIds;
     private final Retryer<RepliconEntity> retryer;
     private final RepliconService repliconService;
+    private static final RateLimiter PARSING_RATE_LIMITER = RateLimiter.create(10);
 
     public DownloadRepliconTask(@NonNull RepliconEntity replicon, @NonNull RepliconService repliconService) {
         this.replicon = replicon;
@@ -47,12 +44,10 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
     }
 
     private RepliconEntity download() throws IOException{
-        synchronized(synchronizedObject){
-            repliconService.save(replicon);
-        }
         GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
         try(BufferedReader in = new BufferedReader(new InputStreamReader(GenbankUtils.getGBDownloadURL(replicon).toURL().openStream()))) {
             LOGGER.debug("Téléchargement et parsing du replicons '{}' débuté",repliconsIds);
+            PARSING_RATE_LIMITER.acquire();
             GenbankParser.parseGenbankFile(in, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_REPLICON_END, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);

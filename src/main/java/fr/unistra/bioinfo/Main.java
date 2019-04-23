@@ -1,7 +1,6 @@
 package fr.unistra.bioinfo;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.gui.ExceptionDialog;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -57,10 +56,6 @@ public class Main extends Application {
     public void init() {
         Main.mainInstance = this;
         springContext = SpringApplication.run(Main.class, getParameters().getRaw().toArray(new String[0]));
-    }
-
-    public static void generateOrganismDirectories(){
-        GenbankUtils.createAllOrganismsDirectories(CommonUtils.RESULTS_PATH);
     }
 
     private void initStage(Stage primaryStage) {

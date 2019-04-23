@@ -27,7 +27,7 @@ sourceCompatibility = 1.8
 mainClassName = 'fr.unistra.bioinfo.Main'
 compileJava.options.encoding = "${defaultEncoding}"
 compileTestJava.options.encoding = "${defaultEncoding}"
-applicationDefaultJvmArgs = ["-Dfile.encoding=${defaultEncoding}"]
+applicationDefaultJvmArgs = ["-Dfile.encoding=${defaultEncoding}", "-Xmx8G", "-Xms4G"]
 
 repositories {
     mavenCentral()
