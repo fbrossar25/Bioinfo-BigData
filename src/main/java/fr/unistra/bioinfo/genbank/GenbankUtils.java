@@ -405,6 +405,7 @@ public class GenbankUtils {
     }
 
     private static String getRepliconsListFromName(String name) {
+        GENBANK_REQUEST_LIMITER.acquire();
         try(BufferedReader reader = readRequest(
                 buildNgramURL(
                         Reign.ALL,
@@ -448,6 +449,7 @@ public class GenbankUtils {
      */
     static int getNumberOfEntries(Reign reign){
         int numerOfEntries = -1;
+        GENBANK_REQUEST_LIMITER.acquire();
         try(BufferedReader reader = readRequest(getReignTotalEntriesNumberURL(reign))){
             JsonNode json = new ObjectMapper().readTree(reader.lines().collect(Collectors.joining()));
             numerOfEntries = json.get("ngout").get("data").get("totalCount").intValue();
@@ -533,6 +535,7 @@ public class GenbankUtils {
     }
 
     public static HierarchyEntity getHierarchyInfoByOrganism(String organism) {
+        GENBANK_REQUEST_LIMITER.acquire();
         HierarchyEntity entity = null;
         try(BufferedReader reader = readRequest(
                 buildNgramURL(
@@ -552,6 +555,7 @@ public class GenbankUtils {
     }
 
     public static HierarchyEntity getHierarchyInfoByRepliconName(String repliconName) {
+        GENBANK_REQUEST_LIMITER.acquire();
         HierarchyEntity entity = null;
         try(BufferedReader reader = readRequest(
                 buildNgramURL(
