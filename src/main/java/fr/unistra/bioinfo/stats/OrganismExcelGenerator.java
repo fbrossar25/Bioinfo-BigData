@@ -92,6 +92,20 @@ public class OrganismExcelGenerator {
 
         new GeneralInformationSheet(wb, this.organism, replicons).write_lines();
 
+        // RepliconSheet(XSSFWorkbook wb, List<RepliconEntity> replicons, GeneralInformationSheet.LEVEL level)
+//        new RepliconSheet(wb, replicons, GeneralInformationSheet.LEVEL.SUB_GROUP).write_sheet();
+
+        // sum of replicons by types
+        for (RepliconType t : RepliconType.values()) {
+            List<RepliconEntity> typedRepls = this.getListRepliconsByType(replicons, t);
+            if (!typedRepls.isEmpty()) {
+                new RepliconSheet(wb, typedRepls, GeneralInformationSheet.LEVEL.SUB_GROUP).write_sheet();
+                LOGGER.trace("NEW Sheet for " + t);
+            }
+            LOGGER.trace("" + t);
+        }
+
+        // replicons sheets
         for (RepliconEntity r : replicons) {
             new RepliconSheet(wb, r).write_sheet();
         }
@@ -276,11 +290,13 @@ public class OrganismExcelGenerator {
     public boolean write_organism( List<RepliconEntity> replicons ) {
         if (this.generate_excel_organism(replicons)) {
             LOGGER.info("Organisme '{}' mis à jour", this.organism.getOrganism());
+
             for(RepliconEntity r : replicons){
                 if(r.isParsed()) {
                     EventUtils.sendEvent(EventUtils.EventType.STATS_END_REPLICON, r);
                 }
             }
+
             EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
             return true;
         } else {
