@@ -34,7 +34,7 @@ public class GeneralInformationSheet {
     private static final List<String> SECOND_COLNAMES = Arrays.asList(
             "Last update",
             "",
-            "",
+            "# Linkage",
             "# Chromosome",
             "# Mitochondrion",
             "# Plast",
@@ -197,26 +197,37 @@ public class GeneralInformationSheet {
         // TYPE
         HashMap<RepliconType, Integer> types_count = this.CDS_types_count();
 
+        // LINKAGE
+        row = this.sheet.getRow(2);
+        cell = row.createCell(4);
+        cell.setCellValue(types_count.get(RepliconType.LINKAGE));
+        cell.setCellStyle(this.styles.get("value"));
+
+        // CHROMOSOME
         row = this.sheet.getRow(3);
         cell = row.createCell(4);
         cell.setCellValue(types_count.get(RepliconType.CHROMOSOME));
         cell.setCellStyle(this.styles.get("value"));
 
+        // MITOCHONDRION
         row = this.sheet.getRow(4);
         cell = row.createCell(4);
         cell.setCellValue(types_count.get(RepliconType.MITOCHONDRION));
         cell.setCellStyle(this.styles.get("value"));
 
+        // PLAST
         row = this.sheet.getRow(5);
         cell = row.createCell(4);
         cell.setCellValue(types_count.get(RepliconType.PLAST));
         cell.setCellStyle(this.styles.get("value"));
 
+        // PLASMID
         row = this.sheet.getRow(6);
         cell = row.createCell(4);
         cell.setCellValue(types_count.get(RepliconType.PLASMID));
         cell.setCellStyle(this.styles.get("value"));
 
+        // DNA aka UNKNOWN
         row = this.sheet.getRow(7);
         cell = row.createCell(4);
         cell.setCellValue(types_count.get(RepliconType.DNA));
