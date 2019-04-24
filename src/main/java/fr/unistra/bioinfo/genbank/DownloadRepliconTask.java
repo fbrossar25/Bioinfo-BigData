@@ -52,7 +52,7 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_REPLICON_END, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);
             LOGGER.info("Téléchargement et parsing du replicon '{}' terminé",replicon.getGenbankName());
-        }catch (IOException e){
+        }catch (NullPointerException | IOException e){
             replicon.setParsed(false);
             replicon.setComputed(false);
             synchronized(synchronizedObject){

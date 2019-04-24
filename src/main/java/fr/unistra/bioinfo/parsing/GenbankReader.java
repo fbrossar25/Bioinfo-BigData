@@ -113,7 +113,7 @@ public class GenbankReader {
                 processVersion(value);
                 break;
             case "source":
-                if(sequenceLength < 1){
+                if(sequenceLength < 1 && value != null){
                     processSource(value);
                 }
                 break;

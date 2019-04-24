@@ -29,6 +29,7 @@ import org.springframework.stereotype.Controller;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
@@ -67,6 +68,7 @@ public class MainWindowController {
 
     private AtomicInteger countDownload = new AtomicInteger(0);
     private AtomicInteger numberOfFiles = new AtomicInteger(0);
+    private AtomicBoolean isDownloading = new AtomicBoolean(false);
 
     private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
         if((event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END)){
@@ -192,6 +194,7 @@ public class MainWindowController {
         new Thread(() -> {
             try {
                 LOGGER.info("Mise à jour de la base de données");
+                isDownloading.set(true);
                 GenbankUtils.updateNCDatabase();
                 CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
                 GenbankUtils.downloadReplicons(repliconService.getNotDownloadedReplicons(), future);
@@ -228,6 +231,7 @@ public class MainWindowController {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
             } finally {
                 btnDemarrer.setDisable(false);
+                isDownloading.set(false);
             }
         }).start();
     }
@@ -262,7 +266,7 @@ public class MainWindowController {
             treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
             CommonUtils.enableHibernateLogging(true);
-            btnDemarrer.setDisable(false);
+            btnDemarrer.setDisable(isDownloading.get());
             treeView.setDisable(false);
 
             LOGGER.info("Mise à jour de l'arbre terminée");
