@@ -5,7 +5,6 @@ import fr.unistra.bioinfo.genbank.GenbankUtils;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
-import fr.unistra.bioinfo.persistence.entity.RepliconType;
 import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.StringUtils;
@@ -75,7 +74,7 @@ public final class GenbankParser {
         synchronized(synchronizedObject){
             repliconService.save(repliconEntity);
         }
-        if(RepliconType.DNA.equals(repliconEntity.getType())){
+        if(repliconEntity.getType() == null){
             repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
         }
         countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);

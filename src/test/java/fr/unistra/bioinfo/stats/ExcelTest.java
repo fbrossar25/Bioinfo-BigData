@@ -72,7 +72,7 @@ public class ExcelTest {
         try {
             FileUtils.forceMkdir(new File(TEST_PATH));
         } catch (IOException e) {
-            e.printStackTrace();
+            fail(e);
         }
     }
 
@@ -345,5 +345,23 @@ public class ExcelTest {
         LOGGER.info("Elapsed time for generating excels for {} organisms: {}s", hierarchyService.count(), elapsedSeconds);
         long prediction = (long)((((double) elapsedSeconds) / hierarchyService.count()) * 4000);
         LOGGER.info("Generating all organism's Excels (~5000 organisms) should take less than {}", LocalTime.MIN.plusSeconds(prediction).toString());
+    }
+
+    @Test
+    @Disabled
+    void generateExcelWithBadOrganismNames(){
+        HierarchyEntity h = new HierarchyEntity();
+        h.setOrganism("oragnism:*/<>.\\|");
+        h.setGroup("group:*/<>./\\");
+        h.setSubgroup("subgroup:");
+        h.setKingdom("kingdom:");
+        hierarchyService.save(h);
+        RepliconEntity r = new RepliconEntity("NC_012345", 1, h);
+        repliconService.save(r);
+        try{
+            new OrganismExcelGenerator(h, TEST_PATH, this.hierarchyService, this.repliconService).generateExcel();
+        }catch (Throwable e){
+            fail(e);
+        }
     }
 }

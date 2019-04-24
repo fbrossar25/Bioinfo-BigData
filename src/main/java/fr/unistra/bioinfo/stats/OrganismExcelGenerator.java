@@ -60,30 +60,31 @@ public class OrganismExcelGenerator {
     }
 
     public static String generate_path(HierarchyEntity o, String base_path, GeneralInformationSheet.LEVEL level) {
-        String path = base_path + File.separator;
+        StringBuilder pathBuilder = new StringBuilder(base_path.length() * 2);
+        pathBuilder.append(base_path.replaceAll("[\\\\<>:\"/|?*]", "")).append(File.separator);
 
         switch (level) {
             case KINGDOM:
-                path += o.getKingdom() + ".xlsx";
+                pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case GROUP:
-                path += o.getKingdom();
-                path += File.separator + o.getGroup() + ".xlsx";
+                pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case SUB_GROUP:
-                path += o.getKingdom(); 
-                path += File.separator + o.getGroup();
-                path += File.separator + o.getSubgroup() + ".xlsx";
+                pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getSubgroup().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case ORGANISM:
-                path += o.getKingdom();
-                path += File.separator + o.getGroup();
-                path += File.separator + o.getSubgroup();
-                path += File.separator + o.getOrganism() + ".xlsx";
+                pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getSubgroup().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append(o.getOrganism().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
         }
 
-        return path;
+        return pathBuilder.append(".xlsx").toString();
     }
 
     public boolean generate_excel_organism(List<RepliconEntity> replicons) {
