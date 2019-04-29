@@ -1,6 +1,5 @@
 package fr.unistra.bioinfo.gui.tree;
 
-import fr.unistra.bioinfo.gui.MainWindowController;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import javafx.application.Platform;

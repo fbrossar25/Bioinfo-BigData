@@ -28,23 +28,36 @@ public class GenbankReader {
     private static final Pattern ORIGIN_LINE_PATTERN = Pattern.compile("^\\s*(\\d+)\\s*(.+?)\\s*$");
     private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
 
-    class CDS{
-        public int begin;
-        public int end;
-        public boolean complement;
-        public boolean processed = false;
-        List<CDS> linkedCDS = new ArrayList<>();
-        CDS(int begin, int end, boolean comp){
+    class Location{
+        int begin;
+        int end;
+        private int length;
+        Location(int begin, int end){
             this.begin = begin;
             this.end = end;
-            this.complement = comp;
-        }
-        @Override
-        public String toString(){
-            if(complement){
-                return "complement("+begin+".."+end+")";
+            length = end - begin + 1;
+            if(length < 1){
+                length = 0;
             }
-            return begin+".."+end;
+        }
+
+        int length(){
+            return length;
+        }
+    }
+
+    class CDS{
+        List<Location> locations = new ArrayList<>();
+        boolean complement = false;
+        void addLocation(int begin, int end){
+            locations.add(new Location(begin, end));
+        }
+
+        int length(){
+            if(locations.isEmpty()){
+                return 0;
+            }
+            return locations.stream().mapToInt(Location::length).sum();
         }
     }
 
@@ -52,8 +65,8 @@ public class GenbankReader {
     private File file;
     /** Reader du fichier */
     private BufferedReader reader = null;
-    /** Sous-séquences extraites correspondantes aux CDS (operateurs join et complement déjà appliqué si présent) */
-    private List<StringBuilder> processedSequences = new ArrayList<>();
+    /** Sous-séquence extraite correspondante aux CDS du fichier (operateurs join et complement déjà appliqués si présent) */
+    private StringBuilder processedSequence;
     /** Nom du replicon */
     private String name = null;
     /** Liste de tous les CDS valides*/
@@ -161,9 +174,8 @@ public class GenbankReader {
      */
     private void processCDS(String cdsValue) throws IOException{
         boolean endCds = false;
-        boolean complement = false;
         boolean invalid = false;
-        List<CDS> listCds = new ArrayList<>();
+        CDS cds = new CDS();
         if (sequenceLength > 0){
             StringBuilder cdsEntier = new StringBuilder();
             while (!endCds) {
@@ -181,7 +193,7 @@ public class GenbankReader {
                 String content = cdsMatcher.group(3);
                 if (operator != null) {
                     if (operator.contains("complement")) {
-                        complement = true;
+                        cds.complement = true;
                     }
                 }
 
@@ -195,7 +207,7 @@ public class GenbankReader {
                         break;
                     }
 
-                    listCds.add(new CDS(start, end, complement));
+                    cds.addLocation(start, end);
                 }
             }else{
                 invalid = true;
@@ -203,17 +215,12 @@ public class GenbankReader {
         }else{
             throw new RuntimeException("Fichier invalide : La taille de la séquence n'as pas pu être déterminé");
         }
-        if(!invalid) {
-            listCds.sort(Comparator.comparingInt(cds -> cds.begin));
-            cdsValid.addAll(listCds);
-            for(CDS cds : listCds){
-                cds.linkedCDS.addAll(listCds);
-            }
+        if(!invalid && !cds.locations.isEmpty()) {
+            cdsValid.add(cds);
             nbCdsValid++;
         }else{
             nbCdsInvalid++;
         }
-        listCds.clear();
     }
 
     /**
@@ -224,7 +231,6 @@ public class GenbankReader {
         if(cdsValid.isEmpty()){
             return;
         }
-        sortAndcheckCDSIntervalValidity();
         String originLine = reader.readLine();
         //Sous-séquence d'un seul CDS à la fois, ajouté à la liste processedSequences si valide
         StringBuilder fullOrigin = new StringBuilder(sequenceLength > 1 ? sequenceLength : 1000);
@@ -239,102 +245,51 @@ public class GenbankReader {
             originLine = reader.readLine();
         }
 
-        Map<Integer, StringBuilder> localCDSMap = new TreeMap<>();
-        List<CDS> invalidsCDSContent = new ArrayList<>();
-        List<StringBuilder> subSequencesToComplement = new ArrayList<>();
+        StringBuilder localSubsequence = new StringBuilder();
+
+        List<CDS> invalidsCDS = new ArrayList<>();
+
         for(CDS cds : cdsValid){
-            if(cds.processed){
-                continue;
-            }
-            int key = cds.linkedCDS.get(0).begin;
-            if(!localCDSMap.containsKey(key)){
-                localCDSMap.put(key , new StringBuilder(getSubsequenceLength(cds)));
-            }
-            String s = fullOrigin.substring(cds.begin-1, cds.end);
-            StringBuilder sRef = localCDSMap.get(key);
-            if(cds.complement && !subSequencesToComplement.contains(sRef)){
-                subSequencesToComplement.add(sRef);
-            }
-            for(int i=0; i<s.length(); i++){
-                char c = getChar(cds.complement, s.charAt(i));
-                if(c == '?'){
-                    LOGGER.debug("Caractère invalide pour le replicon '{}' dans le CDS '{}' : '{}'", name, cds, s.charAt(i));
-                    localCDSMap.remove(key);
-                    nbCdsValid--;
-                    nbCdsInvalid++;
-                    invalidsCDSContent.addAll(cds.linkedCDS);
-                    for(CDS linked : cds.linkedCDS){
-                        linked.processed = true;
+            boolean invalid = false;
+            StringBuilder cdsSubsequence = new StringBuilder();
+            for(Location l : cds.locations){
+                String s = fullOrigin.substring(l.begin-1, l.end);
+                for(int i=0; i<s.length(); i++){
+                    char c = getChar(cds.complement, s.charAt(i));
+                    if(c == '?'){
+                        LOGGER.debug("Caractère invalide pour le replicon '{}' dans le CDS '{}' : '{}'", name, cds, s.charAt(i));
+                        invalidsCDS.add(cds);
+                        invalid = true;
+                        break;
+                    }else{
+                        cdsSubsequence.append(c);
                     }
+                }
+                if(invalid){
                     break;
-                }else{
-                    sRef.append(c);
                 }
             }
-            cds.processed = true;
-        }
-        cdsValid.removeAll(invalidsCDSContent);
-        processedSequences.addAll(localCDSMap.values());
-        invalidsCDSContent.clear();
-        localCDSMap.clear();
-        for(StringBuilder toComplement : subSequencesToComplement){
-            toComplement.reverse();
-        }
-        subSequencesToComplement.clear();
-        if(!isTest){
-            List<StringBuilder> toDelete = new ArrayList<>();
-            for(StringBuilder subSeq : processedSequences){
-                if(!processedSubsequenceIsValid(subSeq)){
-                    toDelete.add(subSeq);
-                    nbCdsInvalid++;
-                    nbCdsValid--;
+            if(!invalid){
+                if(cds.complement){
+                    cdsSubsequence.reverse();
                 }
+                localSubsequence.append(cdsSubsequence);
             }
-            processedSequences.removeAll(toDelete);
-            toDelete.clear();
         }
-    }
+        nbCdsValid -= invalidsCDS.size();
+        nbCdsInvalid += invalidsCDS.size();
+        cdsValid.removeAll(invalidsCDS);
+        invalidsCDS.clear();
 
-    /**
-     * Trie la liste de cds par ordre croissant des débuts des CDS et supprime les CDS qui démarre ou termine en même qu'un autre
-     */
-    private void sortAndcheckCDSIntervalValidity(){
-        cdsValid.sort(Comparator.comparingInt(cds -> cds.begin));
-        if(cdsValid.size() > 1){
-            List<CDS> checkedCDSList = new ArrayList<>(cdsValid);
-            CDS cds;
-            for(int i=0; i<cdsValid.size(); i++){
-                cds = cdsValid.get(i);
-                if(!checkedCDSList.contains(cds)){
-                    continue;
-                }
-                /**
-                if(i + 1 < cdsValid.size() && cds.end >= cdsValid.get(i+1).begin){
-                    //Si ce CDS termine après que le cds suivant aient démarré
-                    nbCdsInvalid++;
-                    nbCdsValid--;
-                    checkedCDSList.removeAll(cds.linkedCDS);
-                }else if(cds.begin <= cdsValid.get(i - 1).end){
-                    //Si le  CDS commence avant que le cds précédent n'ais terminé
-                    nbCdsInvalid++;
-                    nbCdsValid--;
-                    checkedCDSList.removeAll(cds.linkedCDS);
-                }else */if(((cds.end - cds.begin)+1)%3 != 0){
-                    nbCdsInvalid++;
-                    nbCdsValid--;
-                    checkedCDSList.removeAll(cds.linkedCDS);
-                }
-            }
-            cdsValid = checkedCDSList;
-        }
-    }
 
-    private int getSubsequenceLength(CDS cds){
-        int len = 0;
-        for(CDS subCDS : cds.linkedCDS){
-            len += subCDS.end - subCDS.begin +1;
+
+        if(checkProcessedSequence(localSubsequence)){
+            processedSequence = localSubsequence;
+        }else{
+            LOGGER.debug("La sous-séquences extraites du replicons '{}' est invalide", name);
+            nbCdsInvalid += nbCdsValid;
+            nbCdsValid = 0;
         }
-        return len;
     }
 
     private char getChar(boolean complement, char c) {
@@ -364,7 +319,7 @@ public class GenbankReader {
         }
     }
 
-    public boolean processedSubsequenceIsValid(StringBuilder subSeq){
+    private boolean checkProcessedSequence(StringBuilder subSeq){
         if(StringUtils.isBlank(subSeq)){
             LOGGER.trace("Le CDS du replicon '{}' est vide", name);
             return false;
@@ -401,8 +356,12 @@ public class GenbankReader {
         return check;
     }
 
-    public List<StringBuilder> getProcessedSubsequences(){
-        return processedSequences;
+    public boolean processedSequenceIsValid(){
+        return processedSequence != null;
+    }
+
+    public StringBuilder getProcessedSequence(){
+        return processedSequence;
     }
 
     public int getValidsCDS(){

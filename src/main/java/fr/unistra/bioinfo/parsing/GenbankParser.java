@@ -77,7 +77,7 @@ public final class GenbankParser {
         if(repliconEntity.getType() == null){
             repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
         }
-        countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);
+        countFrequencies(gbReader.getProcessedSequence(), repliconEntity);
         countPrefPhases(repliconEntity);
         repliconEntity.setParsed(true);
         synchronized(synchronizedObject){

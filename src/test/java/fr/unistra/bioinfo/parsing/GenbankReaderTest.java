@@ -1,8 +1,6 @@
 package fr.unistra.bioinfo.parsing;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,11 +10,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GenbankReaderTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReaderTest.class);
-
-    private static final Path FELIS_CATUS_PATH = Paths.get("src", "test", "resources", "NC_001700.1.gb");
+    private static final Path FELIS_CATUS_PATH = Paths.get("src", "test", "resources", "NC_001702.1.gb");
     private static final Path TEST_FILE = Paths.get("src", "test", "resources", "complement-test.gb");
-    private static final Path TEST_MULTILINE = Paths.get("src", "test", "resources", "multiline-of-doom.gb");
+    private static final Path TEST_MULTILINE = Paths.get( "src", "test", "resources", "multiline-of-doom.gb");
     private static final int INVALIDS_CDS = 1;
     private static final int VALIDS_CDS = 4;
     private static final int ORIGIN_LENGTH = 130;
@@ -29,7 +25,7 @@ class GenbankReaderTest {
             GenbankReader gbReader = GenbankReader.createInstance(FELIS_CATUS_PATH.toFile(), true);
             gbReader.process();
             assertEquals(7, gbReader.getValidsCDS());
-            assertEquals(7, gbReader.getProcessedSubsequences().size());
+            assertEquals(1, gbReader.getProcessedSequence().length());
         } catch (IOException e) {
             fail("Erreur lors de la lecture du fichier",e);
         }
@@ -51,13 +47,12 @@ class GenbankReaderTest {
         try {
             GenbankReader gbReader = GenbankReader.createInstance(TEST_MULTILINE.toFile(), true);
             gbReader.process();
-            List<StringBuilder> subSeqs = gbReader.getProcessedSubsequences();
-            assertNotNull(subSeqs);
-            assertEquals(1, subSeqs.size());
+            StringBuilder subSeq = gbReader.getProcessedSequence();
+            assertNotNull(subSeq);
             assertEquals(1, gbReader.getValidsCDS());
             assertEquals(0, gbReader.getInvalidsCDS());
-            assertEquals(EXPECTED_SUBSEQUENCE_OF_DOOM.length(), subSeqs.stream().mapToInt(StringBuilder::length).sum());
-            assertEquals(EXPECTED_SUBSEQUENCE_OF_DOOM, String.join("", subSeqs));
+            assertEquals(EXPECTED_SUBSEQUENCE_OF_DOOM.length(), subSeq.length());
+            assertEquals(EXPECTED_SUBSEQUENCE_OF_DOOM, String.join("", subSeq));
         } catch (IOException e) {
             fail("Erreur lors de la lecture du fichier",e);
         }
@@ -91,12 +86,12 @@ class GenbankReaderTest {
         try {
             GenbankReader gbReader = GenbankReader.createInstance(TEST_FILE.toFile(), true);
             gbReader.process();
-            List<StringBuilder> subSeqs = gbReader.getProcessedSubsequences();
-            assertNotNull(subSeqs);
-            assertEquals(VALIDS_CDS, subSeqs.size());
+            StringBuilder subSeq = gbReader.getProcessedSequence();
+            assertNotNull(subSeq);
+            assertEquals(VALIDS_CDS, subSeq.length());
             assertEquals(VALIDS_CDS, gbReader.getValidsCDS());
             assertEquals(INVALIDS_CDS, gbReader.getInvalidsCDS());
-            assertEquals(EXPECTED_SUBSEQUENCE, String.join("", subSeqs));
+            assertEquals(EXPECTED_SUBSEQUENCE, subSeq.toString());
         } catch (IOException e) {
             fail("Erreur lors de la lecture du fichier",e);
         }
