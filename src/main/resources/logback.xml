@@ -11,17 +11,12 @@
         </filter>
     </appender>
 
-    <appender name="file" class="ch.qos.logback.core.RollingFileAppender">
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
         <file>logs/app.log</file>
         <append>true</append>
         <encoder>
             <pattern>${log.pattern}</pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>app.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
-        </rollingPolicy>
     </appender>
 
     <appender name="${log.textaera.appender.name}" class="fr.unistra.bioinfo.gui.TextAreaAppender">
