@@ -77,8 +77,10 @@ public final class GenbankParser {
         if(repliconEntity.getType() == null){
             repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
         }
-        countFrequencies(gbReader.getProcessedSequence(), repliconEntity);
-        countPrefPhases(repliconEntity);
+        if(gbReader.processedSequenceIsValid()){
+            countFrequencies(gbReader.getProcessedSequence(), repliconEntity);
+            countPrefPhases(repliconEntity);
+        }
         repliconEntity.setParsed(true);
         synchronized(synchronizedObject){
             repliconService.save(repliconEntity);
@@ -146,13 +148,6 @@ public final class GenbankParser {
                 // Aucun trinucleotide -> pas de phase pref
                 replicon.setPhasesPrefsTrinucleotide(trinucleotide);
             }
-        }
-    }
-
-    private static void countFrequencies(@NonNull List<StringBuilder> cdsList, @NonNull final RepliconEntity repliconEntity){
-        repliconEntity.resetCounters();
-        for(StringBuilder cds : cdsList){
-            countFrequencies(cds, repliconEntity);
         }
     }
 
