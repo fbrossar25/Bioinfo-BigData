@@ -229,7 +229,7 @@ public class GenbankUtils {
      * @return Le chemin du dossier de l'organisme
      * @see CommonUtils#RESULTS_PATH
      */
-    static Path getPathOfOrganism(HierarchyEntity hierarchy){
+        static Path getPathOfOrganism(HierarchyEntity hierarchy){
         return CommonUtils.RESULTS_PATH.resolve(Paths.get(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism()));
     }
 

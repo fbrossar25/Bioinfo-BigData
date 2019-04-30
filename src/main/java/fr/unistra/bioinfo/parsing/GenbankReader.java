@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Classe permettant de lire les fichiers Genbank .gb.<br>
@@ -20,29 +21,26 @@ import java.util.regex.Pattern;
  * les fichiers contenant plusieurs replicons ne seront pas entièrement lus.
  */
 public class GenbankReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
+
     private static final String END_TAG = "//";
     private static final Pattern SECTION_PATTERN = Pattern.compile("^\\s*(.+?)(\\s+(.+))?$");
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(NC_\\d+?).(\\d+)$");
     private static final Pattern CDS_PATTERN = Pattern.compile("^\\s*(join\\(|complement\\((join\\()?)?((,?[<>]*\\d+[<>]*\\.\\.[<>]*\\d+[<>]*)+)\\)*\\s*$");
     private static final Pattern INTERVAL_PATTERN = Pattern.compile("^(\\d+)\\.\\.(\\d+)$");
     private static final Pattern ORIGIN_LINE_PATTERN = Pattern.compile("^\\s*(\\d+)\\s*(.+?)\\s*$");
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenbankReader.class);
 
     class Location{
         int begin;
         int end;
-        private int length;
         Location(int begin, int end){
             this.begin = begin;
             this.end = end;
-            length = end - begin + 1;
-            if(length < 1){
-                length = 0;
-            }
         }
 
-        int length(){
-            return length;
+        @Override
+        public String toString(){
+            return begin + ".." + end;
         }
     }
 
@@ -53,11 +51,23 @@ public class GenbankReader {
             locations.add(new Location(begin, end));
         }
 
-        int length(){
-            if(locations.isEmpty()){
-                return 0;
+        @Override
+        public String toString(){
+            StringBuilder sb = new StringBuilder();
+            if(complement){
+                sb.append("complement(");
             }
-            return locations.stream().mapToInt(Location::length).sum();
+            if(locations.size() > 1){
+                sb.append("join(");
+            }
+            sb.append(locations.stream().map(Location::toString).collect(Collectors.joining(",")));
+            if(complement){
+                sb.append(")");
+            }
+            if(locations.size() > 1){
+                sb.append(")");
+            }
+            return sb.toString();
         }
     }
 
@@ -81,7 +91,6 @@ public class GenbankReader {
     private String organism;
     /** Taille du origin */
     private int sequenceLength = -1;
-    private boolean isTest = false;
     /** Indique que le mot clé FEATURES à été lu */
     private boolean features = false;
 
@@ -203,6 +212,7 @@ public class GenbankReader {
                     int start = Integer.parseInt(extremity[0].replaceAll("[<>]+",""));
                     int end = Integer.parseInt(extremity[1].replaceAll("[<>]+",""));
                     if ((start > end) || (end > sequenceLength)) {
+                        LOGGER.trace("CDS invalide dans le replicon '{}' : {}", name, cdsEntier);
                         invalid = true;
                         break;
                     }
@@ -210,6 +220,7 @@ public class GenbankReader {
                     cds.addLocation(start, end);
                 }
             }else{
+                LOGGER.trace("CDS malformé dans le replicon '{}' : {}", name, cdsEntier);
                 invalid = true;
             }
         }else{
@@ -257,7 +268,7 @@ public class GenbankReader {
                 for(int i=0; i<s.length(); i++){
                     char c = getChar(cds.complement, s.charAt(i));
                     if(c == '?'){
-                        LOGGER.debug("Caractère invalide pour le replicon '{}' dans le CDS '{}' : '{}'", name, cds, s.charAt(i));
+                        LOGGER.trace("Caractère invalide pour le replicon '{}' dans le CDS '{}' : '{}'", name, cds, s.charAt(i));
                         invalidsCDS.add(cds);
                         invalid = true;
                         break;
@@ -273,6 +284,7 @@ public class GenbankReader {
                 if(cds.complement){
                     cdsSubsequence.reverse();
                 }
+                LOGGER.trace("CDS du replicon '{}' valide et ajouté : {}", name, cds);
                 localSubsequence.append(cdsSubsequence);
             }
         }
@@ -286,7 +298,7 @@ public class GenbankReader {
         if(checkProcessedSequence(localSubsequence)){
             processedSequence = localSubsequence;
         }else{
-            LOGGER.debug("La sous-séquences extraites du replicons '{}' est invalide", name);
+            LOGGER.debug("La sous-séquence extraite du replicons '{}' est invalide", name);
             nbCdsInvalid += nbCdsValid;
             nbCdsValid = 0;
         }
@@ -388,7 +400,7 @@ public class GenbankReader {
         return organism;
     }
 
-    public int getSequenceLength(){
+    public int getOriginLength(){
         return sequenceLength;
     }
 
@@ -406,13 +418,7 @@ public class GenbankReader {
      * @param reader Le buefer à lire
      * @return Une instance permettant de lire le fichier en paramètre
      */
-    public static GenbankReader createInstance(@NonNull BufferedReader reader){
+    static GenbankReader createInstance(@NonNull BufferedReader reader){
         return new GenbankReader(reader);
-    }
-
-    static GenbankReader createInstance(@NonNull File file, boolean isTest){
-        GenbankReader gbReader =  new GenbankReader(file);
-        gbReader.isTest = true;
-        return  gbReader;
     }
 }
