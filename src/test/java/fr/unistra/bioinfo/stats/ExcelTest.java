@@ -304,7 +304,7 @@ public class ExcelTest {
 
     @Test
     void parseAndGenerateStats(){
-        GenbankUtils.updateNCDatabase(1);
+        GenbankUtils.updateNCDatabase(0);
         CompletableFuture<List<RepliconEntity>> future = new CompletableFuture<>();
         long begin = System.currentTimeMillis();
         GenbankUtils.downloadAllReplicons(future);
