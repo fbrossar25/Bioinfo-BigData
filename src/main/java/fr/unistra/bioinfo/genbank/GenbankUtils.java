@@ -53,7 +53,6 @@ public class GenbankUtils {
     private static final Integer REQUEST_LIMIT = 3;
     // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT
     public static final Integer DOWNLOAD_THREAD_POOL_SIZE = 16;
-    private static final String EUTILS_EFETCH = "efetch.fcgi";
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
 
@@ -100,19 +99,10 @@ public class GenbankUtils {
     /**
      * Télécharge tous les replicons présent en BDD, un update est nécessaire avant d'appeler cette fonction
      * @param callback la callback contenant les données une fois les téléchargements tous terminés
-     * @throws IOException En cas d'erreurs pendant le téléchargement
      * @see GenbankUtils#updateNCDatabase
      */
     public static void downloadAllReplicons(CompletableFuture<List<RepliconEntity>> callback){
         downloadReplicons(repliconService.getAll(), callback);
-    }
-
-    public static URI getEUtilsLink(String application, Map<String, String> params) throws URISyntaxException {
-        URIBuilder builder = buildURL(EUTILS_BASE_URL+application, params);
-        if(!params.containsKey("api_key")){
-            builder.setParameter("api_key", EUTILS_API_KEY);
-        }
-        return builder.build();
     }
 
     public static URIBuilder buildURL(String baseURL, Map<String, String> params) throws URISyntaxException {
@@ -139,15 +129,6 @@ public class GenbankUtils {
     }
 
     /**
-     * Retourne l'URL permettant de télécharger un fichier contenant les replicons donnés
-     * @param replicons liste des replicons à télécharger
-     * @return l'url
-     */
-    public static URI getGBDownloadURL(List<RepliconEntity> replicons){
-        return getGBDownloadURL(getRepliconsIdsString(replicons));
-    }
-
-    /**
      * Retourne l'URL permettant de télécharger un fichier contenant les replicons dont les ids sont donnés</br>
      * Les ids doivent être séparé par une virgule.
      * @param ids liste des ids des replicons à télécharger. Ex: "NC_1.1,NC_2.1,NC_3.1"
@@ -162,7 +143,6 @@ public class GenbankUtils {
         params.put("retmode", "raw");
         params.put("id", ids);
         try{
-            //uri = getEUtilsLink(EUTILS_EFETCH, params);
             uri = getDownloadLink(params);
         }catch(URISyntaxException e){
             LOGGER.error("Syntaxe URI incorrecte", e);
@@ -373,7 +353,8 @@ public class GenbankUtils {
                 if(replicon == null) {
                     replicon = new RepliconEntity(name, version, hierarchy);
                     replicon.setType(getTypeFromRepliconJsonEntry(value));
-                    LOGGER.trace("Replicon '{}' ajouté en base", replicon);
+                    LOGGER.trace("Nouveau Replicon trouvé : {}.{}", name, version);
+                    repliconService.save(replicon);
                 }else{
                     //Mise à jour du replicon
                     if(replicon.getVersion() < version){
