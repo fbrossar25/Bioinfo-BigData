@@ -52,7 +52,7 @@ public class GenbankUtils {
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
     // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT
-    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = 16;
+    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() > 0 ? Runtime.getRuntime().availableProcessors() : 16;
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
 
@@ -66,6 +66,7 @@ public class GenbankUtils {
 
     static{
         EventUtils.subscribe(DOWNLOAD_END_LISTENER);
+        LOGGER.info("Taille du pool de thread de téléchargement fixé à {}", DOWNLOAD_THREAD_POOL_SIZE);
     }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<RepliconEntity>> callback) {
