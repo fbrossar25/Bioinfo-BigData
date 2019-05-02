@@ -28,7 +28,7 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
     private final String repliconsIds;
     private final Retryer<RepliconEntity> retryer;
     private final RepliconService repliconService;
-    private static final RateLimiter PARSING_RATE_LIMITER = RateLimiter.create(10);
+    private static final long MIN_HEAP_SPACE = 1000000000; // 1 Go
 
     public DownloadRepliconTask(@NonNull RepliconEntity replicon, @NonNull RepliconService repliconService) {
         this.replicon = replicon;
@@ -43,11 +43,25 @@ public class DownloadRepliconTask extends Task<RepliconEntity> implements Callab
         this.repliconService = repliconService;
     }
 
+    private void waitForHeapSpace(){
+        int tryNumber = 10;
+        while(Runtime.getRuntime().freeMemory() < MIN_HEAP_SPACE && tryNumber > 0){
+            tryNumber--;
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                //ignore
+                break;
+            }
+            Runtime.getRuntime().gc();
+        }
+    }
+
     private RepliconEntity download() throws IOException{
         GenbankUtils.GENBANK_REQUEST_LIMITER.acquire(); //Bloque tant qu'on est pas en dessous du nombre de requête max par seconde
         try(BufferedReader in = new BufferedReader(new InputStreamReader(GenbankUtils.getGBDownloadURL(replicon).toURL().openStream()))) {
             LOGGER.debug("Téléchargement et parsing du replicons '{}' débuté",repliconsIds);
-            PARSING_RATE_LIMITER.acquire();
+            waitForHeapSpace();
             GenbankParser.parseGenbankFile(in, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_REPLICON_END, replicon);
             EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_FILE_END);
