@@ -45,14 +45,11 @@ public class GenbankUtils {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final String NGRAM_BASE_URL = "https://www.ncbi.nlm.nih.gov/Structure/ngram";
-    private static final String EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
     private static final String DDL_BASE_URL = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi";
-    /** Permet de faire jusqu'à 10 appels par seconde au lieu de 3, mais seulement à partir du 1 décembre 2018 à 12H */
-    private static final String EUTILS_API_KEY = "d2780ecb17536153e4d7a8a8a77886afce08";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
-    // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT
-    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() > 0 ? Runtime.getRuntime().availableProcessors() : 16;
+    // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT, maximum 32 threads
+    public static final Integer DOWNLOAD_THREAD_POOL_SIZE = Math.min(Runtime.getRuntime().availableProcessors() * 4, 32);
     /** Match une entrée replicon récupérée dans le JSON genbank. Example : mitochondrion MT:NC_040902.1/ */
     private static final Pattern REPLICON_JSON_ENTRY_PATTERN = Pattern.compile("^(.+):(.+)$");
 
@@ -70,7 +67,7 @@ public class GenbankUtils {
     }
 
     public static void downloadReplicons(List<RepliconEntity> replicons, final CompletableFuture<List<RepliconEntity>> callback) {
-        final ExecutorService ses = Executors.newFixedThreadPool(DOWNLOAD_THREAD_POOL_SIZE);
+        final ExecutorService threadPool = Executors.newFixedThreadPool(DOWNLOAD_THREAD_POOL_SIZE);
         final List<DownloadRepliconTask> tasks = new ArrayList<>(replicons.size());
 
         replicons.stream().filter(Objects::nonNull).forEach(r -> tasks.add(new DownloadRepliconTask(r, repliconService)));
@@ -78,9 +75,9 @@ public class GenbankUtils {
         EventUtils.sendEvent(EventUtils.EventType.DOWNLOAD_BEGIN, ""+tasks.size());
             new Thread(() -> {
                 try {
-                    final List<Future<RepliconEntity>> futuresFiles = ses.invokeAll(tasks);
-                    ses.shutdown();
-                    ses.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                    final List<Future<RepliconEntity>> futuresFiles = threadPool.invokeAll(tasks);
+                    threadPool.shutdown();
+                    threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
                     LOGGER.info("Fin des téléchargements");
                     List<RepliconEntity> files = new ArrayList<>(replicons.size());
                     for(Future<RepliconEntity> future : futuresFiles){
@@ -153,12 +150,11 @@ public class GenbankUtils {
 
     /**
      * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
-     * @param ncOnly Ne récupère que les organismes ayant au moins 1 replicons de type NC_*
-     * @param pageNumber Nombre de page à charger (0 pour tout charger)
+     * @param limit Nombre d'éléments à charger (0 pour tout charger)
      * @return l'URL de la requête
      */
-    private static String getFullOrganismsListRequestURL(boolean ncOnly, int pageNumber){
-        return buildNgramURL(Reign.ALL, ncOnly ? "replicons like \"*NC_*\"" : "", pageNumber, "organism", "kingdom", "group", "subgroup", "replicons");
+    private static String getFullOrganismsListRequestURL(int limit){
+        return buildNgramURL(null, "replicons like \"*NC_*\" and subgroup == \"Mammals\"", limit, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
     /**
@@ -237,7 +233,7 @@ public class GenbankUtils {
         genBankModule.addDeserializer(HierarchyEntity.class, new JSONUtils.HierarchyFromGenbankDeserializer());
         mapper.registerModule(genBankModule);
         GENBANK_REQUEST_LIMITER.acquire();
-        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(true, limit))) {
+        try(BufferedReader reader = readRequest(getFullOrganismsListRequestURL(limit))) {
             LOGGER.info("Lecture de la base de données genbank, cette opération prend quelques secondes...");
             genbankJSON = mapper.readTree(reader.lines().collect(Collectors.joining()));
         }catch (IOException e){
@@ -272,6 +268,7 @@ public class GenbankUtils {
      * @throws GenbankException Si une erreur empêche la mise à jours des métadonnées
      */
     public static void updateNCDatabase(int limit) throws GenbankException  {
+        int batchSaveSize = 100;
         MainWindowController controller = MainWindowController.get();
         CommonUtils.disableHibernateLogging();
         JsonNode dataNode;
@@ -288,18 +285,18 @@ public class GenbankUtils {
         List<String> repliconsNames = new ArrayList<>(128);
         for(JsonNode organismJson : contentNode) {
             replicons.addAll(jsonEntryToReplicon(organismJson));
-            if(++organismCount % 100 == 0){
+            if(++organismCount % batchSaveSize == 0){
                 repliconService.saveAll(replicons);
                 //sauvegarde régulière pour éviter un pic de mémoire trop élevé
                 repliconsNames.addAll(replicons.stream().map(RepliconEntity::getName).collect(Collectors.toList()));
                 replicons.clear();
                 LOGGER.info("{}/{} organismes traités", organismCount, numberOfOrganisms);
-            }
-            float d = ((float)organismCount / numberOfOrganisms);
-            if(controller != null){
-                controller.getProgressBar().setProgress(d);
-                final int j = organismCount;
-                Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
+                float d = ((float)organismCount / numberOfOrganisms);
+                if(controller != null){
+                    controller.getProgressBar().setProgress(d);
+                    final int j = organismCount;
+                    Platform.runLater(()->controller.getDownloadLabel().setText(j+"/"+numberOfOrganisms+" organismes mis à jour"));
+                }
             }
         }
         if(!replicons.isEmpty()){
@@ -342,11 +339,10 @@ public class GenbankUtils {
      * @return La liste des replicons, les nouveaux instanciés, et les existants récupérés dans la base et mis à jour.
      */
     private static List<RepliconEntity> extractRepliconsFromJSONEntry(String repliconsList, HierarchyEntity hierarchy) {
-        List<RepliconEntity> replicons = new ArrayList<>();
-        String[] repliconsJSONValues = repliconsList.split(";");
-        Matcher m;
-        for(String value : repliconsJSONValues){
-            m = RegexUtils.REPLICON_PATTERN.matcher(value);
+        List<String> repliconsJSONValues = Arrays.asList(repliconsList.split(";"));
+        List<RepliconEntity> replicons = new ArrayList<>(repliconsJSONValues.size());
+        for(String value : repliconsJSONValues) {
+            Matcher m = RegexUtils.REPLICON_PATTERN.matcher(value);
             if(m.matches()){
                 String name = m.group(1);
                 Integer version = Integer.parseInt(m.group(2));
@@ -508,9 +504,12 @@ public class GenbankUtils {
             builder.append("tab==[");
             builder.append(reign.getSearchTable());
             builder.append("]");
+            if(StringUtils.isNotBlank(condition)){
+                builder.append(" and ");
+            }
         }
         if(StringUtils.isNotBlank(condition)){
-            builder.append(" and ").append(condition);
+            builder.append(condition);
         }
         builder.append(")");
         return builder.toString();
