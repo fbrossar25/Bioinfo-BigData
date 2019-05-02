@@ -310,7 +310,7 @@ public class ExcelTest {
         GenbankUtils.downloadAllReplicons(future);
         List<RepliconEntity> files = null;
         try {
-            files = future.get(1, TimeUnit.HOURS);
+            files = future.get(8, TimeUnit.HOURS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             fail("Erreur lors du téléchargement", e);
         }
