@@ -154,7 +154,7 @@ public class GenbankUtils {
      * @return l'URL de la requête
      */
     private static String getFullOrganismsListRequestURL(int limit){
-        return buildNgramURL(null, "replicons like \"*NC_*\"", limit, "organism", "kingdom", "group", "subgroup", "replicons");
+        return buildNgramURL(Reign.ALL, "replicons like \"*NC_*\"", limit, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
     /**
