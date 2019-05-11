@@ -44,7 +44,7 @@
          </center>
          <bottom>
             <TitledPane animated="false" collapsible="false" prefHeight="239.0" prefWidth="600.0" text="Logs" BorderPane.alignment="CENTER">
-               <TextArea fx:id="logs" editable="false" prefHeight="229.0" prefWidth="598.0" />
+               <TextArea fx:id="logs" editable="false" prefHeight="229.0" prefWidth="598.0"/>
             </TitledPane>
          </bottom>
       </BorderPane>

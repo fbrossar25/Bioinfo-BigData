@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
 
-    private TextArea textAera;
+    private TextArea textArea;
     private PatternLayoutEncoder encoder;
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Lock readLock = rwLock.readLock();
@@ -23,7 +23,7 @@ public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent eventObject) {
-        if (textAera == null) {
+        if (textArea == null) {
             return;
         }
         readLock.lock();
@@ -36,36 +36,38 @@ public class TextAreaAppender extends AppenderBase<ILoggingEvent> {
             for(int i=overFlowLines; i<numberOfLines; i++){
                 buffer.append(lines[i]).append(System.lineSeparator());
             }
-            appendLater(buffer.toString());
+            Platform.runLater(() -> {
+                double scroll = textArea.getScrollTop();
+                textArea.setText(buffer.toString());
+                textArea.setScrollTop(scroll);
+            });
         }else{
-            appendLater(s);
+            Platform.runLater(() -> {
+                double scroll = textArea.getScrollTop();
+                textArea.appendText(s);
+                textArea.setScrollTop(scroll);
+            });
         }
         readLock.unlock();
     }
 
     private void appendLater(final String s){
-        Platform.runLater(() -> {
-            textAera.appendText(s);
-            textAera.deselect();
-            textAera.setScrollLeft(0);
-            textAera.setScrollTop(0);
-            textAera.selectPositionCaret(textAera.getLength());
-        });
+
     }
 
     public void clear(){
         buffer.setLength(0);
-        textAera.clear();
+        textArea.clear();
     }
     
-    public TextArea getTextAera() {
-        return textAera;
+    public TextArea getTextArea() {
+        return textArea;
     }
 
-    public void setTextAera(TextArea textAera) {
-        this.textAera = textAera;
-        if(textAera != null){
-            textAera.setEditable(false);
+    public void setTextArea(TextArea textArea) {
+        this.textArea = textArea;
+        if(textArea != null){
+            textArea.setEditable(false);
         }
     }
 

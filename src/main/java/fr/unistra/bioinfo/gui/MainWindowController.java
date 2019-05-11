@@ -168,7 +168,7 @@ public class MainWindowController {
             Appender a = ((ch.qos.logback.classic.Logger) l).getAppender(textAeraAppenderName);
             if(a instanceof TextAreaAppender){
                 logsAppender = (TextAreaAppender) a;
-                logsAppender.setTextAera(logs);
+                logsAppender.setTextArea(logs);
                 LOGGER.info("Logging IHM initialisé");
             }else{
                 logsAppender = null;
