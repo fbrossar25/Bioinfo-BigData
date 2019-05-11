@@ -45,6 +45,9 @@ public class Main extends Application {
             primaryStage.setScene(scene);
             initStage(primaryStage);
             primaryStage.setOnCloseRequest(Main::openExitDialog);
+            primaryStage.setResizable(false);
+            primaryStage.setMinHeight(600);
+            primaryStage.setMinWidth(1000);
             primaryStage.show();
         } catch (Exception e) {
             new ExceptionDialog(e);
