@@ -3,8 +3,9 @@ Projet Bioinformatique Master ILC 2018-2019.
 
 ## Lancer le projet
 
-Lancer le script bin/bioinfo.bat (Windows) où bin/bioinfo (Linux).  
-Il est possible de modifier les options de démarrage dans ces scripts afin par exemple
+* Lancer le script bin/bioinfo.bat (Windows) où bin/bioinfo (Linux).  
+* La classe principale est fr.unistra.bioinfo.Main
+* Il est possible de modifier les options de démarrage dans ces scripts afin par exemple
 d'allouer plus de mémoire (argument -Xmx8G pour 8Go de RAM max)
 
 ## Particularités du projet
@@ -12,7 +13,7 @@ d'allouer plus de mémoire (argument -Xmx8G pour 8Go de RAM max)
 * Nous détectons 6 types de replicons : Chromosome, mitochondrion, plasmid, linkage, plast et dna.
 * Le type plast regroupe tous les type données par Genbank ayant plast dans leurs nom (plasti, chloroplast, etc...).
 * Dans le cas ou le type n'est pas renseigné ou n'as pas pu être déterminé, le type par défaut DNA est attribué
- * Ceci entraine par exemple que la quasi totalité des virus (étant des RNA) sont classé comme DNA.
+  * Ceci entraine par exemple que la quasi totalité des virus (étant des RNA) sont classé comme DNA.
 
 ## Importer le projet dans Eclipse
 
@@ -73,3 +74,13 @@ Penser à augmenter le niveau de log à WARN où ERROR dans le fichier logback.x
 - **François HALLER** - @francois.haller
 - **Matthieu FUCHS** - @matthieufuchs
 - **Florian BROSSARD** - @brossard
+
+## Outils et frameworks
+
+- **Gradle** - https://gradle.org/
+- **SpringBoot** - https://spring.io/projects/spring-boot
+- **Hibernate** - http://hibernate.org/
+- **Apache POI** - https://poi.apache.org/
+- **Eclipse** - https://www.eclipse.org/
+- **IntelliJ IDEA** - https://www.jetbrains.com/idea/
+- **JUnit 5** - https://junit.org/junit5/

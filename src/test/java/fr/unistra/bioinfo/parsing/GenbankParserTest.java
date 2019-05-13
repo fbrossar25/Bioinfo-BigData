@@ -12,12 +12,6 @@ import fr.unistra.bioinfo.persistence.service.HierarchyService;
 import fr.unistra.bioinfo.persistence.service.RepliconService;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.biojava.nbio.core.sequence.DNASequence;
-import org.biojava.nbio.core.sequence.compound.NucleotideCompound;
-import org.biojava.nbio.core.sequence.features.FeatureInterface;
-import org.biojava.nbio.core.sequence.features.Qualifier;
-import org.biojava.nbio.core.sequence.io.GenbankReaderHelper;
-import org.biojava.nbio.core.sequence.template.AbstractSequence;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -34,7 +28,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -340,31 +337,5 @@ class GenbankParserTest {
         assertEquals(trinucleotides_pref, replicon.getCounters().getTrinucleotides_pref());
         assertEquals(dinucleotides, replicon.getCounters().getDinucleotides());
         assertEquals(dinucleotides_pref, replicon.getCounters().getDinucleotides_pref());
-    }
-
-    @Test
-    @Disabled("Tests pour comprendre le fonctionnement de BioJava")
-    void biojavaTest(){
-        final File repliconFile = GENBANK_TEST_FILE_PATH.toFile();
-        LinkedHashMap<String, DNASequence> dnaSequences = null;
-        try {
-            dnaSequences = GenbankReaderHelper.readGenbankDNASequence(repliconFile);
-        } catch (Exception e) {
-            fail("Erreur lecture fichier genbank",e);
-        }
-        for(DNASequence seq : dnaSequences.values()) {
-            for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> feature : seq.getFeatures()) {
-                LOGGER.info(feature.getDescription());
-            }
-            LOGGER.info("-----------------Source features---------------");
-            for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> source : seq.getFeaturesByType("source")) {
-                for (Map.Entry<String, List<Qualifier>> entry : source.getQualifiers().entrySet()) {
-                    LOGGER.info(entry.getKey() + " -> " + entry.getValue().get(0));
-                }
-                for (FeatureInterface<AbstractSequence<NucleotideCompound>, NucleotideCompound> childrenFeature : source.getChildrenFeatures()) {
-                    LOGGER.info(childrenFeature.getDescription());
-                }
-            }
-        }
     }
 }
