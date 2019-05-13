@@ -16,11 +16,10 @@
       <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
          <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
             <MenuItem fx:id="btnQuitter" mnemonicParsing="false" onAction="#quitter" text="Quitter" />
+            <MenuItem fx:id="btnRegenExcel" mnemonicParsing="false" onAction="#regenererExcels" text="Forcer la réécriture des fichiers Excels"/>
          </Menu>
-         <Menu fx:id="menuEdition" mnemonicParsing="false" text="Edition">
-           <items>
-             <MenuItem fx:id="btnViderLogs" mnemonicParsing="false" onAction="#viderLogs" text="Vider Logs" />
-           </items>
+         <Menu mnemonicParsing="false" text="Edition">
+            <MenuItem mnemonicParsing="false" onAction="#viderLogs" text="Vider Logs"/>
          </Menu>
       </MenuBar>
    </top>

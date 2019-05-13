@@ -92,7 +92,7 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
                         .map(replicon -> replicon.getHierarchyEntity().getId())
                         .distinct()
                         .collect(Collectors.toList());
-        LOGGER.debug("Liste des ids des organismes à mettre à jour : {}", ids);
+        LOGGER.trace("Liste des ids des organismes à mettre à jour : {}", ids);
         return getByIds(ids);
     }
 

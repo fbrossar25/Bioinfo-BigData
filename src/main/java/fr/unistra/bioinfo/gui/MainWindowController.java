@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -42,11 +43,12 @@ public class MainWindowController {
 
     private final HierarchyService hierarchyService;
     private final RepliconService repliconService;
-    
+
     @Value("${log.textaera.appender.name}")
     private String textAeraAppenderName;
     private TextAreaAppender logsAppender;
 
+    @FXML public MenuItem btnRegenExcel;
     @FXML private BorderPane panelPrincipal;
     @FXML private MenuBar barreMenu;
     @FXML private Menu menuFichier;
@@ -191,6 +193,7 @@ public class MainWindowController {
     @FXML
     public void demarrer(ActionEvent actionEvent){
         btnDemarrer.setDisable(true);
+        btnRegenExcel.setDisable(true);
         new Thread(() -> {
             try {
                 LOGGER.info("Mise à jour de la base de données");
@@ -204,28 +207,7 @@ public class MainWindowController {
                 } catch (InterruptedException | ExecutionException e) {
                     LOGGER.error("Une erreur est survenue", e);
                 }
-                LOGGER.info("Début de la génération des excels...");
-                List<HierarchyEntity> hierarchies = hierarchyService.getAll();
-                int count = hierarchies.size();
-                Platform.runLater(() -> {
-                    this.getProgressBarTreeView().setProgress(0.0);
-                    this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
-                });
-                final AtomicInteger atomicCount = new AtomicInteger(0);
-                for(HierarchyEntity entity : hierarchies){
-                    new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
-                    atomicCount.incrementAndGet();
-                    if(atomicCount.get() % 100 == 0){
-                        LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", atomicCount.get(), count);
-                    }
-                    Platform.runLater(() -> {
-
-                        this.getProgressBarTreeView().setProgress(atomicCount.get()/(double)count);
-                        this.getTreeViewLabel().setText(atomicCount.get() + "/" + count + " organismes traités (génération des excels)");
-
-                    });
-                }
-                LOGGER.info("Génération des excels terminés");
+                genererExcels(hierarchyService.getOrganismToUpdateExcel());
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
                 LOGGER.error("Erreur lors de la mise à jour de la base de données", e);
@@ -292,5 +274,36 @@ public class MainWindowController {
 
     public void setNumberOfFiles(int size) {
         this.numberOfFiles.set(size);
+    }
+
+    public void genererExcels(@NonNull List<HierarchyEntity> hierarchies){
+        btnRegenExcel.setDisable(true);
+        LOGGER.info("Début de la génération des excels...");
+        int count = hierarchies.size();
+        Platform.runLater(() -> {
+            this.getProgressBarTreeView().setProgress(0.0);
+            this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
+        });
+        final AtomicInteger atomicCount = new AtomicInteger(0);
+        for(HierarchyEntity entity : hierarchies){
+            new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
+            atomicCount.incrementAndGet();
+            if(atomicCount.get() % 100 == 0){
+                LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", atomicCount.get(), count);
+            }
+            Platform.runLater(() -> {
+
+                this.getProgressBarTreeView().setProgress(atomicCount.get()/(double)count);
+                this.getTreeViewLabel().setText(atomicCount.get() + "/" + count + " organismes traités (génération des excels)");
+
+            });
+        }
+        btnRegenExcel.setDisable(false);
+        LOGGER.info("Génération des excels terminés");
+    }
+
+    @FXML
+    public void regenererExcels(ActionEvent actionEvent) {
+        genererExcels(hierarchyService.getAll());
     }
 }
