@@ -132,4 +132,21 @@ class RepliconServiceTest {
         assertEquals(repliconsByHierarchy.size(), allReplicons.size());
         IntStream.range(0, N).parallel().forEach(i -> assertEquals(replicons.get(i), allReplicons.get(i)));
     }
+
+    @Test
+    void setAllComputedFalseTest(){
+        HierarchyEntity h = new HierarchyEntity("k","g","s","o");
+        for(int i=0; i<1000; i++){
+            RepliconEntity r = new RepliconEntity("R"+i,1,h);
+            r.setComputed(true);
+            repliconService.save(r);
+        }
+        for(RepliconEntity r : repliconService.getAll()){
+            assertTrue(r.isComputed(), "Au moins un replicon à isComputed à false : "+r.getName());
+        }
+        repliconService.setAllComputedFalse();
+        for(RepliconEntity r : repliconService.getAll()){
+            assertFalse(r.isComputed(), "Au moins un replicon à isComputed à true : "+r.getName());
+        }
+    }
 }

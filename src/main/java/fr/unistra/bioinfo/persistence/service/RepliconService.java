@@ -20,4 +20,5 @@ public interface RepliconService extends AbstractService<RepliconEntity, Long> {
     Boolean hasRepliconToProceedForSubgroup(String ss_group);
     Boolean hasRepliconToProceedForGroup(String group);
     Boolean hasRepliconToProceedForKingdom(String kingdom);
+    void setAllComputedFalse();
 }

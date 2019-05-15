@@ -30,7 +30,7 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
 
     List<RepliconEntity> getAllByNameIn(List<String> repliconsNames);
 
-    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntitySubgroup(String ss_group);
-    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntityGroup(String group);
-    List<RepliconEntity> getAllByComputedFalseAndHierarchyEntityKingdom(String kingdom);
+    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntitySubgroup(String ss_group);
+    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntityGroup(String group);
+    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntityKingdom(String kingdom);
 }

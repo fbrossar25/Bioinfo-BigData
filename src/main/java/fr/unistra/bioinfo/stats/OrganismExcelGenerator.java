@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrganismExcelGenerator {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -27,6 +28,8 @@ public class OrganismExcelGenerator {
 
     private HierarchyService hierarchyService;
     private RepliconService repliconService;
+
+    private static final Object synchronizedObject = new Object();
 
     @Autowired
     public OrganismExcelGenerator(HierarchyEntity organism, String base_path, HierarchyService hierarchyService, RepliconService repliconService) {
@@ -237,8 +240,9 @@ public class OrganismExcelGenerator {
      */
     public boolean generateExcel() {
 
-        // Get replicon list and write organism
-        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
+        // Get parsed replicon list and write organism
+        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism)
+                .stream().filter(RepliconEntity::isParsed).collect(Collectors.toList());
         this.write_organism(replicons);
 
         // Set replicon to computed
@@ -279,7 +283,9 @@ public class OrganismExcelGenerator {
         for (RepliconEntity r : replicons) {
             r.setComputed(true);
         }
-        this.repliconService.saveAll(replicons);
+        synchronized (synchronizedObject){
+            this.repliconService.saveAll(replicons);
+        }
     }
 
     /**
@@ -289,7 +295,7 @@ public class OrganismExcelGenerator {
      */
     public boolean write_organism( List<RepliconEntity> replicons ) {
         if (this.generate_excel_organism(replicons)) {
-            LOGGER.info("Organisme '{}' mis à jour", this.organism.getOrganism());
+            LOGGER.debug("Organisme '{}' mis à jour", this.organism.getOrganism());
 
             for(RepliconEntity r : replicons){
                 if(r.isParsed()) {
@@ -344,34 +350,6 @@ public class OrganismExcelGenerator {
 //            LOGGER.warn("MAJ KINGDOM '{}'", this.organism.getKingdom());
         }
 
-        return true;
-    }
-
-
-
-    /**
-     * Write all Excels (orga, ss group, group, kingdom)
-     * @return
-     */
-    public boolean generateExcell() {
-
-        // Get replicon list and write organism
-        List<RepliconEntity> replicons = repliconService.getByHierarchy(this.organism);
-
-        if ( this.write_organism(replicons) )
-        {
-            return false;
-        }
-
-        if ( !this.writeSubExcel())
-        {
-            return false;
-        }
-
-        // Set replicon to computed
-        this.setOrganismComputed(replicons);
-
-        EventUtils.sendEvent( EventUtils.EventType.STATS_END);
         return true;
     }
 }

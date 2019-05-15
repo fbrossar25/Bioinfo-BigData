@@ -20,6 +20,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,18 +29,15 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class MainWindowController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainWindowController.class);
-    private static final String ROOT_FOLDER = "Results";
 
     private static MainWindowController singleton;
-    private static boolean init = true;
 
     private final HierarchyService hierarchyService;
     private final RepliconService repliconService;
@@ -53,7 +51,6 @@ public class MainWindowController {
     @FXML private MenuBar barreMenu;
     @FXML private Menu menuFichier;
     @FXML private Button btnDemarrer;
-    @FXML private MenuItem btnNettoyerDonnees;
     @FXML private MenuItem btnQuitter;
     @FXML private ProgressBar progressBar;
     @FXML private ProgressBar progressBarParsing;
@@ -71,6 +68,7 @@ public class MainWindowController {
     private AtomicInteger countDownload = new AtomicInteger(0);
     private AtomicInteger numberOfFiles = new AtomicInteger(0);
     private AtomicBoolean isDownloading = new AtomicBoolean(false);
+    private AtomicBoolean isGeneratingExcels = new AtomicBoolean(false);
 
     private final EventUtils.EventListener GENBANK_DOWNLOAD_END = (event -> {
         if((event.getType() == EventUtils.EventType.DOWNLOAD_FILE_END)){
@@ -207,6 +205,7 @@ public class MainWindowController {
                 } catch (InterruptedException | ExecutionException e) {
                     LOGGER.error("Une erreur est survenue", e);
                 }
+                numberOfFiles.set(0);
                 genererExcels(hierarchyService.getOrganismToUpdateExcel());
                 LOGGER.info("Mise à jour terminée");
             } catch (GenbankException e) {
@@ -214,13 +213,10 @@ public class MainWindowController {
             } finally {
                 btnDemarrer.setDisable(false);
                 isDownloading.set(false);
+                isGeneratingExcels.set(false);
+                btnRegenExcel.setDisable(false);
             }
         }).start();
-    }
-
-    @FXML
-    public void nettoyerDonnees(ActionEvent actionEvent) {
-        LOGGER.info("Nettoyage des données...");
     }
 
     @FXML
@@ -240,6 +236,7 @@ public class MainWindowController {
     private void updateFullTreeView(){
         btnDemarrer.setDisable(true);
         treeView.setDisable(true);
+        btnRegenExcel.setDisable(true);
 
         new Thread(() -> {
             CommonUtils.disableHibernateLogging();
@@ -250,7 +247,7 @@ public class MainWindowController {
             CommonUtils.enableHibernateLogging(true);
             btnDemarrer.setDisable(isDownloading.get());
             treeView.setDisable(false);
-
+            btnRegenExcel.setDisable(isDownloading.get() && !isGeneratingExcels.get());
             LOGGER.info("Mise à jour de l'arbre terminée");
         }).start();
     }
@@ -263,9 +260,9 @@ public class MainWindowController {
         return downloadLabel;
     }
 
-    public ProgressBar getProgressBarTreeView() { return progressBarParsing;}
+    private ProgressBar getProgressBarTreeView() { return progressBarParsing;}
 
-    public Label getTreeViewLabel(){ return parsingLabel; }
+    private Label getTreeViewLabel(){ return parsingLabel; }
 
 
     public static MainWindowController get(){
@@ -276,34 +273,47 @@ public class MainWindowController {
         this.numberOfFiles.set(size);
     }
 
-    public void genererExcels(@NonNull List<HierarchyEntity> hierarchies){
-        btnRegenExcel.setDisable(true);
+    private void genererExcels(@NonNull List<HierarchyEntity> hierarchies){
         LOGGER.info("Début de la génération des excels...");
         int count = hierarchies.size();
         Platform.runLater(() -> {
             this.getProgressBarTreeView().setProgress(0.0);
             this.getTreeViewLabel().setText( "0/"+count+" organismes traités (génération des excels) ");
         });
-        final AtomicInteger atomicCount = new AtomicInteger(0);
-        for(HierarchyEntity entity : hierarchies){
+        hierarchies.parallelStream().forEach(entity -> {
             new OrganismExcelGenerator(entity, this.hierarchyService, this.repliconService).generateExcel();
-            atomicCount.incrementAndGet();
-            if(atomicCount.get() % 100 == 0){
-                LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", atomicCount.get(), count);
+            numberOfFiles.incrementAndGet();
+            if(numberOfFiles.get() % 100 == 0){
+                LOGGER.info("Generation des feuilles Excel -> {}/{} organismes traités", numberOfFiles.get(), count);
             }
             Platform.runLater(() -> {
-
-                this.getProgressBarTreeView().setProgress(atomicCount.get()/(double)count);
-                this.getTreeViewLabel().setText(atomicCount.get() + "/" + count + " organismes traités (génération des excels)");
-
+                this.getProgressBarTreeView().setProgress(numberOfFiles.get()/(double)count);
+                this.getTreeViewLabel().setText(numberOfFiles.get() + "/" + count + " organismes traités (génération des excels)");
             });
-        }
-        btnRegenExcel.setDisable(false);
+        });
+        Platform.runLater(() -> {
+            this.getProgressBarTreeView().setProgress(1.0);
+            this.getTreeViewLabel().setText(count + "/" + count + " organismes traités (génération des excels)");
+        });
         LOGGER.info("Génération des excels terminés");
     }
 
     @FXML
     public void regenererExcels(ActionEvent actionEvent) {
-        genererExcels(hierarchyService.getAll());
+        new Thread(() -> {
+            try{
+                numberOfFiles.set(0);
+                isGeneratingExcels.set(true);
+                btnRegenExcel.setDisable(true);
+                repliconService.setAllComputedFalse();
+                FileUtils.deleteQuietly(CommonUtils.RESULTS_PATH.toFile());
+                genererExcels(hierarchyService.getOrganismToUpdateExcel());
+            }catch(Exception e){
+                LOGGER.error("Erreur lors de la régénération des Excels", e);
+            }finally {
+                btnRegenExcel.setDisable(false);
+                isGeneratingExcels.set(false);
+            }
+        }).start();
     }
 }
