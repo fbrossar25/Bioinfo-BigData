@@ -1,7 +1,5 @@
 package fr.unistra.bioinfo.persistence.entity;
 
-import fr.unistra.bioinfo.common.CommonUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -9,7 +7,6 @@ import org.hibernate.annotations.NaturalId;
 import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
-import java.nio.file.Files;
 import java.util.List;
 
 @Entity
@@ -160,18 +157,18 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return this.counters;
     }
 
-    public void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
+    public void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull long value ) {
         getCounters().setDinucleotideCount(din, ph, value);
     }
-    public void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Integer value ) {
+    public void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Long value ) {
         getCounters().setTrinucleotideCount(tri, ph, value);
     }
 
-    public Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+    public Long getDinucleotideCount(@NonNull String dinucleotide, @NonNull Phase phase){
         return getCounters().getDinucleotideCount(dinucleotide, phase);
     }
 
-    public Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+    public Long getTrinucleotideCount(@NonNull String trinucleotide, @NonNull Phase phase){
         return getCounters().getTrinucleotideCount(trinucleotide, phase);
     }
 
@@ -183,7 +180,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         getCounters().incrementTrinucleotideCount(trinucleotide, phase);
     }
 
-    public Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+    public Long getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
         return getCounters().getPhasePrefTrinucleotide(trinucleotide, phase);
     }
 
@@ -191,7 +188,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         getCounters().setPhasePrefTrinucleotide(trinucleotide, phase);
     }
 
-    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Integer value){
+    public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Long value){
         getCounters().setPhasePrefTrinucleotide(trinucleotide, phase, value);
     }
 
@@ -203,7 +200,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         getCounters().setPhasesPrefsTrinucleotide(trinucleotide, phase);
     }
 
-    public Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+    public Long getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
         return getCounters().getPhasePrefDinucleotide(dinucleotide, phase);
     }
 
@@ -211,7 +208,7 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         getCounters().setPhasePrefDinucleotide(dinucleotide, phase);
     }
 
-    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Integer value){
+    public void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Long value){
         getCounters().setPhasePrefDinucleotide(dinucleotide, phase, value);
     }
 
@@ -331,7 +328,6 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
     }
 
     public static RepliconEntity add(List<RepliconEntity> replicons) {
-        // TODO : clone if size == 1
         if (replicons.size() == 1) {
             return replicons.get(0);
         }
@@ -345,8 +341,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return pre_result;
     }
 
-    public Integer getTotalTrinucleotides(Phase ph) {
-        Integer r = 0;
+    public Long getTotalTrinucleotides(Phase ph) {
+        Long r = 0L;
         String tri = null;
 
         for (char c : "ACGT".toCharArray()) {
@@ -360,8 +356,8 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         return r;
     }
 
-    public Integer getTotalDinucleotides(Phase ph) {
-        Integer r = 0;
+    public Long getTotalDinucleotides(Phase ph) {
+        Long r = 0L;
         String din = null;
 
         for (char c : "ACGT".toCharArray()) {

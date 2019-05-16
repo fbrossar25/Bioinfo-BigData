@@ -1,7 +1,7 @@
 package fr.unistra.bioinfo.persistence.entity;
 
 import fr.unistra.bioinfo.common.CommonUtils;
-import fr.unistra.bioinfo.persistence.entity.converters.ListIntConverter;
+import fr.unistra.bioinfo.persistence.entity.converters.ListLongConverter;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.springframework.lang.NonNull;
@@ -18,20 +18,20 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     private Long id;
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = ListIntConverter.class)
-    private List<Integer> trinucleotides = new ArrayList<>();
+    @Convert(converter = ListLongConverter.class)
+    private List<Long> trinucleotides = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = ListIntConverter.class)
-    private List<Integer> trinucleotides_pref = new ArrayList<>();
+    @Convert(converter = ListLongConverter.class)
+    private List<Long> trinucleotides_pref = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = ListIntConverter.class)
-    private List<Integer> dinucleotides = new ArrayList<>();
+    @Convert(converter = ListLongConverter.class)
+    private List<Long> dinucleotides = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "text")
-    @Convert(converter = ListIntConverter.class)
-    private List<Integer> dinucleotides_pref = new ArrayList<>();
+    @Convert(converter = ListLongConverter.class)
+    private List<Long> dinucleotides_pref = new ArrayList<>();
 
     public CountersEntity() {
         super();
@@ -46,39 +46,39 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         this.id = id;
     }
 
-    public List<Integer> getTrinucleotides() {
+    public List<Long> getTrinucleotides() {
         return trinucleotides;
     }
 
-    public void setTrinucleotides(List<Integer> trinucleotides) {
+    public void setTrinucleotides(List<Long> trinucleotides) {
         this.trinucleotides = trinucleotides;
     }
 
-    public List<Integer> getTrinucleotides_pref() {
+    public List<Long> getTrinucleotides_pref() {
         return trinucleotides_pref;
     }
 
-    public void setTrinucleotides_pref(List<Integer> trinucleotides_pref) {
+    public void setTrinucleotides_pref(List<Long> trinucleotides_pref) {
         this.trinucleotides_pref = trinucleotides_pref;
     }
 
-    public List<Integer> getDinucleotides() {
+    public List<Long> getDinucleotides() {
         return dinucleotides;
     }
 
-    public void setDinucleotides(List<Integer> dinucleotides) {
+    public void setDinucleotides(List<Long> dinucleotides) {
         this.dinucleotides = dinucleotides;
     }
 
-    public List<Integer> getDinucleotides_pref() {
+    public List<Long> getDinucleotides_pref() {
         return dinucleotides_pref;
     }
 
-    public void setDinucleotides_pref(List<Integer> dinucleotides_pref) {
+    public void setDinucleotides_pref(List<Long> dinucleotides_pref) {
         this.dinucleotides_pref = dinucleotides_pref;
     }
 
-    void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull Integer value ) {
+    void setDinucleotideCount(@NonNull String din, @NonNull Phase ph, @NonNull long value ) {
         Integer key = getNucleotidePhaseKey(din, ph);
         if(key != null){
             this.dinucleotides.set(key, value);
@@ -86,7 +86,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
             throw new IllegalArgumentException("'"+din+"' phase '"+ph+"' n'est pas un dinucleotide valide");
         }
     }
-    void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Integer value ) {
+    void setTrinucleotideCount(@NonNull String tri, @NonNull Phase ph, @NonNull Long value ) {
         Integer key = getNucleotidePhaseKey(tri, ph);
         if(key != null){
             trinucleotides.set(key, value);
@@ -95,7 +95,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         }
     }
 
-    Integer getDinucleotideCount(@NonNull String dinucleotide,@NonNull Phase phase){
+    Long getDinucleotideCount(@NonNull String dinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(dinucleotide, phase);
         if(key != null){
             return dinucleotides.get(key);
@@ -104,7 +104,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         }
     }
 
-    Integer getTrinucleotideCount(@NonNull String trinucleotide,@NonNull Phase phase){
+    Long getTrinucleotideCount(@NonNull String trinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(trinucleotide, phase);
         if(key != null){
             return trinucleotides.get(key);
@@ -131,7 +131,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         }
     }
 
-    Integer getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
+    Long getPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(trinucleotide, phase);
         if(key != null){
             return trinucleotides_pref.get(key);
@@ -143,13 +143,13 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(trinucleotide, phase);
         if(key != null){
-            trinucleotides_pref.set(key, 1);
+            trinucleotides_pref.set(key, 1L);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
     }
 
-    void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Integer value){
+    void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Long value){
         Integer key = getNucleotidePhaseKey(trinucleotide, phase);
         if(key != null){
             trinucleotides_pref.set(key, value);
@@ -161,7 +161,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     void unsetPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(trinucleotide, phase);
         if(key != null){
-            trinucleotides_pref.set(key, 0);
+            trinucleotides_pref.set(key, 0L);
         }else{
             throw new IllegalArgumentException("("+trinucleotide+","+phase+") n'est pas un couple trinucleotide-phase valide");
         }
@@ -173,7 +173,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
         }
     }
 
-    Integer getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
+    Long getPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(dinucleotide, phase);
         if(key != null){
             return dinucleotides_pref.get(key);
@@ -185,13 +185,13 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(dinucleotide, phase);
         if(key != null){
-            dinucleotides_pref.set(key, 1);
+            dinucleotides_pref.set(key, 1L);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
     }
 
-    void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Integer value){
+    void setPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase, @NonNull Long value){
         Integer key = getNucleotidePhaseKey(dinucleotide, phase);
         if(key != null){
             dinucleotides_pref.set(key, value);
@@ -203,7 +203,7 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     void unsetPhasePrefDinucleotide(@NonNull String dinucleotide, @NonNull Phase phase){
         Integer key = getNucleotidePhaseKey(dinucleotide, phase);
         if(key != null){
-            dinucleotides_pref.set(key, 0);
+            dinucleotides_pref.set(key, 0L);
         }else{
             throw new IllegalArgumentException("("+dinucleotide+","+phase+") n'est pas un couple dinucleotide-phase valide");
         }
@@ -234,10 +234,10 @@ public class CountersEntity implements IEntity<Long>, Comparable<CountersEntity>
     }
 
     public void resetCounters() {
-        dinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.DINUCLEOTIDES.size() * 2, 0));
-        dinucleotides_pref = new ArrayList<>(Collections.nCopies(dinucleotides.size(), 0));
-        trinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.TRINUCLEOTIDES.size() * 3, 0));
-        trinucleotides_pref = new ArrayList<>(Collections.nCopies(trinucleotides.size(), 0));
+        dinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.DINUCLEOTIDES.size() * 2, 0L));
+        dinucleotides_pref = new ArrayList<Long>(Collections.nCopies(dinucleotides.size(), 0L));
+        trinucleotides = new ArrayList<>(Collections.nCopies(CommonUtils.TRINUCLEOTIDES.size() * 3, 0L));
+        trinucleotides_pref = new ArrayList<>(Collections.nCopies(trinucleotides.size(), 0L));
     }
 
     public boolean deepEquals(CountersEntity other){

@@ -82,13 +82,13 @@ class HierarchyServiceTest {
         assertEquals("R1", r.getName());
         assertEquals(1, r.getVersion().intValue());
         for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
-            assertEquals(0, r.getTrinucleotideCount(tri, Phase.PHASE_0).intValue());
-            assertEquals(1, r.getTrinucleotideCount(tri, Phase.PHASE_1).intValue());
-            assertEquals(2, r.getTrinucleotideCount(tri, Phase.PHASE_2).intValue());
+            assertEquals(0, r.getTrinucleotideCount(tri, Phase.PHASE_0).longValue());
+            assertEquals(1, r.getTrinucleotideCount(tri, Phase.PHASE_1).longValue());
+            assertEquals(2, r.getTrinucleotideCount(tri, Phase.PHASE_2).longValue());
         }
         for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
-            assertEquals(0, r.getDinucleotideCount(di, Phase.PHASE_0).intValue());
-            assertEquals(1, r.getDinucleotideCount(di, Phase.PHASE_1).intValue());
+            assertEquals(0, r.getDinucleotideCount(di, Phase.PHASE_0).longValue());
+            assertEquals(1, r.getDinucleotideCount(di, Phase.PHASE_1).longValue());
         }
         CommonUtils.enableHibernateLogging(true);
     }
@@ -195,7 +195,7 @@ class HierarchyServiceTest {
         Page<HierarchyEntity> page = hierarchyService.getAll(0, Sort.Direction.ASC, HierarchyMembers.ORGANISM);
         Pageable pageable = page.getPageable();
         long count = 0, total = page.getTotalElements();
-        List<HierarchyEntity> entities = page.getContent();
+        List<HierarchyEntity> entities;
         while(page.hasNext()){
             page = hierarchyService.getAll(pageable);
             entities = page.getContent();

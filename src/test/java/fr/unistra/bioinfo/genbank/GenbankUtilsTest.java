@@ -235,6 +235,7 @@ class GenbankUtilsTest {
     }
 
     @Test
+    @Disabled("A des fin de benchmarks uniquement")
     void testMultiThreadsDownloadSpeed(){
         GenbankUtils.updateNCDatabase(0);
         RepliconEntity r = repliconService.getByName("NC_016088");

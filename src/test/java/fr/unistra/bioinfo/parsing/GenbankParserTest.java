@@ -80,22 +80,22 @@ class GenbankParserTest {
         RepliconEntity r = new RepliconEntity("test", null);
         GenbankParser.countFrequencies("ACGTCCTAA", r);
         GenbankParser.countFrequencies("ACCATATAA", r);
-        assertEquals(2, r.getDinucleotideCount("AC", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getDinucleotideCount("GT", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getDinucleotideCount("TA", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getDinucleotideCount("CA", Phase.PHASE_0).intValue());
+        assertEquals(2, r.getDinucleotideCount("AC", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getDinucleotideCount("GT", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getDinucleotideCount("TA", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getDinucleotideCount("CA", Phase.PHASE_0).longValue());
 
 
-        assertEquals(1, r.getDinucleotideCount("CG", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getDinucleotideCount("TC", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getDinucleotideCount("CT", Phase.PHASE_1).intValue());
-        assertEquals(0, r.getDinucleotideCount("AA", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_1).intValue());
-        assertEquals(2, r.getDinucleotideCount("AT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getDinucleotideCount("CG", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getDinucleotideCount("TC", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getDinucleotideCount("CT", Phase.PHASE_1).longValue());
+        assertEquals(0, r.getDinucleotideCount("AA", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getDinucleotideCount("CC", Phase.PHASE_1).longValue());
+        assertEquals(2, r.getDinucleotideCount("AT", Phase.PHASE_1).longValue());
 
-        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_0).intValue());
-        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_1).intValue());
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_0).longValue());
+        assertEquals(6, r.getTotalDinucleotides(Phase.PHASE_1).longValue());
     }
 
     @Test
@@ -103,26 +103,26 @@ class GenbankParserTest {
         RepliconEntity r = new RepliconEntity("test", null);
         GenbankParser.countFrequencies("ACGTCCTAA", r);
         GenbankParser.countFrequencies("ACCATATAA", r);
-        assertEquals(1, r.getTrinucleotideCount("ACG", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getTrinucleotideCount("TCC", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getTrinucleotideCount("ACC", Phase.PHASE_0).intValue());
-        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_0).intValue());
-        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).intValue(), "Les trinucleotides STOP ne doivent pas être comptés");
+        assertEquals(1, r.getTrinucleotideCount("ACG", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getTrinucleotideCount("TCC", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getTrinucleotideCount("ACC", Phase.PHASE_0).longValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_0).longValue());
+        assertEquals(0, r.getTrinucleotideCount("TAA", Phase.PHASE_0).longValue(), "Les trinucleotides STOP ne doivent pas être comptés");
 
-        assertEquals(1, r.getTrinucleotideCount("CGT", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getTrinucleotideCount("CCT", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getTrinucleotideCount("CCA", Phase.PHASE_1).intValue());
-        assertEquals(1, r.getTrinucleotideCount("TAT", Phase.PHASE_1).intValue());
+        assertEquals(1, r.getTrinucleotideCount("CGT", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getTrinucleotideCount("CCT", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getTrinucleotideCount("CCA", Phase.PHASE_1).longValue());
+        assertEquals(1, r.getTrinucleotideCount("TAT", Phase.PHASE_1).longValue());
 
 
-        assertEquals(1, r.getTrinucleotideCount("GTC", Phase.PHASE_2).intValue());
-        assertEquals(1, r.getTrinucleotideCount("CTA", Phase.PHASE_2).intValue());
-        assertEquals(1, r.getTrinucleotideCount("CAT", Phase.PHASE_2).intValue());
-        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_2).intValue());
+        assertEquals(1, r.getTrinucleotideCount("GTC", Phase.PHASE_2).longValue());
+        assertEquals(1, r.getTrinucleotideCount("CTA", Phase.PHASE_2).longValue());
+        assertEquals(1, r.getTrinucleotideCount("CAT", Phase.PHASE_2).longValue());
+        assertEquals(1, r.getTrinucleotideCount("ATA", Phase.PHASE_2).longValue());
 
-        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_0).intValue());
-        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_1).intValue());
-        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_2).intValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_0).longValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_1).longValue());
+        assertEquals(4, r.getTotalTrinucleotides(Phase.PHASE_2).longValue());
     }
 
     @Test
@@ -185,7 +185,7 @@ class GenbankParserTest {
             if(p == Phase.PHASE_2)
                 continue;
             for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
-                Integer pref = r.getPhasePrefDinucleotide(dinucleotide, p);
+                Long pref = r.getPhasePrefDinucleotide(dinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
                     phasePrefChceck = true;
@@ -197,7 +197,7 @@ class GenbankParserTest {
         phasePrefChceck = false;
         for(Phase p : Phase.values()){
             for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
-                Integer pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
+                Long pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertTrue(pref == 0 || pref == 1);
                 if(pref == 1){
                     phasePrefChceck = true;
@@ -248,13 +248,13 @@ class GenbankParserTest {
         for(Phase p : Phase.values()){
             if(p != Phase.PHASE_2){
                 for (String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()) {
-                    Integer count = r.getPhasePrefDinucleotide(dinucleotide, p);
+                    Long count = r.getPhasePrefDinucleotide(dinucleotide, p);
                     assertNotNull(count);
                     assertTrue(count == 0 || count == 1);
                 }
             }
             for (String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()) {
-                Integer count = r.getPhasePrefTrinucleotide(trinucleotide, p);
+                Long count = r.getPhasePrefTrinucleotide(trinucleotide, p);
                 assertNotNull(count);
                 assertTrue(count == 0 || count == 1);
             }
@@ -327,10 +327,10 @@ class GenbankParserTest {
         RepliconEntity replicon = repliconService.getByName("NC_001700");
         assertNotNull(replicon);
         assertNotNull(replicon.getCounters());
-        ArrayList<Integer> trinucleotides = new ArrayList<>(replicon.getCounters().getTrinucleotides());
-        ArrayList<Integer> trinucleotides_pref = new ArrayList<>(replicon.getCounters().getTrinucleotides_pref());
-        ArrayList<Integer> dinucleotides = new ArrayList<>(replicon.getCounters().getDinucleotides());
-        ArrayList<Integer> dinucleotides_pref = new ArrayList<>(replicon.getCounters().getDinucleotides_pref());
+        ArrayList<Long> trinucleotides = new ArrayList<>(replicon.getCounters().getTrinucleotides());
+        ArrayList<Long> trinucleotides_pref = new ArrayList<>(replicon.getCounters().getTrinucleotides_pref());
+        ArrayList<Long> dinucleotides = new ArrayList<>(replicon.getCounters().getDinucleotides());
+        ArrayList<Long> dinucleotides_pref = new ArrayList<>(replicon.getCounters().getDinucleotides_pref());
         GenbankParser.parseGenbankFile(GENBANK_TEST_FILE_PATH.toFile());
         replicon = repliconService.getByName("NC_001700");
         assertEquals(trinucleotides, replicon.getCounters().getTrinucleotides());

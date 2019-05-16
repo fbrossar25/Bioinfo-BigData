@@ -90,7 +90,7 @@ class RepliconServiceTest {
         assertTrue(hierarchyService.existsById(h.getId()));
         assertNotNull(repliconService.getById(r.getId()));
         assertEquals(r, repliconService.getById(r.getId()));
-        assertEquals(42, repliconService.getById(r.getId()).getDinucleotideCount("AA", Phase.PHASE_1).intValue());
+        assertEquals(42, repliconService.getById(r.getId()).getDinucleotideCount("AA", Phase.PHASE_1).longValue());
         assertEquals(r.getHierarchyEntity(), h);
 
         List<RepliconEntity> replicons = repliconService.getByHierarchy(h);

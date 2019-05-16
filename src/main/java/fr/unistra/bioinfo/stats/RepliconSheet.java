@@ -318,7 +318,7 @@ public class RepliconSheet {
         }
     }
 
-    private void write_total(RepliconEntity r, List<Integer> total, Boolean is_trin) {
+    private void write_total(RepliconEntity r, List<Long> total, Boolean is_trin) {
         Row row = null;
         Cell cell = null;
         int trin_total_pos = 64 + 1;
@@ -341,14 +341,14 @@ public class RepliconSheet {
         }
     }
 
-    private double getFrequency(int n, int total) {
+    private double getFrequency(Long n, Long total) {
         if ( total == 0 || n == 0 ) {
             return 0.0;
         } else {
             return (((double)n) / ((double)total));
         }
     }
-    private void write_freq_trin(RepliconEntity r, List<Integer> total) {
+    private void write_freq_trin(RepliconEntity r, List<Long> total) {
         String tri = "";
         Row row = null;
         Cell cell = null;
@@ -422,7 +422,7 @@ public class RepliconSheet {
 
     }
 
-    private void write_freq_din(RepliconEntity r, List<Integer> total) {
+    private void write_freq_din(RepliconEntity r, List<Long> total) {
         String value = "";
         String din = "";
         Row row = null;
@@ -537,12 +537,12 @@ public class RepliconSheet {
             r = RepliconEntity.add(this.replicons);
         }
 
-        List<Integer> total_trin = new ArrayList<Integer>();
+        List<Long> total_trin = new ArrayList<>();
         total_trin.add(r.getTotalTrinucleotides(Phase.PHASE_0));
         total_trin.add(r.getTotalTrinucleotides(Phase.PHASE_1));
         total_trin.add(r.getTotalTrinucleotides(Phase.PHASE_2));
 
-        List<Integer> total_din = new ArrayList<Integer>();
+        List<Long> total_din = new ArrayList<>();
         total_din.add(r.getTotalDinucleotides(Phase.PHASE_0));
         total_din.add(r.getTotalDinucleotides(Phase.PHASE_1));
 
