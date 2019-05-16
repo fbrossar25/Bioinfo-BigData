@@ -13,11 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Converter
-public class ListIntConverter implements AttributeConverter<List<Integer>, String> {
-    private static final Logger LOGGER  = LoggerFactory.getLogger(ListIntConverter.class);
+public class ListLongConverter implements AttributeConverter<List<Long>, String> {
+    private static final Logger LOGGER  = LoggerFactory.getLogger(ListLongConverter.class);
 
     @Override
-    public String convertToDatabaseColumn(List<Integer> attribute) {
+    public String convertToDatabaseColumn(List<Long> attribute) {
         String json;
         try{
              json = new ObjectMapper().writeValueAsString(attribute);
@@ -29,11 +29,11 @@ public class ListIntConverter implements AttributeConverter<List<Integer>, Strin
     }
 
     @Override
-    public List<Integer> convertToEntityAttribute(String dbData) {
-        List<Integer> list;
+    public List<Long> convertToEntityAttribute(String dbData) {
+        List<Long> list;
         ObjectMapper mapper = new ObjectMapper();
         try {
-            list = mapper.readValue(dbData, new TypeReference<List<Integer>>(){});
+            list = mapper.readValue(dbData, new TypeReference<List<Long>>(){});
         } catch (IOException e) {
             LOGGER.error("Erreur de conversion du json en map", e);
             list = new ArrayList<>();
