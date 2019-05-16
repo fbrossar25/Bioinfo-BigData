@@ -2,6 +2,7 @@ package fr.unistra.bioinfo.parsing;
 
 import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.genbank.GenbankUtils;
+import fr.unistra.bioinfo.persistence.entity.CountersEntity;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
@@ -78,7 +79,6 @@ public final class GenbankParser {
             repliconEntity.setType(GenbankUtils.getRepliconTypeFromRepliconName(repliconName));
         }
         countFrequencies(gbReader.getProcessedSubsequences(), repliconEntity);
-        countPrefPhases(repliconEntity);
         repliconEntity.setParsed(true);
         synchronized(synchronizedObject){
             repliconService.save(repliconEntity);
@@ -105,46 +105,46 @@ public final class GenbankParser {
         }
     }
 
-    static void countPrefPhases(RepliconEntity replicon){
+    static void countPrefPhases(RepliconEntity replicon, CountersEntity cdsCounters){
         for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
-            Long p0 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
-            Long p1 = replicon.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
+            Long p0 = cdsCounters.getDinucleotideCount(dinucleotide, Phase.PHASE_0);
+            Long p1 = cdsCounters.getDinucleotideCount(dinucleotide, Phase.PHASE_1);
             if(p0 > p1){
-                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0);
+                replicon.incrementPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0);
             }else if(p1 > p0) {
-                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_1);
+                replicon.incrementPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_1);
             }else if(p0 != 0){
-                replicon.setPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0, Phase.PHASE_1);
+                replicon.incrementPhasesPrefsDinucleotide(dinucleotide, Phase.PHASE_0, Phase.PHASE_1);
             }else{
-                replicon.setPhasesPrefsDinucleotide(dinucleotide);
+                replicon.incrementPhasesPrefsDinucleotide(dinucleotide);
             }
         }
         for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
-            Long p0 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_0);
-            Long p1 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_1);
-            Long p2 = replicon.getTrinucleotideCount(trinucleotide, Phase.PHASE_2);
+            Long p0 = cdsCounters.getTrinucleotideCount(trinucleotide, Phase.PHASE_0);
+            Long p1 = cdsCounters.getTrinucleotideCount(trinucleotide, Phase.PHASE_1);
+            Long p2 = cdsCounters.getTrinucleotideCount(trinucleotide, Phase.PHASE_2);
             if(p0 > p1){
                 if(p0 > p2){
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0);
                 }else if(p2 > p0){
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
                 }else{
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_2);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_2);
                 }
             }else if(p1 > p0 || p2 > p0) {
                 if (p1 > p2) {
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1);
                 } else if (p2 > p1) {
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_2);
                 } else {
-                    replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1, Phase.PHASE_2);
+                    replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_1, Phase.PHASE_2);
                 }
             }else if(p0 != 0){
                 // Toutes les phase pref
-                replicon.setPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_1, Phase.PHASE_2);
+                replicon.incrementPhasesPrefsTrinucleotide(trinucleotide, Phase.PHASE_0, Phase.PHASE_1, Phase.PHASE_2);
             }else{
                 // Aucun trinucleotide -> pas de phase pref
-                replicon.setPhasesPrefsTrinucleotide(trinucleotide);
+                replicon.incrementPhasesPrefsTrinucleotide(trinucleotide);
             }
         }
     }
@@ -152,36 +152,43 @@ public final class GenbankParser {
     private static void countFrequencies(@NonNull List<StringBuilder> cdsList, @NonNull final RepliconEntity repliconEntity){
         repliconEntity.resetCounters();
         for(StringBuilder cds : cdsList){
-            countFrequencies(cds, repliconEntity);
+            countPrefPhases(repliconEntity, countFrequencies(cds, repliconEntity));
         }
     }
 
     /**
-     * Compte les fréquences des di/trinucléotides dans la séquence donnée et<br/>
+     * Compte les fréquences et phases préférentielles des di/trinucléotides dans la séquence donnée et<br/>
      * met à jour le Replicon donné.
      * @param sequence La séquence d'ADN au format (ACGT)
      * @param repliconEntity le replicon qui seras mis à jour si le cds est correct
      * @return true si le cds est valide et pris en compte, false sinon
      */
-    static void countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
+    static CountersEntity countFrequencies(@NonNull CharSequence sequence, @NonNull final RepliconEntity repliconEntity) {
+        CountersEntity counters = new CountersEntity();
         LOGGER.trace("CDS Replicon '{}' : {}", repliconEntity.getGenbankName(), sequence);
         int iMax = sequence.length() - 3;
         for(int i=0; i<iMax; i+=3){
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i, i+3).toString(), Phase.PHASE_0);
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i+1, i+4).toString(), Phase.PHASE_1);
             repliconEntity.incrementTrinucleotideCount(sequence.subSequence(i+2, i+5).toString(), Phase.PHASE_2);
+            counters.incrementTrinucleotideCount(sequence.subSequence(i, i+3).toString(), Phase.PHASE_0);
+            counters.incrementTrinucleotideCount(sequence.subSequence(i+1, i+4).toString(), Phase.PHASE_1);
+            counters.incrementTrinucleotideCount(sequence.subSequence(i+2, i+5).toString(), Phase.PHASE_2);
         }
         iMax = ((sequence.length() % 2) == 0) ? sequence.length() - 4 : sequence.length() - 3;
         for(int i=0; i<iMax; i+=2){
             repliconEntity.incrementDinucleotideCount(sequence.subSequence(i, i+2).toString(), Phase.PHASE_0);
             repliconEntity.incrementDinucleotideCount(sequence.subSequence(i+1, i+3).toString(), Phase.PHASE_1);
+            counters.incrementDinucleotideCount(sequence.subSequence(i, i+2).toString(), Phase.PHASE_0);
+            counters.incrementDinucleotideCount(sequence.subSequence(i+1, i+3).toString(), Phase.PHASE_1);
         }
+        return counters;
     }
 
     /**
      * Créé et sauvegarde le replicon à partir du fichier fournis et de son nom. Créer également le HierarchyEntity associé s'il n'existe pas.
      * @param repliconName Le nom du replicon
-     * @return Le repliconEntity créé où null
+     * @return Le counters créé où null
      * @throws IOException Si une erreur arrive lors de la lecture du fichier
      */
     static RepliconEntity createReplicon(@NonNull GenbankReader gbReader, @NonNull String repliconName) throws IOException{

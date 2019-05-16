@@ -188,6 +188,14 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         getCounters().setPhasePrefTrinucleotide(trinucleotide, phase);
     }
 
+    public void incrementPhasesPrefsDinucleotide(@NonNull String dinucleotide, @NonNull Phase... phases){
+        getCounters().incrementPhasesPrefsDinucleotide(dinucleotide, phases);
+    }
+
+    public void incrementPhasesPrefsTrinucleotide(@NonNull String trinucleotide, @NonNull Phase... phases){
+        getCounters().incrementPhasesPrefsTrinucleotide(trinucleotide, phases);
+    }
+
     public void setPhasePrefTrinucleotide(@NonNull String trinucleotide, @NonNull Phase phase, @NonNull Long value){
         getCounters().setPhasePrefTrinucleotide(trinucleotide, phase, value);
     }

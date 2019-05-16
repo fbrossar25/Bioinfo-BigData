@@ -46,6 +46,7 @@ public class GenbankUtils {
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final String NGRAM_BASE_URL = "https://www.ncbi.nlm.nih.gov/Structure/ngram";
     private static final String DDL_BASE_URL = "https://www.ncbi.nlm.nih.gov/sviewer/viewer.fcgi";
+    private static final String EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.cgi";
     /** 10 requête max avec un clé API d'après la doc de genbank, mais bizarrement ça marche pas, donc 3 par défaut */
     private static final Integer REQUEST_LIMIT = 3;
     // Nombre de téléchargement concurrents max, en respectant REQUEST_LIMIT, maximum 32 threads
@@ -123,7 +124,8 @@ public class GenbankUtils {
      * @return l'url
      */
     public static URI getGBDownloadURL(RepliconEntity replicon){
-        return getGBDownloadURL(replicon.getGenbankName());
+        //return getGBDownloadURL(replicon.getGenbankName());
+        return getEFetchDownloadURI(replicon.getGenbankName());
     }
 
     /**
@@ -148,6 +150,23 @@ public class GenbankUtils {
         return uri;
     }
 
+    private static URI getEFetchDownloadURI(String ids){
+        Map<String, String> params = new HashMap<>();
+        params.put("tool", "fbrossar-bioinfo");
+        params.put("email", "florian.brossard@etu.unistra.fr");
+        params.put("api_key", "d2780ecb17536153e4d7a8a8a77886afce08");
+        params.put("db", "nuccore");
+        params.put("rettype", "gbwithparts");
+        params.put("retmode", "text");
+        params.put("id", ids);
+        try{
+            return buildURL(DDL_BASE_URL, params).build();
+        }catch(URISyntaxException e){
+            LOGGER.error("Syntaxe URI incorrecte", e);
+            return null;
+        }
+    }
+
     /**
      * Retourne la requête donnant au format JSON la liste complètes des organismes avec leurs noms, sous-groupes, groupes et royaumes respectifs.
      * @param limit Nombre d'éléments à charger (0 pour tout charger)
@@ -155,6 +174,7 @@ public class GenbankUtils {
      */
     private static String getFullOrganismsListRequestURL(int limit){
         return buildNgramURL(Reign.ALL, "replicons like \"*NC_*\"", limit, "organism", "kingdom", "group", "subgroup", "replicons");
+        //return buildNgramURL(Reign.ALL, "replicons like \"*NC_*\"", limit, "organism", "kingdom", "group", "subgroup", "replicons");
     }
 
     /**

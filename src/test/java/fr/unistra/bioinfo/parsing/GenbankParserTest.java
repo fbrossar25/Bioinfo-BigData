@@ -153,8 +153,8 @@ class GenbankParserTest {
         for(RepliconEntity r : replicons){
             assertTrue(r.isParsed());
             if(invalidsReplicons.contains(r.getName())){
-                assertEquals(27, r.getValidsCDS().intValue());
-                assertEquals(6, r.getInvalidsCDS().intValue());
+                assertEquals(29, r.getValidsCDS().intValue());
+                assertEquals(4, r.getInvalidsCDS().intValue());
             }
         }
         CommonUtils.enableHibernateLogging(true);
@@ -186,8 +186,8 @@ class GenbankParserTest {
                 continue;
             for(String dinucleotide : CommonUtils.DINUCLEOTIDES.keySet()){
                 Long pref = r.getPhasePrefDinucleotide(dinucleotide, p);
-                assertTrue(pref == 0 || pref == 1);
-                if(pref == 1){
+                assertTrue(pref >= 0 || pref <= r.getValidsCDS());
+                if(pref > 0){
                     phasePrefChceck = true;
                     break;
                 }
@@ -198,8 +198,8 @@ class GenbankParserTest {
         for(Phase p : Phase.values()){
             for(String trinucleotide : CommonUtils.TRINUCLEOTIDES.keySet()){
                 Long pref = r.getPhasePrefTrinucleotide(trinucleotide, p);
-                assertTrue(pref == 0 || pref == 1);
-                if(pref == 1){
+                assertTrue(pref >= 0 || pref <= r.getValidsCDS());
+                if(pref > 0){
                     phasePrefChceck = true;
                     break;
                 }
@@ -214,8 +214,8 @@ class GenbankParserTest {
         assertEquals("Mammals", h.getSubgroup());
         assertEquals("Felis catus", h.getOrganism());
         assertEquals(RepliconType.MITOCHONDRION, r.getType());
-        assertEquals(11, r.getInvalidsCDS().intValue(), "Comptages CDS invalides KO");
-        assertEquals(2, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
+        assertEquals(6, r.getInvalidsCDS().intValue(), "Comptages CDS invalides KO");
+        assertEquals(7, r.getValidsCDS().intValue(), "Comptage CDS valides KO");
         assertTrue(r.getDinucleotideCount("GG", Phase.PHASE_0) > 0, "Comptage dinucleotides KO");
         assertEquals(r.getDinucleotideCount("GG", Phase.PHASE_0), r.getDinucleotideCount("gg", Phase.PHASE_0), "Comptage dinucleotides sensible à la casse");
     }

@@ -7,7 +7,7 @@
             <pattern>${log.pattern}</pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>DEBUG</level>
+            <level>TRACE</level>
         </filter>
     </appender>
 
@@ -29,6 +29,8 @@
     </appender>
 
     <logger name="fr.unistra.bioinfo" level="DEBUG"/>
+    <logger name="fr.unistra.bioinfo.parsing.GenbankReader" level="TRACE"/>
+    <logger name="fr.unistra.bioinfo.parsing.GenbankReaderTest" level="TRACE"/>
     <logger name="org.springframework" level="ERROR"/>
 
     <!-- Logs hibernate -->

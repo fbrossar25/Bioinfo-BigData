@@ -245,9 +245,11 @@ public class MainWindowController {
             treeView.clear();
             repliconService.getAll().parallelStream().forEach(replicon -> treeView.addReplicon(replicon));
             CommonUtils.enableHibernateLogging(true);
-            btnDemarrer.setDisable(isDownloading.get());
-            treeView.setDisable(false);
-            btnRegenExcel.setDisable(isDownloading.get() && !isGeneratingExcels.get());
+            Platform.runLater(()->{
+                btnDemarrer.setDisable(isDownloading.get());
+                treeView.setDisable(false);
+                btnRegenExcel.setDisable(isDownloading.get() && !isGeneratingExcels.get());
+            });
             LOGGER.info("Mise à jour de l'arbre terminée");
         }).start();
     }

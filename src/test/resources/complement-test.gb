@@ -23,7 +23,6 @@ FEATURES             Location/Qualifiers
                      /tissue_type="blood"
                      /dev_stage="adult"
      CDS             31..64
-     CDS             2..3,3..4
      CDS             1..15
      CDS             16..30
                      /gene="COX1"
@@ -44,7 +43,7 @@ FEATURES             Location/Qualifiers
                      NTISSMGSFISLTAVMLMVFMVWEAFASKREVAMVELTTTNLEWLHGCPPPYHTFEEP
                      TYVLLK"
      CDS             complement(join(<65..90,
-  91..120>))
+                     91..120>))
 
                      /gene="COX1"
                      /gene_synonym="COI"
