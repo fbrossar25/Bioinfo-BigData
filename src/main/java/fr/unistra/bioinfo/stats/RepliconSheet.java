@@ -1,7 +1,9 @@
 package fr.unistra.bioinfo.stats;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import fr.unistra.bioinfo.persistence.entity.Phase;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -191,7 +193,7 @@ public class RepliconSheet {
 
     public RepliconSheet(XSSFWorkbook wb, RepliconEntity replicon) {
         this.wb = wb;
-        this.replicons = Arrays.asList(replicon);
+        this.replicons = Collections.singletonList(replicon);
         this.level = GeneralInformationSheet.LEVEL.ORGANISM;
 
         this.sheet = this.wb.createSheet(this.determine_sheet_name());
@@ -213,7 +215,7 @@ public class RepliconSheet {
         Row row = this.sheet.createRow(0);
         Cell cell = null;
         for (int i = 0; i < HEADERS.size(); i++) {
-            if (HEADERS.get(i) != "") {
+            if (StringUtils.isNotEmpty(HEADERS.get(i))) {
                 String header = HEADERS.get(i);
                 cell = row.createCell(i);
                 cell.setCellValue(header);
@@ -224,23 +226,19 @@ public class RepliconSheet {
     }
 
     private void write_trinucleotides_headers() {
-        String tri = null;
         Row row = null;
         Cell cell = null;
         int row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                for (char ccc : "ACGT".toCharArray()) {
-                    tri = "" + c + cc + ccc;
-                    row = this.sheet.createRow(row_number);
-                    cell = row.createCell(0);
-                    cell.setCellValue(tri.toUpperCase());
-                    cell.setCellStyle(this.styles.get("nuc"));
-                    row_number++;
-                }
-            }
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            row = this.sheet.createRow(row_number);
+            cell = row.createCell(0);
+            cell.setCellValue(tri.toUpperCase());
+            cell.setCellStyle(this.styles.get("nuc"));
+            row_number++;
+
         }
+
         row = this.sheet.createRow(row_number);
         cell = row.createCell(0);
         cell.setCellValue("Total");
@@ -248,21 +246,18 @@ public class RepliconSheet {
     }
 
     private void write_dinucleotides_headers() {
-        String din = null;
         Row row = null;
         Cell cell = null;
         int row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                din = "" + c + cc;
-                row = this.sheet.getRow(row_number);
-                cell = row.createCell(11);
-                cell.setCellValue(din.toUpperCase());
-                cell.setCellStyle(this.styles.get("nuc"));
-                row_number++;
-            }
+        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
+            cell = row.createCell(11);
+            cell.setCellValue(din.toUpperCase());
+            cell.setCellStyle(this.styles.get("nuc"));
+            row_number++;
         }
+
         row = this.sheet.getRow(row_number);
         cell = row.createCell(11);
         cell.setCellValue("Total");
@@ -270,51 +265,41 @@ public class RepliconSheet {
     }
 
     private void write_tri(RepliconEntity r, Phase ph) {
-        String tri = null;
         Row row = null;
         Cell cell = null;
         int row_pos = 1 + ph.ordinal();
         int row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                for (char ccc : "ACGT".toCharArray()) {
-                    tri = ("" + c + cc + ccc).toUpperCase();
-                    row = this.sheet.getRow(row_number);
-                    cell = row.createCell(row_pos);
-                    cell.setCellValue(r.getTrinucleotideCount(tri, ph));
-                    if (row_number % 2 == 0) {
-                        cell.setCellStyle(this.styles.get("even num"));
-                    } else {
-                        cell.setCellStyle(this.styles.get("odd num"));
-                    }
-                    row_number++;
-                }
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
+            cell = row.createCell(row_pos);
+            cell.setCellValue(r.getTrinucleotideCount(tri, ph));
+            if (row_number % 2 == 0) {
+                cell.setCellStyle(this.styles.get("even num"));
+            } else {
+                cell.setCellStyle(this.styles.get("odd num"));
             }
+            row_number++;
         }
     }
 
 
     private void write_din(RepliconEntity r, Phase ph) {
-        String din = null;
         Row row = null;
         Cell cell = null;
         int row_pos = 12 + ph.ordinal();
         int row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                din = ("" + c + cc).toUpperCase();
-                row = this.sheet.getRow(row_number);
-                cell = row.createCell(row_pos);
-                cell.setCellValue(r.getDinucleotideCount(din, ph));
-                if (row_number % 2 == 0) {
-                    cell.setCellStyle(this.styles.get("even num"));
-                } else {
-                    cell.setCellStyle(this.styles.get("odd num"));
-                }
-                row_number++;
+        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
+            cell = row.createCell(row_pos);
+            cell.setCellValue(r.getDinucleotideCount(din, ph));
+            if (row_number % 2 == 0) {
+                cell.setCellStyle(this.styles.get("even num"));
+            } else {
+                cell.setCellStyle(this.styles.get("odd num"));
             }
+            row_number++;
         }
     }
 
@@ -349,7 +334,6 @@ public class RepliconSheet {
         }
     }
     private void write_freq_trin(RepliconEntity r, List<Long> total) {
-        String tri = "";
         Row row = null;
         Cell cell = null;
         Integer col_num = 4;
@@ -359,42 +343,36 @@ public class RepliconSheet {
         total_sum.add(0.0);
         total_sum.add(0.0);
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                for (char ccc : "ACGT".toCharArray()) {
-                    tri = ("" + c + cc + ccc).toUpperCase();
-                    row = this.sheet.getRow(row_number);
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
 
-                    for (Phase ph : Phase.values()) {
-                        double freq = 0.0;
-                        switch (ph) {
-                            case PHASE_0:
-                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_0),total.get(0));
-                                total_sum.set(0, total_sum.get(0) + freq);
-                                break;
-                            case PHASE_1:
-                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_1),total.get(1));
-                                total_sum.set(1, total_sum.get(1) + freq);
-                                break;
-                            case PHASE_2:
-                                freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_2),total.get(2));
-                                total_sum.set(2, total_sum.get(2) + freq);
-                                break;
-                        }
+            for (Phase ph : Phase.values()) {
+                double freq = 0.0;
+                switch (ph) {
+                    case PHASE_0:
+                        freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_0),total.get(0));
+                        total_sum.set(0, total_sum.get(0) + freq);
+                        break;
+                    case PHASE_1:
+                        freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_1),total.get(1));
+                        total_sum.set(1, total_sum.get(1) + freq);
+                        break;
+                    case PHASE_2:
+                        freq = this.getFrequency(r.getTrinucleotideCount(tri, Phase.PHASE_2),total.get(2));
+                        total_sum.set(2, total_sum.get(2) + freq);
+                        break;
+                }
 
-                        cell = row.createCell(col_num + ph.ordinal());
-                        cell.setCellType(CellType.NUMERIC);
-                        cell.setCellValue(freq);
-                        if (row_number % 2 == 0) {
-                            cell.setCellStyle(this.styles.get("even perc"));
-                        } else {
-                            cell.setCellStyle(this.styles.get("odd perc"));
-                        }
-                    }
-
-                    row_number++;
+                cell = row.createCell(col_num + ph.ordinal());
+                cell.setCellType(CellType.NUMERIC);
+                cell.setCellValue(freq);
+                if (row_number % 2 == 0) {
+                    cell.setCellStyle(this.styles.get("even perc"));
+                } else {
+                    cell.setCellStyle(this.styles.get("odd perc"));
                 }
             }
+            row_number++;
         }
 
         row = this.sheet.getRow(64 + 1);
@@ -424,7 +402,6 @@ public class RepliconSheet {
 
     private void write_freq_din(RepliconEntity r, List<Long> total) {
         String value = "";
-        String din = "";
         Row row = null;
         Cell cell = null;
         Integer col_num = 14;
@@ -433,37 +410,34 @@ public class RepliconSheet {
         sum_total.add(0.0);
         sum_total.add(0.0);
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                din = ("" + c + cc).toUpperCase();
-                row = this.sheet.getRow(row_number);
+        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
 
-                for (int ph = 0; ph < 2; ph++) {
-                    double freq = 0.0;
-                    switch (ph) {
-                        case 0:
-                            freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_0), total.get(0));
-                            sum_total.set(0, sum_total.get(0) + freq);
-                            break;
-                        case 1:
-                            freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_1), total.get(1));
-                            sum_total.set(1, sum_total.get(1) + freq);
-                            break;
-                    }
-
-                    cell = row.createCell(col_num + ph);
-                    cell.setCellType(CellType.NUMERIC);
-                    cell.setCellValue(freq);
-
-                    if (row_number % 2 == 0) {
-                        cell.setCellStyle(this.styles.get("even perc"));
-                    } else {
-                        cell.setCellStyle(this.styles.get("odd perc"));
-                    }
+            for (int ph = 0; ph < 2; ph++) {
+                double freq = 0.0;
+                switch (ph) {
+                    case 0:
+                        freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_0), total.get(0));
+                        sum_total.set(0, sum_total.get(0) + freq);
+                        break;
+                    case 1:
+                        freq = getFrequency(r.getDinucleotideCount(din, Phase.PHASE_1), total.get(1));
+                        sum_total.set(1, sum_total.get(1) + freq);
+                        break;
                 }
 
-                row_number++;
+                cell = row.createCell(col_num + ph);
+                cell.setCellType(CellType.NUMERIC);
+                cell.setCellValue(freq);
+
+                if (row_number % 2 == 0) {
+                    cell.setCellStyle(this.styles.get("even perc"));
+                } else {
+                    cell.setCellStyle(this.styles.get("odd perc"));
+                }
             }
+
+            row_number++;
         }
 
         row = this.sheet.getRow(16 + 1);
@@ -478,54 +452,44 @@ public class RepliconSheet {
     }
 
     private void write_pref_trin(RepliconEntity r, Phase ph) {
-        String tri = null;
         Row row = null;
         Cell cell = null;
         Integer col_num = 7 + ph.ordinal();
         Integer row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                for (char ccc : "ACGT".toCharArray()) {
-                    tri = ("" + c + cc + ccc).toUpperCase();
-                    row = this.sheet.getRow(row_number);
-                    cell = row.createCell(col_num);
-                    cell.setCellValue(r.getPhasePrefTrinucleotide(tri, ph));
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
+            cell = row.createCell(col_num);
+            cell.setCellValue(r.getPhasePrefTrinucleotide(tri, ph));
 
-                    if (row_number % 2 == 0) {
-                        cell.setCellStyle(this.styles.get("even num"));
-                    } else {
-                        cell.setCellStyle(this.styles.get("odd num"));
-                    }
-
-                    row_number++;
-                }
+            if (row_number % 2 == 0) {
+                cell.setCellStyle(this.styles.get("even num"));
+            } else {
+                cell.setCellStyle(this.styles.get("odd num"));
             }
+
+            row_number++;
         }
     }
 
     private void write_pref_din(RepliconEntity r, Phase ph) {
-        String din = null;
         Row row = null;
         Cell cell = null;
         Integer col_num = 16 + ph.ordinal();
         Integer row_number = 1;
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                din = ("" + c + cc).toUpperCase();
-                row = this.sheet.getRow(row_number);
-                cell = row.createCell(col_num);
-                cell.setCellValue(r.getPhasePrefDinucleotide(din, ph));
+        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+            row = this.sheet.getRow(row_number);
+            cell = row.createCell(col_num);
+            cell.setCellValue(r.getPhasePrefDinucleotide(din, ph));
 
-                if (row_number % 2 == 0) {
-                    cell.setCellStyle(this.styles.get("even num"));
-                } else {
-                    cell.setCellStyle(this.styles.get("odd num"));
-                }
-
-                row_number++;
+            if (row_number % 2 == 0) {
+                cell.setCellStyle(this.styles.get("even num"));
+            } else {
+                cell.setCellStyle(this.styles.get("odd num"));
             }
+
+            row_number++;
         }
     }
 

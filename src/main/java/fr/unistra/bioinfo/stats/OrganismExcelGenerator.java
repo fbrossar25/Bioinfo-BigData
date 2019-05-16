@@ -124,16 +124,8 @@ public class OrganismExcelGenerator {
      * Write every
      * @return
      */
-    private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, RepliconType t) {
-        List<RepliconEntity> results = new ArrayList<>();
-
-        for (RepliconEntity r : repls) {
-            if (r.getType().equals(t)) {
-                results.add(r);
-            }
-        }
-
-        return results;
+    private List<RepliconEntity> getListRepliconsByType(List<RepliconEntity> repls, final RepliconType t) {
+        return repls.stream().filter(r -> r.getType().equals(t)).collect(Collectors.toList());
     }
 
     public boolean genetate_excel_sub_group() {

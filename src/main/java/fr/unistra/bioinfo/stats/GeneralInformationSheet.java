@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.stats;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconType;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -109,7 +110,7 @@ public class GeneralInformationSheet {
     public GeneralInformationSheet(XSSFWorkbook wb, HierarchyEntity organism, List<RepliconEntity> replicons) {
         this.wb = wb;
         this.replicons = replicons;
-        this.organisms = Arrays.asList(organism);
+        this.organisms = Collections.singletonList(organism);
         this.sheet = this.wb.createSheet(SHEET_NAME);
         this.level = LEVEL.ORGANISM;
         this.generate_styles();
@@ -129,13 +130,13 @@ public class GeneralInformationSheet {
             row = this.sheet.createRow(i);
             cell = row.createCell(0);
             cell.setCellValue(FIRST_COLNAMES.get(i));
-            if (FIRST_COLNAMES.get(i) != "") {
+            if (StringUtils.isNotEmpty(FIRST_COLNAMES.get(i))) {
                 cell.setCellStyle(this.styles.get("main"));
             }
 
             cell = row.createCell(3);
             cell.setCellValue(SECOND_COLNAMES.get(i));
-            if (SECOND_COLNAMES.get(i) != "") {
+            if (StringUtils.isNotEmpty(SECOND_COLNAMES.get(i))) {
                 cell.setCellStyle(this.styles.get("main"));
             }
 

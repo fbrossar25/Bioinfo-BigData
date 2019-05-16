@@ -149,4 +149,40 @@ class RepliconServiceTest {
             assertFalse(r.isComputed(), "Au moins un replicon à isComputed à true : "+r.getName());
         }
     }
+
+    @Test
+    void sumRepliconTest(){
+        RepliconEntity r1 = new RepliconEntity();
+        RepliconEntity r2 = new RepliconEntity();
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            r1.setTrinucleotideCount(tri, Phase.PHASE_0, 1L);
+            r1.setTrinucleotideCount(tri, Phase.PHASE_1, 2L);
+            r1.setTrinucleotideCount(tri, Phase.PHASE_2, 3L);
+            r2.setTrinucleotideCount(tri, Phase.PHASE_0, 1L);
+            r2.setTrinucleotideCount(tri, Phase.PHASE_1, 2L);
+            r2.setTrinucleotideCount(tri, Phase.PHASE_2, 3L);
+        }
+        for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
+            r1.setDinucleotideCount(di, Phase.PHASE_0, 1L);
+            r1.setDinucleotideCount(di, Phase.PHASE_1, 2L);
+            r2.setDinucleotideCount(di, Phase.PHASE_0, 1L);
+            r2.setDinucleotideCount(di, Phase.PHASE_1, 2L);
+        }
+        RepliconEntity sum = RepliconEntity.add(r1, r2);
+        try{
+            for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+                assertEquals(Long.valueOf(2), sum.getTrinucleotideCount(tri, Phase.PHASE_0));
+                assertEquals(Long.valueOf(4), sum.getTrinucleotideCount(tri, Phase.PHASE_1));
+                assertEquals(Long.valueOf(6), sum.getTrinucleotideCount(tri, Phase.PHASE_2));
+            }
+            for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
+                assertEquals(Long.valueOf(2), sum.getDinucleotideCount(di, Phase.PHASE_0));
+                assertEquals(Long.valueOf(4), sum.getDinucleotideCount(di, Phase.PHASE_1));
+            }
+            assertTrue(sum.getCounters().deepEquals(RepliconEntity.add(r2, r1).getCounters()));
+        }catch(NullPointerException e){
+            LOGGER.error("Erreur : un des nucleotides n'existe pas",e);
+            fail(e);
+        }
+    }
 }
