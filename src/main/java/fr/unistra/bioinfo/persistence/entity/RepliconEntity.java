@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.persistence.entity;
 
+import fr.unistra.bioinfo.common.CommonUtils;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -275,53 +276,64 @@ public class RepliconEntity implements IEntity<Long>, Comparable<RepliconEntity>
         }
 
         RepliconEntity result = new RepliconEntity();
-        String din = null;
-        String tri = null;
-
         result.setType(e.getType());
 
-        for (char c : "ACGT".toCharArray()) {
-            for (char cc : "ACGT".toCharArray()) {
-                din = "" + c + cc;
+        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+            result.setTrinucleotideCount(
+                    tri,
+                    Phase.PHASE_0,
+                    e.getTrinucleotideCount(tri, Phase.PHASE_0) + ee.getTrinucleotideCount(tri, Phase.PHASE_0)
+            );
+            result.setTrinucleotideCount(
+                    tri,
+                    Phase.PHASE_1,
+                    e.getTrinucleotideCount(tri, Phase.PHASE_1) + ee.getTrinucleotideCount(tri, Phase.PHASE_1)
+            );
+            result.setTrinucleotideCount(
+                    tri,
+                    Phase.PHASE_2,
+                    e.getTrinucleotideCount(tri, Phase.PHASE_2) + ee.getTrinucleotideCount(tri, Phase.PHASE_2)
+            );
 
-                result.setDinucleotideCount(
-                        din,
-                        Phase.PHASE_0,
-                        e.getDinucleotideCount(din, Phase.PHASE_0) + ee.getDinucleotideCount(din, Phase.PHASE_0)
-                );
-                result.setDinucleotideCount(
-                        din,
-                        Phase.PHASE_1,
-                        e.getDinucleotideCount(din, Phase.PHASE_1) + ee.getDinucleotideCount(din, Phase.PHASE_1)
-                );
+            result.setPhasePrefTrinucleotide(
+                    tri,
+                    Phase.PHASE_0,
+                    e.getPhasePrefTrinucleotide(tri, Phase.PHASE_0) + ee.getPhasePrefTrinucleotide(tri, Phase.PHASE_0)
+            );
+            result.setPhasePrefTrinucleotide(
+                    tri,
+                    Phase.PHASE_1,
+                    e.getPhasePrefTrinucleotide(tri, Phase.PHASE_1) + ee.getPhasePrefTrinucleotide(tri, Phase.PHASE_1)
+            );
+            result.setPhasePrefTrinucleotide(
+                    tri,
+                    Phase.PHASE_2,
+                    e.getPhasePrefTrinucleotide(tri, Phase.PHASE_2) + ee.getPhasePrefTrinucleotide(tri, Phase.PHASE_2)
+            );
+        }
 
-                result.setPhasePrefDinucleotide(
-                        din,
-                        Phase.PHASE_0,
-                        e.getPhasePrefDinucleotide(din, Phase.PHASE_0) + ee.getPhasePrefDinucleotide(din, Phase.PHASE_0)
-                );
-                result.setPhasePrefDinucleotide(
-                        din,
-                        Phase.PHASE_1,
-                        e.getPhasePrefDinucleotide(din, Phase.PHASE_1) + ee.getPhasePrefDinucleotide(din, Phase.PHASE_1)
-                );
+        for(String di : CommonUtils.DINUCLEOTIDES.keySet()){
+            result.setDinucleotideCount(
+                    di,
+                    Phase.PHASE_0,
+                    e.getDinucleotideCount(di, Phase.PHASE_0) + ee.getDinucleotideCount(di, Phase.PHASE_0)
+            );
+            result.setDinucleotideCount(
+                    di,
+                    Phase.PHASE_1,
+                    e.getDinucleotideCount(di, Phase.PHASE_1) + ee.getDinucleotideCount(di, Phase.PHASE_1)
+            );
 
-                for (char ccc : "ACGT".toCharArray()) {
-                    tri = din + ccc;
-                    for (Phase ph : Phase.values()) {
-                        result.setTrinucleotideCount(
-                                tri,
-                                ph,
-                                e.getTrinucleotideCount(tri, ph) + ee.getTrinucleotideCount(tri, ph)
-                        );
-                        result.setPhasePrefTrinucleotide(
-                                tri,
-                                ph,
-                                e.getPhasePrefTrinucleotide(tri, ph) + ee.getPhasePrefTrinucleotide(tri, ph)
-                        );
-                    }
-                }
-            }
+            result.setPhasePrefDinucleotide(
+                    di,
+                    Phase.PHASE_0,
+                    e.getPhasePrefDinucleotide(di, Phase.PHASE_0) + ee.getPhasePrefDinucleotide(di, Phase.PHASE_0)
+            );
+            result.setPhasePrefDinucleotide(
+                    di,
+                    Phase.PHASE_1,
+                    e.getPhasePrefDinucleotide(di, Phase.PHASE_1) + ee.getPhasePrefDinucleotide(di, Phase.PHASE_1)
+            );
         }
 
         return result;
