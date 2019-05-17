@@ -71,6 +71,13 @@ public class RepliconView extends TreeView<RepliconViewNode> {
             iv1.setImage(this.son.getValue().getState().getImage());
             this.son.setGraphic(iv1);
             father.getChildren().add(son);
+            if(this.son.getValue().getType() == RepliconViewNode.RepliconViewNodeType.REPLICON
+                    && "Deltavirus".equals(this.son.getValue().getReplicon().getHierarchyEntity().getGroup())){
+                TreeItem<RepliconViewNode> parent = this.son.getParent();
+                do{
+                    parent.setExpanded(true);
+                }while((parent = parent.getParent()) != null);
+            }
         }
     }
 
@@ -175,6 +182,9 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         if(hierarchy == null){
             LOGGER.error("Le replicon '{}' n'as pas de hierarchy", replicon);
             return null;
+        }
+        if(hierarchy.getGroup().equals("Deltavirus")){
+            LOGGER.info("Deltavirus : {}>{}", replicon.getHierarchyEntity(), replicon.getGenbankName());
         }
         TreeItem<RepliconViewNode> organismItem = addOrganismNode(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism());
         RepliconViewNode repliconView = RepliconViewNodeFactory.createRepliconNode(replicon);
