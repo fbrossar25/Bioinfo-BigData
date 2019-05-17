@@ -35,25 +35,6 @@ public class RepliconView extends TreeView<RepliconViewNode> {
             this.father = father;
         }
 
-        private void updateNodeState(TreeItem<RepliconViewNode> node){
-            TreeItem<RepliconViewNode> parent = node;
-            do{
-                RepliconViewNode.RepliconViewNodeState nextState = RepliconViewNode.RepliconViewNodeState.OK;
-                for(TreeItem<RepliconViewNode> child : parent.getChildren()){
-                    if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.INTERMEDIARY){
-                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
-                    }else if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.NOK){
-                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
-                        break;
-                    }
-                }
-                parent.getValue().setState(nextState);
-                ImageView iv1 = new ImageView();
-                iv1.setImage(parent.getValue().getState().getImage());
-                parent.setGraphic(iv1);
-            }while((parent = parent.getParent()) != null);
-        }
-
         @Override
         public void run() {
             if(this.son.getValue().getType() == RepliconViewNode.RepliconViewNodeType.REPLICON){
@@ -79,8 +60,34 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      */
     public RepliconView(){
         super();
-        setRoot(new TreeItem<>(RepliconViewNodeFactory.createRootNode()));
+        setRoot(RepliconViewNodeFactory.createRootNode().getNode());
         getRoot().setExpanded(true);
+    }
+
+    public synchronized void updateNodeState(TreeItem<RepliconViewNode> node){
+        TreeItem<RepliconViewNode> parent = node;
+        do{
+            RepliconViewNode.RepliconViewNodeState nextState = RepliconViewNode.RepliconViewNodeState.OK;
+            boolean allNok = true;
+            for(TreeItem<RepliconViewNode> child : parent.getChildren()){
+                if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.INTERMEDIARY){
+                    nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                    allNok = false;
+                    break;
+                }else if(child.getValue().getState() == RepliconViewNode.RepliconViewNodeState.NOK){
+                    nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                }else{
+                    allNok = false;
+                }
+            }
+            if(allNok){
+                nextState = RepliconViewNode.RepliconViewNodeState.NOK;
+            }
+            parent.getValue().setState(nextState);
+            ImageView iv1 = new ImageView();
+            iv1.setImage(parent.getValue().getState().getImage());
+            parent.setGraphic(iv1);
+        }while((parent = parent.getParent()) != null);
     }
 
     /**
@@ -94,7 +101,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
             return node;
         }
         RepliconViewNode kingdomView = RepliconViewNodeFactory.createKingdomNode(kingdom);
-        node = new TreeItem<>(kingdomView);
+        node = kingdomView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, getRoot()));
         kingdoms.put(kingdom, node);
         return node;
@@ -113,7 +120,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         }
         TreeItem<RepliconViewNode> kingdomItem = addKingdomNode(kingdom);
         RepliconViewNode groupView = RepliconViewNodeFactory.createGroupNode(group);
-        node = new TreeItem<>(groupView);
+        node = groupView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, kingdomItem));
         groups.put(group, node);
         return node;
@@ -133,7 +140,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         }
         TreeItem<RepliconViewNode> groupItem = addGroupNode(kingdom, group);
         RepliconViewNode subgroupView = RepliconViewNodeFactory.createSubgroupNode(subgroup);
-        node = new TreeItem<>(subgroupView);
+        node = subgroupView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, groupItem));
         subgroups.put(subgroup, node);
         return node;
@@ -154,7 +161,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         }
         TreeItem<RepliconViewNode> subgroupItem = addSubgroupNode(kingdom, group, subgroup);
         RepliconViewNode organismView = RepliconViewNodeFactory.createOrganismNode(organism);
-        node = new TreeItem<>(organismView);
+        node = organismView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, subgroupItem));
         organisms.put(organism, node);
         return node;
@@ -178,7 +185,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         }
         TreeItem<RepliconViewNode> organismItem = addOrganismNode(hierarchy.getKingdom(), hierarchy.getGroup(), hierarchy.getSubgroup(), hierarchy.getOrganism());
         RepliconViewNode repliconView = RepliconViewNodeFactory.createRepliconNode(replicon);
-        node = new TreeItem<>(repliconView);
+        node = repliconView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, organismItem));
         replicons.put(replicon.getName(), node);
         return node;
