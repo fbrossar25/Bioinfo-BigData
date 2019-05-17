@@ -107,32 +107,49 @@ public class MainWindowController {
     private final EventUtils.EventListener STATS_END_LISTENER = (event -> {
         RepliconEntity r = event.getReplicon();
         String entityName = event.getEntityName();
-        TreeItem<RepliconViewNode> repliconNode = null;
+        TreeItem<RepliconViewNode> replicon = null;
+        RepliconViewNode.RepliconViewNodeState nextState = null;
         switch(event.getType()){
             case PARSING_BEGIN:
                 break;
             case STATS_END:
-                repliconNode = treeView.getRoot();
+                replicon = treeView.getRoot();
                 break;
             case STATS_END_REPLICON:
-                repliconNode = treeView.getRepliconNode(r);
+                replicon = treeView.getRepliconNode(r);
+                nextState = RepliconViewNode.RepliconViewNodeState.OK;
                 break;
             case STATS_END_ORGANISM:
-                repliconNode = treeView.getOrganismNode(entityName);
+                replicon = treeView.getOrganismNode(entityName);
                 break;
             case STATS_END_SUBGROUP:
-                repliconNode = treeView.getSubgroupNode(entityName);
+                replicon = treeView.getSubgroupNode(entityName);
                 break;
             case STATS_END_GROUP:
-                repliconNode = treeView.getGroupNode(entityName);
+                replicon = treeView.getGroupNode(entityName);
                 break;
             case STATS_END_KINGDOM:
-                repliconNode = treeView.getKingdomNode(entityName);
+                replicon = treeView.getKingdomNode(entityName);
                 break;
             default:
         }
-        if(repliconNode != null){
-            treeView.updateNodeState(repliconNode);
+        if(replicon != null){
+            if(nextState == null){
+                nextState = RepliconViewNode.RepliconViewNodeState.OK;
+                for(TreeItem<RepliconViewNode> son : replicon.getChildren()){
+                    if(son.getValue().getState() == RepliconViewNode.RepliconViewNodeState.INTERMEDIARY){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                    }else if(son.getValue().getState() == RepliconViewNode.RepliconViewNodeState.NOK){
+                        nextState = RepliconViewNode.RepliconViewNodeState.INTERMEDIARY;
+                        break;
+                    }
+                }
+            }
+            replicon.getValue().setState(nextState);
+            Node n = replicon.getGraphic();
+            if(n instanceof ImageView){
+                ((ImageView)n).setImage(replicon.getValue().getState().getImage());
+            }
         }
     });
 

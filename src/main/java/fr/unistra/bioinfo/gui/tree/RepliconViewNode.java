@@ -1,10 +1,7 @@
 package fr.unistra.bioinfo.gui.tree;
 
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
-import javafx.scene.control.TreeItem;
 import javafx.scene.image.Image;
-import org.springframework.lang.NonNull;
-import sun.reflect.generics.tree.Tree;
 
 /**
  * Vue d'un replicon dans un RepliconView
@@ -27,12 +24,17 @@ public class RepliconViewNode {
         NOK("images/rouge.png"),
         INTERMEDIARY("images/jaune.png");
 
+        private String value;
         private Image img;
 
         RepliconViewNodeState(String value){
+            this.value = value;
             this.img = new Image(value);
         }
 
+        public String getValue(){
+            return value;
+        }
         public Image getImage(){
             return img;
         }
@@ -47,11 +49,8 @@ public class RepliconViewNode {
     private RepliconViewNodeState state = RepliconViewNodeState.NOK;
     /** Valeur affichée dans l'arbre */
     private String displayValue = "No display value supplied";
-    /** Valeur affichée dans l'arbre */
-    private TreeItem<RepliconViewNode> node = new TreeItem<>(this);
 
-    RepliconViewNode(){
-    }
+    RepliconViewNode(){}
 
     public boolean isReplicon(){
         return type == RepliconViewNodeType.REPLICON;
@@ -98,17 +97,8 @@ public class RepliconViewNode {
         this.state = state;
     }
 
-    public TreeItem<RepliconViewNode> getNode(){
-        return node;
-    }
-
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getDisplayValue());
-        if(!RepliconViewNodeType.REPLICON.equals(getType())){
-            sb.append(" (").append(this.node.getChildren().size()).append(")");
-        }
-        return sb.toString();
+        return getDisplayValue();
     }
 }

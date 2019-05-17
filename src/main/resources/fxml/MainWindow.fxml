@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
 <?import fr.unistra.bioinfo.gui.tree.RepliconView?>
-<BorderPane fx:id="panelPrincipal" maxHeight="600.0" maxWidth="1200.0" minHeight="600.0" minWidth="1200.0" prefHeight="600.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.unistra.bioinfo.gui.MainWindowController">
+<BorderPane fx:id="panelPrincipal" maxHeight="600.0" maxWidth="1000.0" minHeight="600.0" minWidth="1000.0" prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="fr.unistra.bioinfo.gui.MainWindowController">
    <top>
       <MenuBar fx:id="barreMenu" BorderPane.alignment="CENTER">
          <Menu fx:id="menuFichier" mnemonicParsing="false" text="Fichier">
@@ -26,7 +26,7 @@
    <left>
       <BorderPane>
          <center>
-            <RepliconView fx:id="treeView" prefWidth="450.0" />
+            <RepliconView fx:id="treeView" prefHeight="200.0" prefWidth="200.0" />
          </center>
       </BorderPane>
    </left>
