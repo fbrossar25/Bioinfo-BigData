@@ -276,7 +276,7 @@ public class MainWindowController {
     }
 
     private void genererExcels(@NonNull List<HierarchyEntity> hierarchies){
-        LOGGER.info("Début de la génération des excels...");
+        LOGGER.info("Début de la génération des excels... ({} organismes)", hierarchies.size());
         int count = hierarchies.size();
         Platform.runLater(() -> {
             this.getProgressBarTreeView().setProgress(0.0);

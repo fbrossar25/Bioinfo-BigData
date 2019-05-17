@@ -115,12 +115,16 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
 
     @Override
     public void setAllComputedFalse(){
-        Page<RepliconEntity> page = getAll(PageRequest.of(0, 500));
-        Pageable pageable = page.getPageable();
-        while(page.hasNext()){
+        Pageable pageable = PageRequest.of(0, 500);
+        Page<RepliconEntity> page;
+        while(true){
             page = getAll(pageable);
             saveAll(page.getContent().stream().peek(r -> r.setComputed(false)).collect(Collectors.toList()));
-            pageable = page.nextPageable();
+            if(page.hasNext()){
+                pageable = page.nextPageable();
+            }else{
+                break;
+            }
         }
     }
 }

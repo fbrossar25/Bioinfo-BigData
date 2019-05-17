@@ -306,7 +306,7 @@ public class OrganismExcelGenerator {
 
     public boolean writeSubExcel() {
 
-        // write wub group
+        // write sub group
         if ( !this.repliconService.hasRepliconToProceedForSubgroup(this.organism.getSubgroup()) ) {
             if (this.genetate_excel_sub_group()) {
                 LOGGER.info("Sous-groupe '{}' mis à jour", this.organism.getSubgroup());
@@ -315,7 +315,6 @@ public class OrganismExcelGenerator {
                 LOGGER.warn("Échec mise à jour sous-groupe '{}'", this.organism.getSubgroup());
                 return false;
             }
-//            LOGGER.warn("MAJ SUB GROUP '{}'", this.organism.getSubgroup());
         }
 
         // write group
@@ -327,7 +326,6 @@ public class OrganismExcelGenerator {
                 LOGGER.warn("Échec mise à jour groupe '{}'", this.organism.getGroup());
                 return false;
             }
-//            LOGGER.warn("MAJ GROUP '{}'", this.organism.getGroup());
         }
 
         // Write kingdom
@@ -339,7 +337,6 @@ public class OrganismExcelGenerator {
                 LOGGER.warn("Échec mise à jour royaume '{}'", this.organism.getKingdom());
                 return false;
             }
-//            LOGGER.warn("MAJ KINGDOM '{}'", this.organism.getKingdom());
         }
 
         return true;
