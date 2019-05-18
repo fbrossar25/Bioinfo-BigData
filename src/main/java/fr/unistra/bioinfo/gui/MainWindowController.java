@@ -106,7 +106,7 @@ public class MainWindowController {
 
     private final EventUtils.EventListener STATS_END_LISTENER = (event -> {
         RepliconEntity r = event.getReplicon();
-        String entityName = event.getEntityName();
+        HierarchyEntity h = event.getHierarchy();
         TreeItem<RepliconViewNode> replicon = null;
         RepliconViewNode.RepliconViewNodeState nextState = null;
         switch(event.getType()){
@@ -120,16 +120,16 @@ public class MainWindowController {
                 nextState = RepliconViewNode.RepliconViewNodeState.OK;
                 break;
             case STATS_END_ORGANISM:
-                replicon = treeView.getOrganismNode(entityName);
+                replicon = treeView.getOrganismNode(h.getOrganism());
                 break;
             case STATS_END_SUBGROUP:
-                replicon = treeView.getSubgroupNode(entityName);
+                replicon = treeView.getSubgroupNode(h.getKingdom(), h.getGroup(), h.getSubgroup());
                 break;
             case STATS_END_GROUP:
-                replicon = treeView.getGroupNode(entityName);
+                replicon = treeView.getGroupNode(h.getKingdom(), h.getGroup());
                 break;
             case STATS_END_KINGDOM:
-                replicon = treeView.getKingdomNode(entityName);
+                replicon = treeView.getKingdomNode(h.getKingdom());
                 break;
             default:
         }

@@ -110,7 +110,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @return L'item du groupe ou null
      */
     private synchronized TreeItem<RepliconViewNode> addGroupNode(String kingdom, String group){
-        TreeItem<RepliconViewNode> node = getGroupNode(group);
+        TreeItem<RepliconViewNode> node = getGroupNode(kingdom, group);
         if(node != null){
             return node;
         }
@@ -118,7 +118,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         RepliconViewNode groupView = RepliconViewNodeFactory.createGroupNode(group);
         node = groupView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, kingdomItem));
-        groups.put(group, node);
+        groups.put(kingdom + "-" + group, node);
         return node;
     }
 
@@ -130,7 +130,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @return L'item du sous-groupe ou null
      */
     private synchronized TreeItem<RepliconViewNode> addSubgroupNode(String kingdom, String group, String subgroup){
-        TreeItem<RepliconViewNode> node = getSubgroupNode(subgroup);
+        TreeItem<RepliconViewNode> node = getSubgroupNode(kingdom, group, subgroup);
         if(node != null){
             return node;
         }
@@ -138,7 +138,7 @@ public class RepliconView extends TreeView<RepliconViewNode> {
         RepliconViewNode subgroupView = RepliconViewNodeFactory.createSubgroupNode(subgroup);
         node = subgroupView.getNode();
         Platform.runLater(new NonBlockingAddNode(node, groupItem));
-        subgroups.put(subgroup, node);
+        subgroups.put(kingdom + "-" + group + "-" + subgroup, node);
         return node;
     }
 
@@ -201,8 +201,8 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param group Le nom du groupe
      * @return L'item du groupe correspondant ou null
      */
-    public TreeItem<RepliconViewNode> getGroupNode(String group){
-        return groups.get(group);
+    public TreeItem<RepliconViewNode> getGroupNode(String kingdom, String group){
+        return groups.get(kingdom+"-"+group);
     }
 
     /**
@@ -210,8 +210,8 @@ public class RepliconView extends TreeView<RepliconViewNode> {
      * @param subgroup Le nom du sous-groupe
      * @return L'item du sous-groupe correspondant ou null
      */
-    public TreeItem<RepliconViewNode> getSubgroupNode(String subgroup){
-        return subgroups.get(subgroup);
+    public TreeItem<RepliconViewNode> getSubgroupNode(String kingdom, String group, String subgroup){
+        return subgroups.get(kingdom+"-"+group+"-"+subgroup);
     }
 
     /**

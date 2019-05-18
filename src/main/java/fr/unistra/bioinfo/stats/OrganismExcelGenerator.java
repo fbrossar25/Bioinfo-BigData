@@ -295,7 +295,7 @@ public class OrganismExcelGenerator {
                 }
             }
 
-            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism.getOrganism());
+            EventUtils.sendEvent( EventUtils.EventType.STATS_END_ORGANISM, this.organism);
             return true;
         } else {
             LOGGER.warn("Échec mise à jour organisme '{}'", this.organism.getOrganism());
@@ -310,7 +310,7 @@ public class OrganismExcelGenerator {
         if ( !this.repliconService.hasRepliconToProceedForSubgroup(this.organism.getSubgroup()) ) {
             if (this.genetate_excel_sub_group()) {
                 LOGGER.info("Sous-groupe '{}' mis à jour", this.organism.getSubgroup());
-                EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism.getSubgroup());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism);
             } else {
                 LOGGER.warn("Échec mise à jour sous-groupe '{}'", this.organism.getSubgroup());
                 return false;
@@ -321,7 +321,7 @@ public class OrganismExcelGenerator {
         if ( !this.repliconService.hasRepliconToProceedForGroup(this.organism.getGroup()) ) {
             if (this.genetate_excel_group()) {
                 LOGGER.info("Groupe '{}' mis à jour", this.organism.getGroup());
-                EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism.getGroup());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism);
             } else {
                 LOGGER.warn("Échec mise à jour groupe '{}'", this.organism.getGroup());
                 return false;
@@ -332,7 +332,7 @@ public class OrganismExcelGenerator {
         if ( !this.repliconService.hasRepliconToProceedForKingdom(this.organism.getKingdom()) ) {
             if (this.generate_excel_kingdom()) {
                 LOGGER.info("Royaume '{}' mis à jour", this.organism.getKingdom());
-                EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism.getKingdom());
+                EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism);
             } else {
                 LOGGER.warn("Échec mise à jour royaume '{}'", this.organism.getKingdom());
                 return false;

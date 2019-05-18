@@ -1,5 +1,6 @@
 package fr.unistra.bioinfo.common;
 
+import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.springframework.lang.NonNull;
 
@@ -49,6 +50,8 @@ public final class EventUtils {
         private EventType type;
         /** Le replicon concerné par l'évenement */
         private RepliconEntity replicon;
+        /** Le hierarchy concerné par l'évenement */
+        private HierarchyEntity hierarchy;
         /** L'entité concernée par l'évenement */
         private String entityName;
 
@@ -59,6 +62,11 @@ public final class EventUtils {
         Event(@NonNull EventType type, RepliconEntity replicon){
             this.type = type;
             this.replicon = replicon;
+        }
+
+        Event(@NonNull EventType type, HierarchyEntity hierarchy){
+            this.type = type;
+            this.hierarchy = hierarchy;
         }
 
         Event(@NonNull EventType type, String entityName){
@@ -76,6 +84,11 @@ public final class EventUtils {
             return replicon;
         }
 
+        /** Replicon concerné par l'événement. Peut être null. */
+        public HierarchyEntity getHierarchy(){
+            return hierarchy;
+        }
+
         /** Entité concernée par l'événement. Peut être null. */
         public String getEntityName(){
             return entityName;
@@ -90,6 +103,15 @@ public final class EventUtils {
      * @see EventUtils#subscribe(EventListener) */
     public static void sendEvent(EventType type, RepliconEntity replicon){
         Event event = new Event(type, replicon);
+        for(EventListener listener : listeners){
+            listener.onEvent(event);
+        }
+    }
+
+    /** Envoie un nouvel événement à tous les listener inscrits via la méthode subscribe.
+     * @see EventUtils#subscribe(EventListener) */
+    public static void sendEvent(EventType type, HierarchyEntity hierarchyEntity){
+        Event event = new Event(type, hierarchyEntity);
         for(EventListener listener : listeners){
             listener.onEvent(event);
         }
