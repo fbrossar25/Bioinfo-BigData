@@ -131,7 +131,7 @@ public class OrganismExcelGenerator {
     public boolean genetate_excel_sub_group() {
         XSSFWorkbook wb = new XSSFWorkbook();
 
-        List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getSubgroup());
+        List<HierarchyEntity> orgas = this.hierarchyService.getBySubgroup(this.organism.getKingdom(), this.organism.getGroup(), this.organism.getSubgroup());
         if (orgas.isEmpty()) {
             LOGGER.trace("SUB GROUP ORGA EMPTY");
             return false;
@@ -163,7 +163,7 @@ public class OrganismExcelGenerator {
 
     public boolean genetate_excel_group() {
         try(XSSFWorkbook wb = new XSSFWorkbook()){
-            List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getGroup());
+            List<HierarchyEntity> orgas = this.hierarchyService.getByGroup(this.organism.getKingdom(), this.organism.getGroup());
             if (orgas.isEmpty()) {
                 LOGGER.trace("GROUP ORGA EMPTY");
                 return false;

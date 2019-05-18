@@ -63,14 +63,14 @@ public class HierarchyServiceImpl extends AbstractServiceImpl<HierarchyEntity, L
         return entity;
     }
 
-    public List<HierarchyEntity> getBySubgroup(@NonNull String subgroup)
+    public List<HierarchyEntity> getBySubgroup(@NonNull String kingdom, @NonNull String group, @NonNull String subgroup)
     {
-        return hierarchyManager.getHierarchyEntitiesBySubgroup(subgroup);
+        return hierarchyManager.getHierarchyEntitiesByKingdomAndGroupAndSubgroup(kingdom, group, subgroup);
     }
 
-    public List<HierarchyEntity> getByGroup(@NonNull String group)
+    public List<HierarchyEntity> getByGroup(@NonNull String kingdom, @NonNull String group)
     {
-        return hierarchyManager.getHierarchyEntitiesByGroup(group);
+        return hierarchyManager.getHierarchyEntitiesByKingdomAndGroup(kingdom, group);
     }
 
     public List<HierarchyEntity> getByKingdom(@NonNull String kingdom)

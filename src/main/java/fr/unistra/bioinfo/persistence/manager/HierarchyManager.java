@@ -13,7 +13,8 @@ public interface HierarchyManager extends IManager<HierarchyEntity, Long> {
     void deleteAllByIdNotIn(List<Long> ids);
 
     HierarchyEntity getByOrganism(String organism);
-    List<HierarchyEntity> getHierarchyEntitiesBySubgroup(String subgroup);
-    List<HierarchyEntity> getHierarchyEntitiesByGroup(String group);
+
+    List<HierarchyEntity> getHierarchyEntitiesByKingdomAndGroupAndSubgroup(String kingdom, String group, String subgroup);
+    List<HierarchyEntity> getHierarchyEntitiesByKingdomAndGroup(String kingdom, String group);
     List<HierarchyEntity> getHierarchyEntitiesByKingdom(String kingdom);
 }
