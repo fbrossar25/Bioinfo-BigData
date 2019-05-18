@@ -101,16 +101,16 @@ public class RepliconServiceImpl extends AbstractServiceImpl<RepliconEntity, Lon
     }
 
     @Override
-    public Boolean hasRepliconToProceedForSubgroup(String ss_group) {
-        return repliconManager.getAllByComputedFalseAndParsedTrueAndHierarchyEntitySubgroup(ss_group).size() > 0;
+    public Boolean hasRepliconToProceedForSubgroup(@NonNull HierarchyEntity hierarchyEntity) {
+        return repliconManager.existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdomAndHierarchyEntityGroupAndHierarchyEntitySubgroup(hierarchyEntity.getKingdom(), hierarchyEntity.getGroup(), hierarchyEntity.getSubgroup());
     }
     @Override
-    public Boolean hasRepliconToProceedForGroup(String group) {
-        return repliconManager.getAllByComputedFalseAndParsedTrueAndHierarchyEntityGroup(group).size() > 0;
+    public Boolean hasRepliconToProceedForGroup(@NonNull HierarchyEntity hierarchyEntity) {
+        return repliconManager.existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdomAndHierarchyEntityGroup(hierarchyEntity.getKingdom(), hierarchyEntity.getGroup());
     }
     @Override
-    public Boolean hasRepliconToProceedForKingdom(String kingdom) {
-        return repliconManager.getAllByComputedFalseAndParsedTrueAndHierarchyEntityKingdom(kingdom).size() > 0;
+    public Boolean hasRepliconToProceedForKingdom(@NonNull HierarchyEntity hierarchyEntity) {
+        return repliconManager.existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdom(hierarchyEntity.getKingdom());
     }
 
     @Override

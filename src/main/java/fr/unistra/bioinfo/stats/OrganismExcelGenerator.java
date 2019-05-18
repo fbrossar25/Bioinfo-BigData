@@ -307,7 +307,7 @@ public class OrganismExcelGenerator {
     public boolean writeSubExcel() {
 
         // write sub group
-        if ( !this.repliconService.hasRepliconToProceedForSubgroup(this.organism.getSubgroup()) ) {
+        if ( !this.repliconService.hasRepliconToProceedForSubgroup(this.organism) ) {
             if (this.genetate_excel_sub_group()) {
                 LOGGER.info("Sous-groupe '{}' mis à jour", this.organism.getSubgroup());
                 EventUtils.sendEvent( EventUtils.EventType.STATS_END_SUBGROUP, this.organism);
@@ -318,7 +318,7 @@ public class OrganismExcelGenerator {
         }
 
         // write group
-        if ( !this.repliconService.hasRepliconToProceedForGroup(this.organism.getGroup()) ) {
+        if ( !this.repliconService.hasRepliconToProceedForGroup(this.organism) ) {
             if (this.genetate_excel_group()) {
                 LOGGER.info("Groupe '{}' mis à jour", this.organism.getGroup());
                 EventUtils.sendEvent( EventUtils.EventType.STATS_END_GROUP, this.organism);
@@ -329,7 +329,7 @@ public class OrganismExcelGenerator {
         }
 
         // Write kingdom
-        if ( !this.repliconService.hasRepliconToProceedForKingdom(this.organism.getKingdom()) ) {
+        if ( !this.repliconService.hasRepliconToProceedForKingdom(this.organism) ) {
             if (this.generate_excel_kingdom()) {
                 LOGGER.info("Royaume '{}' mis à jour", this.organism.getKingdom());
                 EventUtils.sendEvent( EventUtils.EventType.STATS_END_KINGDOM, this.organism);

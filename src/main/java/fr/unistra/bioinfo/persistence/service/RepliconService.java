@@ -17,8 +17,8 @@ public interface RepliconService extends AbstractService<RepliconEntity, Long> {
 
     List<RepliconEntity> getByNameIn(@NonNull List<String> repliconsNames);
 
-    Boolean hasRepliconToProceedForSubgroup(String ss_group);
-    Boolean hasRepliconToProceedForGroup(String group);
-    Boolean hasRepliconToProceedForKingdom(String kingdom);
+    Boolean hasRepliconToProceedForSubgroup(@NonNull HierarchyEntity entity);
+    Boolean hasRepliconToProceedForGroup(@NonNull HierarchyEntity entity);
+    Boolean hasRepliconToProceedForKingdom(@NonNull HierarchyEntity entity);
     void setAllComputedFalse();
 }

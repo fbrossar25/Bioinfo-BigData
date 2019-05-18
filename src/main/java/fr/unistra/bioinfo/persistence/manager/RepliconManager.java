@@ -3,6 +3,7 @@ package fr.unistra.bioinfo.persistence.manager;
 import fr.unistra.bioinfo.persistence.entity.HierarchyEntity;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.lang.NonNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -25,12 +26,14 @@ public interface RepliconManager extends IManager<RepliconEntity, Long> {
 
     List<RepliconEntity> getAllByParsed(boolean parsed);
 
-    @Query("from RepliconEntity where parsed = FALSE")
+    @Query("from RepliconEntity where parsed = false")
     List<RepliconEntity> getAllNotDownloaded();
 
     List<RepliconEntity> getAllByNameIn(List<String> repliconsNames);
 
-    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntitySubgroup(String ss_group);
-    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntityGroup(String group);
-    List<RepliconEntity> getAllByComputedFalseAndParsedTrueAndHierarchyEntityKingdom(String kingdom);
+    Boolean existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdomAndHierarchyEntityGroupAndHierarchyEntitySubgroup(@NonNull String kingdom, @NonNull String group, @NonNull String subgroup);
+
+    Boolean existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdomAndHierarchyEntityGroup(@NonNull String kingdom, @NonNull String group);
+
+    Boolean existsByComputedFalseAndParsedTrueAndHierarchyEntityKingdom(@NonNull String kingdom);
 }
