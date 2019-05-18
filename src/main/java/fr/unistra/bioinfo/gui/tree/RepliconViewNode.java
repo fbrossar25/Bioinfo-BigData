@@ -3,8 +3,6 @@ package fr.unistra.bioinfo.gui.tree;
 import fr.unistra.bioinfo.persistence.entity.RepliconEntity;
 import javafx.scene.control.TreeItem;
 import javafx.scene.image.Image;
-import org.springframework.lang.NonNull;
-import sun.reflect.generics.tree.Tree;
 
 /**
  * Vue d'un replicon dans un RepliconView
