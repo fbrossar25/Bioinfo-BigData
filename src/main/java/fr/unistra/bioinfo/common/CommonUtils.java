@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class CommonUtils {
     private CommonUtils(){}
@@ -26,6 +27,8 @@ public final class CommonUtils {
     public static final Path DATAS_PATH = Paths.get("Datas").toAbsolutePath();
     public static final Path RESULTS_PATH = Paths.get("Results").toAbsolutePath();
 
+    public static final List<String> DINUCLEOTIDES_SORTED;
+    public static final List<String> TRINUCLEOTIDES_SORTED;
     public static final Map<String, Integer> DINUCLEOTIDES;
     public static final Map<String, Integer> TRINUCLEOTIDES;
     public static final Set<String> TRINUCLEOTIDES_INIT = new TreeSet<>(Arrays.asList("ATG", "CTG", "TTG", "GTG", "ATA", "ATC", "ATT", "TTA"));
@@ -46,6 +49,8 @@ public final class CommonUtils {
         TRINUCLEOTIDES = triset;
         LOGGER.trace("DINUCLEOTIDES : " + Arrays.toString(DINUCLEOTIDES.keySet().toArray(new String[0])));
         LOGGER.trace("TRINUCLEOTIDES : " + Arrays.toString(TRINUCLEOTIDES.keySet().toArray(new String[0])));
+        DINUCLEOTIDES_SORTED = Collections.unmodifiableList(DINUCLEOTIDES.keySet().stream().sorted().collect(Collectors.toList()));
+        TRINUCLEOTIDES_SORTED = Collections.unmodifiableList(TRINUCLEOTIDES.keySet().stream().sorted().collect(Collectors.toList()));
     }
 
     /**

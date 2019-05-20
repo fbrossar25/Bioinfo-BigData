@@ -68,16 +68,16 @@ public class OrganismExcelGenerator {
 
         switch (level) {
             case KINGDOM:
-                pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append("Total_").append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case GROUP:
                 pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
-                pathBuilder.append(File.separator).append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append("Total_").append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case SUB_GROUP:
                 pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));
                 pathBuilder.append(File.separator).append(o.getGroup().replaceAll("[\\\\<>:\"/|?*]", ""));
-                pathBuilder.append(File.separator).append(o.getSubgroup().replaceAll("[\\\\<>:\"/|?*]", ""));
+                pathBuilder.append(File.separator).append("Total_").append(o.getSubgroup().replaceAll("[\\\\<>:\"/|?*]", ""));
                 break;
             case ORGANISM:
                 pathBuilder.append(o.getKingdom().replaceAll("[\\\\<>:\"/|?*]", ""));

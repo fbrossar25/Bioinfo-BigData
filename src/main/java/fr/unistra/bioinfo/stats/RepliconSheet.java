@@ -213,7 +213,7 @@ public class RepliconSheet {
 
     private void write_header() {
         Row row = this.sheet.createRow(0);
-        Cell cell = null;
+        Cell cell;
         for (int i = 0; i < HEADERS.size(); i++) {
             if (StringUtils.isNotEmpty(HEADERS.get(i))) {
                 String header = HEADERS.get(i);
@@ -226,11 +226,11 @@ public class RepliconSheet {
     }
 
     private void write_trinucleotides_headers() {
-        Row row = null;
-        Cell cell = null;
+        Row row;
+        Cell cell;
         int row_number = 1;
 
-        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+        for(String tri : CommonUtils.TRINUCLEOTIDES_SORTED){
             row = this.sheet.createRow(row_number);
             cell = row.createCell(0);
             cell.setCellValue(tri.toUpperCase());
@@ -246,11 +246,11 @@ public class RepliconSheet {
     }
 
     private void write_dinucleotides_headers() {
-        Row row = null;
-        Cell cell = null;
+        Row row;
+        Cell cell;
         int row_number = 1;
 
-        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+        for(String din : CommonUtils.DINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
             cell = row.createCell(11);
             cell.setCellValue(din.toUpperCase());
@@ -265,12 +265,12 @@ public class RepliconSheet {
     }
 
     private void write_tri(RepliconEntity r, Phase ph) {
-        Row row = null;
-        Cell cell = null;
+        Row row;
+        Cell cell;
         int row_pos = 1 + ph.ordinal();
         int row_number = 1;
 
-        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+        for(String tri : CommonUtils.TRINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
             cell = row.createCell(row_pos);
             cell.setCellValue(r.getTrinucleotideCount(tri, ph));
@@ -285,12 +285,12 @@ public class RepliconSheet {
 
 
     private void write_din(RepliconEntity r, Phase ph) {
-        Row row = null;
-        Cell cell = null;
+        Row row;
+        Cell cell;
         int row_pos = 12 + ph.ordinal();
         int row_number = 1;
 
-        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+        for(String din : CommonUtils.DINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
             cell = row.createCell(row_pos);
             cell.setCellValue(r.getDinucleotideCount(din, ph));
@@ -304,8 +304,8 @@ public class RepliconSheet {
     }
 
     private void write_total(RepliconEntity r, List<Long> total, Boolean is_trin) {
-        Row row = null;
-        Cell cell = null;
+        Row row;
+        Cell cell;
         int trin_total_pos = 64 + 1;
         int din_total_pos = 16 + 1;
 
@@ -334,16 +334,16 @@ public class RepliconSheet {
         }
     }
     private void write_freq_trin(RepliconEntity r, List<Long> total) {
-        Row row = null;
-        Cell cell = null;
-        Integer col_num = 4;
-        Integer row_number = 1;
-        List<Double> total_sum = new ArrayList<Double>();
+        Row row;
+        Cell cell;
+        int col_num = 4;
+        int row_number = 1;
+        List<Double> total_sum = new ArrayList<>();
         total_sum.add(0.0);
         total_sum.add(0.0);
         total_sum.add(0.0);
 
-        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+        for(String tri : CommonUtils.TRINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
 
             for (Phase ph : Phase.values()) {
@@ -401,16 +401,15 @@ public class RepliconSheet {
     }
 
     private void write_freq_din(RepliconEntity r, List<Long> total) {
-        String value = "";
-        Row row = null;
-        Cell cell = null;
-        Integer col_num = 14;
-        Integer row_number = 1;
-        List<Double> sum_total = new ArrayList<Double>();
+        Row row;
+        Cell cell;
+        int col_num = 14;
+        int row_number = 1;
+        List<Double> sum_total = new ArrayList<>();
         sum_total.add(0.0);
         sum_total.add(0.0);
 
-        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+        for(String din : CommonUtils.DINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
 
             for (int ph = 0; ph < 2; ph++) {
@@ -452,12 +451,12 @@ public class RepliconSheet {
     }
 
     private void write_pref_trin(RepliconEntity r, Phase ph) {
-        Row row = null;
-        Cell cell = null;
-        Integer col_num = 7 + ph.ordinal();
-        Integer row_number = 1;
+        Row row;
+        Cell cell;
+        int col_num = 7 + ph.ordinal();
+        int row_number = 1;
 
-        for(String tri : CommonUtils.TRINUCLEOTIDES.keySet()){
+        for(String tri : CommonUtils.TRINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
             cell = row.createCell(col_num);
             cell.setCellValue(r.getPhasePrefTrinucleotide(tri, ph));
@@ -473,12 +472,12 @@ public class RepliconSheet {
     }
 
     private void write_pref_din(RepliconEntity r, Phase ph) {
-        Row row = null;
-        Cell cell = null;
-        Integer col_num = 16 + ph.ordinal();
-        Integer row_number = 1;
+        Row row;
+        Cell cell;
+        int col_num = 16 + ph.ordinal();
+        int row_number = 1;
 
-        for(String din : CommonUtils.DINUCLEOTIDES.keySet()){
+        for(String din : CommonUtils.DINUCLEOTIDES_SORTED){
             row = this.sheet.getRow(row_number);
             cell = row.createCell(col_num);
             cell.setCellValue(r.getPhasePrefDinucleotide(din, ph));
@@ -494,7 +493,7 @@ public class RepliconSheet {
     }
 
     public void write_sheet() {
-        RepliconEntity r = null;
+        RepliconEntity r;
         if (this.level == GeneralInformationSheet.LEVEL.ORGANISM) {
             r = this.replicons.get(0);
         } else {

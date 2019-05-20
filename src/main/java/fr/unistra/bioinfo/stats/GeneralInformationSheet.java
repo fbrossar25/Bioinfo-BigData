@@ -119,12 +119,6 @@ public class GeneralInformationSheet {
     public void write_lines() {
         Row row = null;
         Cell cell = null;
-//        CellStyle basic_style = this.wb.createCellStyle();
-//
-//        basic_style.setBorderTop(BorderStyle.THICK);
-//        basic_style.setBorderRight(BorderStyle.THIN);
-//        basic_style.setBorderBottom(BorderStyle.THIN);
-//        basic_style.setBorderLeft(BorderStyle.THIN);
 
         for (int i = 0; i < FIRST_COLNAMES.size(); i++) {
             row = this.sheet.createRow(i);
